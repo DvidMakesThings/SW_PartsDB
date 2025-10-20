@@ -1,0 +1,36 @@
+URL: https://www.onsemi.com/pdf/datasheet/nvmfs5c604nl-d.pdf
+Model: gpt-oss:20b   Host: http://localhost:11434
+Total pages: 8
+Pages kept: 5  Indices kept: [1, 2, 6, 7, 8]
+Pages skipped: 3  Indices skipped: [3, 4, 5]
+
+---- Final extracted values by field ----
+MPN: 'NVMFS5C604NL'
+Quantity: ''
+Value: '60 V, 1.2 mΩ, 287 A'
+FET Type: 'MOSFET'
+Technology: 'Power MOSFET'
+Drain to Source Voltage (Vdss): '60 V'
+Current - Continuous Drain (Id) on 25°C: '10 μA'
+Drive Voltage (Max Rds On): '1.2 mΩ'
+Drive Voltage (Min Rds On): '0.93 mΩ'
+Rds On (Max): '1.2 mΩ'
+Id, Vgs: '50 A'
+Vgs(th) (Max): '2.0 V'
+Id: '50 A'
+Gate Charge (Qg) (Max): '120 nC'
+Vgs: '10 V'
+Vgs (Max): '10 V'
+Input Capacitance (Ciss) (Max): '8900 pF'
+Vds: '25 V'
+FET Feature: 'Small Footprint (5x6 mm) for Compact Design; Low RDS(on) to Minimize Conduction Losses; Low QG and Capacitance to Minimize Driver Losses; Wettable Flank Option for Enhanced Optical Inspection; AEC‑Q101 Qualified and PPAP Capable; Pb‑Free and RoHS Compliant'
+Power Dissipation (Max): '200 W'
+Operating Temperature: '-55 to +175 °C'
+Grade: 'AEC-Q101'
+Qualification: 'AEC-Q101 Qualified'
+Mounting Type: 'Surface Mount'
+Package / Case: '507BE'
+Manufacturer: 'onsemi'
+Description: 'DFNW5 4.90x5.90x1.00, 1.27P'
+RoHS: 'Yes'
+Datasheet: 'https://www.onsemi.com'

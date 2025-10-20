@@ -1,0 +1,260 @@
+DMP3013SFV 
+ 
+ 
+ 
+ 
+Maximum Ratings (@TA = +25°C, unless otherwise specified.) 
+Characteristic 
+Symbol 
+Value 
+Unit 
+Drain-Source Voltage 
+VDSS 
+-30 
+V 
+Gate-Source Voltage 
+VGSS 
+±25 
+V 
+Continuous Drain Current (Note 6) VGS = -10V 
+Steady 
+State 
+TA = +25°C 
+TA = +70°C 
+ID 
+-12 
+-10 
+A 
+Continuous Drain Current (Note 7) VGS = -10V 
+Steady 
+State 
+TC = +25°C 
+TC = +70°C 
+ID 
+-35 
+-25 
+A 
+Maximum Continuous Body Diode Forward Current (Note 7) 
+IS 
+-35 
+A 
+Pulsed Drain Current (380µs Pulse, Duty Cycle = 1%) 
+IDM 
+-80 
+A 
+Pulsed Body Diode Forward Current (380µs Pulse, Duty Cycle = 1%) 
+ISM 
+-80 
+A 
+Avalanche Current (Note 8) L = 1mH 
+IAS 
+-14 
+A 
+Avalanche Energy (Note 8) L = 1mH 
+EAS 
+100 
+mJ 
+ 
+ 
+Thermal Characteristics (@TA = +25°C, unless otherwise specified.) 
+Characteristic 
+Symbol 
+Value 
+Unit 
+Total Power Dissipation (Note 5) 
+TA = +25°C 
+PD 
+0.94 
+W 
+Thermal Resistance, Junction to Ambient (Note 5) 
+Steady State 
+RϴJA 
+134 
+°C/W 
+Total Power Dissipation (Note 6) 
+TA = +25°C 
+PD 
+1.94 
+W 
+Thermal Resistance, Junction to Ambient (Note 6) 
+Steady State 
+RϴJA 
+65 
+°C/W 
+Total Power Dissipation (Note 7) 
+PD 
+31 
+W 
+Thermal Resistance, Junction to Case (Note 7) 
+RϴJC 
+4.0 
+°C/W 
+Operating and Storage Temperature Range 
+TJ, TSTG 
+-55 to +150 
+°C 
+ 
+ 
+Electrical Characteristics (@TA = +25°C, unless otherwise specified.) 
+Characteristic  
+Symbol  
+Min  
+Typ  
+Max  
+Unit  
+Test Condition  
+OFF CHARACTERISTICS (Note 9)  
+Drain-Source Breakdown Voltage  
+BVDSS 
+-30 
+— 
+— 
+V 
+VGS = 0V, ID = -250μA  
+Zero Gate Voltage Drain Current 
+IDSS 
+— 
+— 
+-1 
+μA 
+VDS = -24V, VGS = 0V 
+Gate-Source Leakage  
+IGSS 
+— 
+— 
+±10 
+μA 
+VGS = ±20V, VDS = 0V  
+ON CHARACTERISTICS (Note 9)  
+Gate Threshold Voltage  
+VGS(TH) 
+-1.0 
+— 
+-3.0 
+V 
+VDS = VGS, ID = -250μA  
+Static Drain-Source On-Resistance  
+RDS(ON) 
+— 
+8 
+9.5 
+mΩ 
+VGS = -10V, ID = -11.5A  
+— 
+11 
+17 
+VGS = -4.5V, ID = -8.5A 
+Diode Forward Voltage  
+VSD 
+— 
+-0.7 
+-1.2 
+V 
+VGS = 0V, IS = -1A  
+DYNAMIC CHARACTERISTICS (Note 10) 
+Input Capacitance  
+Ciss 
+— 
+1674 
+— 
+pF 
+VDS = -15V, VGS = 0V, 
+f = 1.0MHz  
+Output Capacitance  
+Coss 
+— 
+302 
+— 
+pF 
+Reverse Transfer Capacitance  
+Crss 
+— 
+230 
+— 
+pF 
+Gate Resistance  
+Rg 
+— 
+15.2 
+— 
+Ω 
+VDS = 0V, VGS = 0V, f = 1.0MHz 
+Total Gate Charge (VGS = -5V) 
+Qg 
+— 
+16.2 
+— 
+nC 
+VDS = -15V, ID = -11.5A  
+Total Gate Charge (VGS = -10V) 
+Qg 
+— 
+33.7 
+— 
+nC 
+Gate-Source Charge  
+Qgs 
+— 
+3.5 
+— 
+nC 
+Gate-Drain Charge  
+Qgd 
+— 
+6.7 
+— 
+nC 
+Turn-On Delay Time  
+tD(ON) 
+— 
+4.0 
+— 
+ns 
+VDD = -15V, VGS = -10V,  
+RG = 6Ω, ID = -11.5A 
+Turn-On Rise Time  
+tR 
+— 
+4.5 
+— 
+ns 
+Turn-Off Delay Time  
+tD(OFF) 
+— 
+96 
+— 
+ns 
+Turn-Off Fall Time  
+tF 
+— 
+106.5 
+— 
+ns 
+Reverse Recovery Time 
+tRR 
+— 
+46 
+— 
+ns 
+IS = -11.5A, dI/dt = 100A/μs 
+Reverse Recovery Charge 
+QRR 
+— 
+25.5 
+— 
+nC 
+Notes: 
+  5. Device mounted on FR-4 PC board, with minimum recommended pad layout, single sided. 
+  6. Device mounted on FR-4 substrate PC board, 2oz copper, with thermal bias to bottom layer 1-inch square copper plate. 
+  7. Thermal resistance from junction to soldering point (on the exposed drain pad). 
+  8. IAS and EAS ratings are based on low frequency and duty cycles to keep TJ = +25°C. 
+  9. Short duration pulse test used to minimize self-heating effect. 
+10. Guaranteed by design. Not subject to product testing. 
+ 
+ 
+DMP3013SFV 
+Document number: DS40141 Rev. 5 - 2 
+2 of 7 
+www.diodes.com  
+June 2019 
+© Diodes Incorporated

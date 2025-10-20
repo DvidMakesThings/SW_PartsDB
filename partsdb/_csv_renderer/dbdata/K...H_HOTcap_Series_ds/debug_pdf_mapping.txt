@@ -1,0 +1,28 @@
+URL: https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/2313/K...H_HOTcap_Series_ds.pdf
+Model: gpt-oss:20b   Host: http://localhost:11434
+Total pages: 6
+Pages kept: 6  Indices kept: [1, 2, 3, 4, 5, 6]
+Pages skipped: 0  Indices skipped: []
+
+---- Final extracted values by field ----
+MPN: 'K104'
+Quantity: ''
+Value: '100000 pF'
+Capacitance: '100000 pF'
+Tolerance: '±10%'
+Voltage - Rated: '200 VDC'
+Dielectric: 'X0U'
+Operating Temperature: 'High operating temperature'
+ESR: ''
+Frequency: ''
+Ratings: 'EIA 198, IEC 60384-9, AEC-Q200'
+Ripple Current: ''
+Low Frequency: ''
+High Frequency: ''
+Qualification: 'AEC-Q200 qualified'
+Mounting Type: 'Radial leaded'
+Package / Case: 'MLCC, Lead spacing 5.0 mm ±0.5 mm'
+Manufacturer: 'Vishay BCcomponents'
+Description: 'Reel Data for K...H Series'
+RoHS: ''
+Datasheet: ''

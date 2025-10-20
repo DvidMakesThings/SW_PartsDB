@@ -1,0 +1,55 @@
+10
+OptiMOSTMPower-Transistor,60V
+BSZ065N06LS5
+Rev.2.4,2020-11-09
+Final Data Sheet
+5PackageOutlines
+DIMENSIONS
+MIN.
+MAX.
+MILLIMETERS
+PG-TSDSON-8-U03
+REVISION: 03
+DATE: 20.10.2020
+PACKAGE - GROUP
+NUMBER:
+L
+E1
+L1
+aaa
+E2
+c
+D
+A
+b
+e
+E
+D2
+D1
+L2
+0.40
+2.01
+0.10
+3.20
+0.90
+0.24
+3.20
+0.30
+1.54
+2.19
+0.50
+0.06
+(0.20)
+0.65
+0.60
+2.21
+3.40
+0.30
+1.10
+0.44
+3.40
+0.50
+1.74
+2.39
+0.70
+Figure1OutlinePG-TSDSON-8FL,dimensionsinmm

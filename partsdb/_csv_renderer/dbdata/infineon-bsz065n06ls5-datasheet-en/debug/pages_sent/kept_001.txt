@@ -1,0 +1,51 @@
+1
+BSZ065N06LS5
+Rev.2.4,2020-11-09
+Final Data Sheet
+TSDSON-8FL(S3O8)
+8 D
+7 D
+6 D
+5 D
+S 1
+S 2
+S 3
+G 4
+MOSFET
+OptiMOSTMPower-Transistor,60V
+Features
+•OptimizedforhighperformanceSMPS,e.g.sync.rec.
+•100%avalanchetested
+•Superiorthermalresistance
+•N-channel
+•QualifiedaccordingtoJEDEC1)fortargetapplications
+•Pb-freeleadplating;RoHScompliant
+•Halogen-freeaccordingtoIEC61249-2-21
+Table1KeyPerformanceParameters
+Parameter
+Value
+Unit
+VDS
+60
+V
+RDS(on),max
+6.5
+mΩ
+ID
+65
+A
+QOSS
+19
+nC
+QG(0V..4.5V)
+10
+nC
+Type/OrderingCode
+Package
+Marking
+RelatedLinks
+BSZ065N06LS5
+PG-TSDSON-8 FL
+065N06L
+-
+1) J-STD20 and JESD22

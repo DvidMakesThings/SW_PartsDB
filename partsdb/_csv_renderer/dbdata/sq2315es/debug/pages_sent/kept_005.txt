@@ -1,0 +1,28 @@
+Application Note 826
+Vishay Siliconix
+ 
+ 
+Document Number: 72609
+www.vishay.com
+Revision: 21-Jan-08
+25
+A P P L I C A T I O N  N O T E
+RECOMMENDED MINIMUM PADS FOR SOT-23
+0.106
+(2.692)
+Recommended Minimum Pads
+Dimensions in Inches/(mm)
+0.022
+(0.559)
+0.049
+(1.245)
+0.029
+(0.724)
+0.037
+(0.950)
+0.053
+(1.341)
+0.097
+(2.459)
+Return to Index
+Return to Index

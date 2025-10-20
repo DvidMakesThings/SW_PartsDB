@@ -603,37 +603,39 @@ class DMTGUI(tk.Tk):
         def _make_split_cell(parent, combined_key):
             """
             Inside one cell: [EntryL]   @ right_key:   [EntryR]
-            - Outer label (placed by caller) uses left_key only.
-            - No left sublabel to avoid duplication.
-            - Right sublabel is shown inline after '@'.
+            - Outer label uses the left part of the combined key.
+            - We store **unique internal keys** for left/right to avoid collisions when
+            two different combined keys share the same left key text.
             """
             left_key, right_key = combined_key.split(" @ ", 1)
-            self.at_join_map[combined_key] = (left_key, right_key)
+
+            # Use unique internal names tied to the combined column
+            left_internal  = f"{combined_key}::L"
+            right_internal = f"{combined_key}::R"
+
+            # at_join_map maps the combined CSV column -> (internal_left, internal_right)
+            self.at_join_map[combined_key] = (left_internal, right_internal)
 
             wrap = ttk.Frame(parent)
             wrap.pack(fill="x", expand=True)
 
-            # 0=EntryL, 1='@', 2=right sublabel, 3=EntryR
             wrap.columnconfigure(0, weight=1)
             wrap.columnconfigure(3, weight=1)
 
             # Left entry (no sublabel)
             var_l = tk.StringVar()
-            ttk.Entry(wrap, textvariable=var_l).grid(
-                row=0, column=0, sticky="we", padx=(0, 6)
-            )
-            self.form_inputs[left_key] = var_l
+            ttk.Entry(wrap, textvariable=var_l).grid(row=0, column=0, sticky="we", padx=(0, 6))
+            self.form_inputs[left_internal] = var_l  # <-- store by internal key
 
             # '@' and right sublabel
             ttk.Label(wrap, text="@").grid(row=0, column=1, sticky="w", padx=(0, 6))
-            ttk.Label(wrap, text=f"{right_key}:").grid(
-                row=0, column=2, sticky="e", padx=(0, 6)
-            )
+            ttk.Label(wrap, text=f"{right_key}:").grid(row=0, column=2, sticky="e", padx=(0, 6))
 
             # Right entry
             var_r = tk.StringVar()
             ttk.Entry(wrap, textvariable=var_r).grid(row=0, column=3, sticky="we")
-            self.form_inputs[right_key] = var_r
+            self.form_inputs[right_internal] = var_r  # <-- store by internal key
+
 
         def _place_side(row, label_col, cell_col, key):
             # Decide label text and widget
@@ -670,6 +672,8 @@ class DMTGUI(tk.Tk):
 
             r += 1
             i += 2
+
+
 
     def _compute_ordered_columns(self, template_fields):
         head = ["MPN", "Quantity", "Value"]
@@ -942,26 +946,51 @@ class DMTGUI(tk.Tk):
 
         # --- 3) Populate inputs
         # Fill split '@' first
-        for combined, (left_key, right_key) in getattr(self, "at_join_map", {}).items():
+        for combined, (left_key_internal, right_key_internal) in getattr(self, "at_join_map", {}).items():
             v = row.get(combined, "")
-            if isinstance(v, str) and v:
-                parts = [p.strip() for p in v.split("@", 1)]
-                if len(parts) == 2:
-                    lv, rv = parts[0], parts[1]
-                    if self._should_normalize_field(left_key):
-                        lv = self._normalize_units(lv)
-                    if self._should_normalize_field(right_key):
-                        rv = self._normalize_units(rv)
-                    if left_key in self.form_inputs:
-                        self.form_inputs[left_key].set(lv)
-                    if right_key in self.form_inputs:
-                        self.form_inputs[right_key].set(rv)
+            if not isinstance(v, str):
+                v = "" if v is None else str(v)
+
+            lv, rv = "", ""
+
+            s = v.strip()
+            if s:
+                if "@" in s:
+                    # canonical: "300 mA @ 100 kHz"
+                    parts = [p.strip() for p in s.split("@", 1)]
+                    lv = parts[0]
+                    rv = parts[1] if len(parts) == 2 else ""
+                else:
+                    # tolerant fallbacks:
+                    # 1) try trailing frequency (e.g., "300 mA 100 kHz")
+                    m = re.search(r"(\d[\d.,]*\s*(?:[GMk]?Hz))\s*$", s, flags=re.IGNORECASE)
+                    if m:
+                        rv = m.group(1).strip()
+                        lv = s[:m.start()].strip()
+                    else:
+                        # 2) comma separated? "300 mA, 100 kHz"
+                        if "," in s:
+                            a, b = s.split(",", 1)
+                            lv, rv = a.strip(), b.strip()
+                        else:
+                            # 3) nothing to split -> put everything on the left
+                            lv, rv = s, ""
+
+            # Optional normalization exactly like your previous code (kept behavior)
+            if self._should_normalize_field(left_key_internal):
+                lv = self._normalize_units(lv)
+            if self._should_normalize_field(right_key_internal):
+                rv = self._normalize_units(rv)
+
+            if left_key_internal in self.form_inputs:
+                self.form_inputs[left_key_internal].set(lv)
+            if right_key_internal in self.form_inputs:
+                self.form_inputs[right_key_internal].set(rv)
 
         # Now fill simple fields
         subkeys = set()
         for _, (lk, rk) in getattr(self, "at_join_map", {}).items():
-            subkeys.add(lk)
-            subkeys.add(rk)
+            subkeys.add(lk); subkeys.add(rk)
 
         for k, var in self.form_inputs.items():
             if k in subkeys:
@@ -972,6 +1001,7 @@ class DMTGUI(tk.Tk):
             if self._should_normalize_field(k):
                 val = self._normalize_units(str(val))
             var.set(str(val))
+
 
     def on_open_csv(self):
         initial = (

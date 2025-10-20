@@ -1,0 +1,50 @@
+5
+OptiMOSTMPower-Transistor,60V
+BSZ065N06LS5
+Rev.2.4,2020-11-09
+Final Data Sheet
+Table7Reversediode
+Values
+Min.
+Typ.
+Max.
+Parameter
+Symbol
+Unit
+Note/TestCondition
+Diode continuous forward current
+IS
+-
+-
+39
+A
+TC=25°C
+Diode pulse current
+IS,pulse
+-
+-
+260
+A
+TC=25°C
+Diode forward voltage
+VSD
+-
+0.83
+1.2
+V
+VGS=0V,IF=20A,Tj=25°C
+Reverse recovery time1)
+trr
+-
+18
+36
+ns
+VR=30V,IF=20A,diF/dt=100A/µs
+Reverse recovery charge1)
+Qrr
+-
+7
+14
+nC
+VR=30V,IF=20A,diF/dt=100A/µs
+1) Defined by design. Not subject to production test

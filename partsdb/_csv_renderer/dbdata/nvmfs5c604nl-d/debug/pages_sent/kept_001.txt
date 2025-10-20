@@ -1,0 +1,156 @@
+DATA SHEET
+www.onsemi.com
+ Semiconductor Components Industries, LLC, 2016
+March, 2025 − Rev. 6
+1
+Publication Order Number:
+NVMFS5C604NL/D
+MOSFET – Power, Single
+N-Channel
+60 V, 1.2 m, 287 A
+NVMFS5C604NL
+Features
+Small Footprint (5x6 mm) for Compact Design
+Low RDS(on) to Minimize Conduction Losses
+Low QG and Capacitance to Minimize Driver Losses
+NVMFS5C604NLWF − Wettable Flank Option for Enhanced Optical
+Inspection
+AEC−Q101 Qualified and PPAP Capable
+These Devices are Pb−Free and are RoHS Compliant
+MAXIMUM RATINGS (TJ = 25C unless otherwise noted)
+Parameter
+Symbol
+Value
+Unit
+Drain−to−Source Voltage
+VDSS
+60
+V
+Gate−to−Source Voltage
+VGS
+20
+V
+Continuous Drain 
+Current RJC 
+(Notes 1, 3)
+Steady
+State
+TC = 25C
+ID
+287
+A
+TC = 100C
+203
+Power Dissipation
+RJC (Note 1)
+TC = 25C
+PD
+200
+W
+TC = 100C
+100
+Continuous Drain 
+Current RJA 
+(Notes 1, 2, 3)
+Steady
+State
+TA = 25C
+ID
+40
+A
+TA = 100C
+28
+Power Dissipation
+RJA (Notes 1 & 2)
+TA = 25C
+PD
+3.9
+W
+TA = 100C
+1.9
+Pulsed Drain Current
+TA = 25C, tp = 10 s
+IDM
+900
+A
+Operating Junction and Storage Temperature
+TJ, Tstg
+−55 to
++175
+C
+Source Current (Body Diode)
+IS
+203
+A
+Single Pulse Drain−to−Source Avalanche 
+Energy (IL(pk) = 22 A)
+EAS
+776
+mJ
+Lead Temperature for Soldering Purposes
+(1/8 from case for 10 s)
+TL
+260
+C
+Stresses exceeding those listed in the Maximum Ratings table may damage the
+device. If any of these limits are exceeded, device functionality should not be
+assumed, damage may occur and reliability may be affected.
+THERMAL RESISTANCE MAXIMUM RATINGS
+Parameter
+Symbol
+Value
+Unit
+Junction−to−Case − Steady State
+RJC
+0.75
+C/W
+Junction−to−Ambient − Steady State (Note 2)
+RJA
+39
+1. The entire application environment impacts the thermal resistance values shown,
+they are not constants and are only valid for the particular conditions noted.
+2. Surface−mounted on FR4 board using a 650 mm2, 2 oz. Cu pad.
+3. Maximum current for pulses as long as 1 second is higher but is dependent
+on pulse duration and duty cycle.
+V(BR)DSS
+RDS(ON) MAX
+ID MAX
+60 V
+1.2 m @ 10 V
+287 A
+1.7 m @ 4.5 V
+G (4)
+S (1,2,3)
+N−CHANNEL MOSFET
+D (5,6)
+See detailed ordering, marking and shipping information in the
+package dimensions section on page 5 of this data sheet.
+ORDERING INFORMATION
+MARKING
+DIAGRAMS
+XXXXXX
+AYWZZ
+S
+S
+S
+G
+D
+D
+D
+D
+DFN5
+CASE 506EZ
+1
+XXXXXX = Specific Device Code
+A
+= Assembly Location
+Y
+= Year
+W
+= Work Week
+ZZ
+= Lot Traceability
+DFNW5
+CASE 507BA
+NOTE: Some of the device on this data sheet have been
+DISCONTINUED. Please refer to the table on page 5

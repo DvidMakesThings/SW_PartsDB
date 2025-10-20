@@ -1,0 +1,63 @@
+9
+OptiMOSTMPower-Transistor,60V
+BSZ065N06LS5
+Rev.2.4,2020-11-09
+Final Data Sheet
+Diagram13:Avalanchecharacteristics
+tAV[µs]
+IAV[A]
+100
+101
+102
+103
+10-1
+100
+101
+102
+25 °C
+100 °C
+125 °C
+IAS=f(tAV);RGS=25Ω;parameter:Tj(start)
+Diagram14:Typ.gatecharge
+Qgate[nC]
+VGS[V]
+0
+4
+8
+12
+16
+20
+24
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+48 V
+30 V
+12 V
+VGS=f(Qgate);ID=20Apulsed;parameter:VDD
+Diagram15:Drain-sourcebreakdownvoltage
+Tj[°C]
+VBR(DSS)[V]
+-60
+-20
+20
+60
+100
+140
+180
+50
+54
+58
+62
+66
+70
+VBR(DSS)=f(Tj);ID=1mA
+Diagram Gate charge waveforms

@@ -1,0 +1,111 @@
+SQ2315ES
+www.vishay.com
+Vishay Siliconix
+ 
+S21-1074-Rev. E, 15-Nov-2021
+1
+Document Number: 71507
+For technical questions, contact: automostechsupport@vishay.com
+THIS DOCUMENT IS SUBJECT TO CHANGE WITHOUT NOTICE. THE PRODUCTS DESCRIBED HEREIN AND THIS DOCUMENT
+ARE SUBJECT TO SPECIFIC DISCLAIMERS, SET FORTH AT www.vishay.com/doc?91000
+Automotive P-Channel 12 V (D-S) 175 °C MOSFET
+Marking Code: 8D
+FEATURES
+• TrenchFET® power MOSFET
+• AEC-Q101 qualified c
+• 100 % Rg and UIS tested
+• Material categorization: 
+for definitions of compliance please see 
+www.vishay.com/doc?99912
+Notes
+a. Pulse test; pulse width ≤ 300 μs, duty cycle ≤ 2 %
+b. When mounted on 1" square PCB (FR4 material)
+c. Parametric verification ongoing. 
+PRODUCT SUMMARY
+VDS (V)
+-12
+RDS(on) (Ω) at VGS = -4.5 V 
+0.050
+RDS(on) (Ω) at VGS = -2.5 V 
+0.068
+RDS(on) (Ω) at VGS = -1.8 V 
+0.100
+ID (A)
+-5
+Configuration
+Single
+Top View
+SOT-23 (TO-236)
+1
+G
+2
+S
+D
+3
+S
+G
+D
+P-Channel MOSFET
+ORDERING INFORMATION
+Package
+SOT-23
+Lead (Pb)-free and halogen-free
+SQ2315ES 
+(for detailed order number please see www.vishay.com/doc?79771)
+ABSOLUTE MAXIMUM RATINGS (TC = 25 °C, unless otherwise noted)
+PARAMETER 
+SYMBOL
+LIMIT
+UNIT
+Drain-source voltage 
+VDS
+-12
+V 
+Gate-source voltage
+VGS 
+± 8
+Continuous drain durrent
+TC = 25 °C 
+ID
+-5
+A
+TC = 125 °C 
+-3
+Continuous source current (diode conduction)
+IS
+-2.5
+Pulsed drain current a
+IDM 
+-20
+Single pulse avalanche current
+L = 0.1 mH
+IAS
+-11
+Single pulse avalanche energy
+EAS 
+6
+mJ 
+Maximum power dissipation a
+TC = 25 °C 
+PD
+2
+W 
+TC = 125 °C 
+0.67
+Operating junction and storage temperature range
+TJ, Tstg
+-55 to +175
+°C 
+THERMAL RESISTANCE RATINGS
+PARAMETER 
+SYMBOL
+LIMIT
+UNIT
+Junction-to-ambient
+PCB mount b
+RthJA
+175
+°C/W
+Junction-to-foot (drain)
+RthJF
+75

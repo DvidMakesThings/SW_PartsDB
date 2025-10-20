@@ -1,0 +1,36 @@
+URL: https://www.infineon.com/assets/row/public/documents/24/49/infineon-bsz065n06ls5-datasheet-en.pdf?fileId=5546d4625696ed760156e55f60164817.pdf
+Model: gpt-oss:20b   Host: http://localhost:11434
+Total pages: 11
+Pages kept: 11  Indices kept: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+Pages skipped: 0  Indices skipped: []
+
+---- Final extracted values by field ----
+MPN: 'BSZ065N06LS5'
+Quantity: ''
+Value: '60 V'
+FET Type: 'N-Channel MOSFET'
+Technology: 'Power-Transistor'
+Drain to Source Voltage (Vdss): '60 V'
+Current - Continuous Drain (Id) on 25°C: '65 A'
+Drive Voltage (Max Rds On): '10V'
+Drive Voltage (Min Rds On): '10V'
+Rds On (Max): '9.4 mΩ'
+Id, Vgs: ''
+Vgs(th) (Max): '2.3 V'
+Id: '65 A'
+Gate Charge (Qg) (Max): '13 nC'
+Vgs: '-20 V to 20 V'
+Vgs (Max): '20 V'
+Input Capacitance (Ciss) (Max): '1800 pF'
+Vds: '60 V'
+FET Feature: 'OptiMOSTM'
+Power Dissipation (Max): '46.2 W'
+Operating Temperature: '-60 to 150°C'
+Grade: ''
+Qualification: 'Qualified according to JEDEC1) for target applications'
+Mounting Type: ''
+Package / Case: 'PG-TSDSON-8-U03'
+Manufacturer: 'Infineon Technologies AG'
+Description: 'Power-Transistor'
+RoHS: 'RoHS compliant'
+Datasheet: ''

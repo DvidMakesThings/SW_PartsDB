@@ -1,0 +1,20 @@
+MPN,Quantity,Value,Tolerance,Wattage,Voltage,Current,Dielectric Characteristic,Resistance,Impedance,Package (LxW),Description,Manufacturer,Datasheet,DBID
+SMS-R050-1.0,,0.05R,1%,5W,,,,,,2512,Thick Film Chip Resistor,Isabellenhütte,https://www.isabellenhuetteusa.com/wp-content/uploads/2024/05/SMS.pdf,DMT-020001
+ERJ6BSFR15V,,0.15R,1%,1/3W,,,,,,0805,Thick Film Chip Resistor,Panasonic,https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf,DMT-020002
+PWR220T-35-25R0J,,25R,5%,35W,,,,,,TO220-2,PWR220T-35 Series Power Resistor,Bourns Inc.,https://www.bourns.com/docs/Product-Datasheets/PWR220T-35.pdf,DMT-020003
+CR0805-FX-1002ELF,,10K,1%,1/8W,,,,,,0805,Thick Film Chip Resistor,Bourns Inc.,https://bourns.com/docs/product-datasheets/cr.pdf?sfvrsn=574d41f6_14,DMT-020004
+MCKP05SJ0680AA9,,18R,5%,5W,,,,,,Leaded,Wire Wound Fixed Resistors,Multicomp,https://www.farnell.com/datasheets/3916833.pdf,DMT-020005
+ERJP03F49R9V,,49.9R,1%,1/5W,,,,,,0603,Thick Film Chip Resistor,Panasonic,https://industrial.panasonic.com/cdbs/www-data/pdf/RDO0000/AOA0000C331.pdf,DMT-020006
+MCMR06X000PH,,0R,1%,1/10W,,,,,,0603,Thick Film Chip Resistor,Multicomp,https://www.farnell.com/datasheets/2860635.pdf?_gl=1*10o4e8p*_gcl_au*MjA0NDg0NDM5Mi4xNzU4NDAzNDE5,DMT-020007
+AC0402FR-0722KL,,22K,1%,1/16W,,,,,,0402,Thick Film Chip Resistor,Yageo,https://www.yageogroup.com/content/datasheet/asset/file/PYU-AC_51_ROHS_L,DMT-020008
+PA1206FRF470R003Z,,0.003R,1%,1W,,,,,,1206,Thick Film Chip Resistor,Yageo,https://www.yageogroup.com/browse/products?search=pyu-pa0100_2512_51_rohs.pdf,DMT-020009
+RT1206BRD0730RL,,30R,0.10%,1/4W,,,,,,1206,Thick Film Chip Resistor,Yageo,https://www.yageogroup.com/component-documentation/download/specsheet/RT1206BRD0730RL,DMT-020010
+PCF0805R-13K3BT1,,13.3K,1%,1/10W,,,,,,0805,Thick Film Chip Resistor,TT Electronics,https://www.ttelectronics.com/TTElectronics/media/ProductFiles/Datasheet/PCF.pdf,DMT-020011
+RP73PF1E34K8BTDF,,34.8K,0.10%,1/16W,,,,,,0402,Thick Film Chip Resistor,TE Connectivity,https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=1773272&DocType=Data%20Sheet&DocLang=English&DocFormat=pdf&PartCntxt=8-1879808-3,DMT-020012
+CRGCQ0402F4K7,,4.7K,1%,1/16W,,,,,,0402,Thick Film Chip Resistor,TE Connectivity,https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=1773204-3&DocType=Data%20Sheet&DocLang=English&DocFormat=pdf&PartCntxt=4-2176338-3,DMT-020013
+MCMR04X000PTL,,0R,1%,1/16W,,,,,,0402,Thick Film Chip Resistor,Multicomp,https://4donline.ihs.com/images/VipMasterIC/IC/SCMP/SCMPS00166/SCMPS00166-1.pdf?hkey=6D3A4C79FDBF58556ACFDE234799DDF0,DMT-020014
+ERJ-8CWFR010V,,0.01R,1%,1W,,,,,,1206,Thick Film Chip Resistor,Panasonic,https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf,DMT-020015
+ERJL06KF10CV,,0.1R,1%,1/4W,,,,,,0805,Thick Film Chip Resistor,Panasonic,https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf,DMT-020016
+MCLRP10DTWTR030,,0.03R,0.50%,1W,,,,,,2010,Thick Film Chip Resistor,Multicomp,https://www.farnell.com/datasheets/3779528.pdf,DMT-020017
+SMS-R250-1.0,,0.25R,1%,5W,,,,,,2512,Thick Film Chip Resistor,Isabellenhütte,https://www.isabellenhuetteusa.com/wp-content/uploads/2024/05/SMS.pdf,DMT-020018
+SMS-R012-1.0,,0.012R,1%,5W,,,,,,2512,Thick Film Chip Resistor,Isabellenhütte,https://www.isabellenhuetteusa.com/wp-content/uploads/2024/05/SMS.pdf,DMT-020019

@@ -1,0 +1,16 @@
+MPN,Quantity,Value,Tolerance,Wattage,Voltage,Current,Dielectric Characteristic,Resistance,Impedance,Package (LxW),Description,Manufacturer,Datasheet,DBID
+NRS4018T1R0NDGJV,,1uH,30%,,,3.2A,,32.4mR,,4.00mm x 4.00mm,Fixed Inductors,Taiyo Yuden,https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/7087/NR-H-S-V%20Datasheet.pdf,DMT-040001
+MPZ1608S601A,,600R@100MHz,25%,,,1A,,0.15R,600R,603,Ferrite Bead,TDK Corporation,https://www.farnell.com/datasheets/84903.pdf,DMT-040002
+BLM21PG221SH1D,,220R@100MHz,25%,,,2A,,0.045R,220R,805,Ferrite Bead,Murata Electronics,https://4donline.ihs.com/images/VipMasterIC/IC/MURE/MURE-S-A0014835407/MURE-S-A0014835654-1.pdf?hkey=6D3A4C79FDBF58556ACFDE234799DDF0,DMT-040003
+742792023,,120R@100MHz,25%,,,3A,,0.03R,120R,805,Ferrite Bead,Würth Elektronik,https://www.farnell.com/datasheets/1919974.pdf,DMT-040004
+MPZ1608S601ATA00,,600R@100MHz,25%,,,1A,,0.15R,600R,603,Ferrite Bead,TDK Corporation,https://product.tdk.com/system/files/dam/doc/product/emc/emc/beads/catalog/beads_commercial_power_mpz1608_en.pdf,DMT-040005
+ACT1210L-201-2P-TL00,,200uH,,,,70mA,,5.5R,,3.20mm x 2.50mm,Common Mode Choke,TDK Corporation,https://product.tdk.com/en/system/files/dam/doc/product/emc/emc/cmf_cmc/catalog/cmf_automotive_signal_act1210l-201_en.pdf,DMT-040006
+BLM18KG221SH1D,,220R@100MHz,25%,,,2.2A,,0.05R,220R,603,Ferrite Bead,Murata Electronics,https://www.murata.com/en-us/products/productdata/8796737273886/QNFA9101.pdf,DMT-040007
+LQM2MPN2R2MG0L,,2.2uH,20%,,,1.2A,,0.138R,,806,Multilayer Inductor,Murata Electronics,https://www.farnell.com/datasheets/3006839.pdf,DMT-040008
+DLW21SN900HQ2L,,CMC,,,,280mA,,0.41R,90R,2.00mm x 1.20mm,Common Mode Choke,Murata Electronics,https://www.farnell.com/datasheets/1888760.pdf,DMT-040009
+CLF10060NIT-101M-D,,100uH,20%,,,1.35A,,0.18R,,10.10mm x 10.00mm,Fixed Inductors,TDK Corporation,https://product.tdk.com/en/system/files/dam/doc/product/inductor/inductor/smd/catalog/inductor_automotive_power_clf10060ni-d_en.pdf,DMT-040010
+7447709100,,10uH,20%,,,7.1A,,0.21R,,12.00mm x 12.00mm,Power Inductor,Würth Elektronik,https://www.we-online.com/components/products/datasheet/7447709100.pdf,DMT-040011
+744770122,,22uH,20%,,,4.6A,,0.43R,,12.00mm x 12.00mm,Power Inductor,Würth Elektronik,https://www.we-online.com/components/products/datasheet/744770122.pdf,DMT-040012
+XAL4020-102MEC,,1uH,20%,,,6.7A,,0.146R,,4.00mm x 4.00mm,Power Inductor,Coilcraft,https://www.coilcraft.com/getmedia/6adcb47d-8b55-416c-976e-1e22e0d2848c/xal4000.pdf,DMT-040013
+SRP6540-5R6MDKR-N0,,5.6uH,20%,,,5.5A,,0.038R,,7.20mm x 6.50mm,Power Inductor,Bourns Inc.,https://www.farnell.com/datasheets/3736846.pdf,DMT-040014
+IHLP2020CZER4R7M5A,,4.7uH,20%,,,3.1A,,0.0783R,,5.18mm x 5.18mm,Power Inductor,Vishay,https://www.vishay.com/docs/34384/ihlp-2020cz-5a.pdf,DMT-040015

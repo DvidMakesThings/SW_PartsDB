@@ -1,0 +1,75 @@
+V IS H A Y  S I L I C ON I X
+Power MOSFETs
+Application Note AN821
+PowerPAK® SO-8 Mounting and Thermal Considerations
+A P P L I C A T I O N  N O T E
+ 
+Revision: 16-Mai-13
+1
+Document Number: 71622
+For technical questions, contact: powermosfettechsupport@vishay.com
+THIS DOCUMENT IS SUBJECT TO CHANGE WITHOUT NOTICE. THE PRODUCTS DESCRIBED HEREIN AND THIS DOCUMENT
+ARE SUBJECT TO SPECIFIC DISCLAIMERS, SET FORTH AT www.vishay.com/doc?91000
+www.vishay.com
+by Wharton McDaniel
+MOSFETs for switching applications are now available with
+die on resistances around 1 m and with the capability to
+handle 85 A. While these die capabilities represent a major
+advance over what was available just a few years ago, it is
+important for power MOSFET packaging technology to keep
+pace. It should be obvious that degradation of a high
+performance die by the package is undesirable. PowerPAK
+is a new package technology that addresses these issues.
+In this application note, PowerPAK’s construction is
+described. Following this mounting information is presented
+including land patterns and soldering profiles for maximum
+reliability. Finally, thermal and electrical performance is
+discussed.
+THE PowerPAK PACKAGE
+The PowerPAK package was developed around the SO-8
+package (figure 1). The PowerPAK SO-8 utilizes the same
+footprint and the same pin-outs as the standard SO-8. This
+allows PowerPAK to be substituted directly for a standard
+SO-8 package. Being a leadless package, PowerPAK SO-8
+utilizes the entire SO-8 footprint, freeing space normally
+occupied by the leads, and thus allowing it to hold a larger
+die than a standard SO-8. In fact, this larger die is slightly
+larger than a full sized DPAK die. The bottom of the die
+attach pad is exposed for the purpose of providing a direct,
+low resistance thermal path to the substrate the device is
+mounted on. Finally, the package height is lower than the
+standard SO-8, making it an excellent choice for
+applications with space constraints.
+ Fig. 1    PowerPAK 1212 Devices
+PowerPAK SO-8 SINGLE MOUNTING
+The PowerPAK single is simple to use. The pin arrangement
+(drain, source, gate pins) and the pin dimensions are the
+same as standard SO-8 devices (see figure 2). Therefore, the
+PowerPAK connection pads match directly to those of the
+SO-8. The only difference is the extended drain connection
+area. To take immediate advantage of the PowerPAK SO-8
+single devices, they can be mounted to existing SO-8 land
+patterns.
+ Fig. 2 
+The minimum land pattern recommended to take full
+advantage of the PowerPAK thermal performance see
+Application Note 826, Recommended Minimum Pad
+Patterns With Outline Drawing Access for Vishay Siliconix
+MOSFETs. Click on the PowerPAK SO-8 single in the index
+of this document.
+In this figure, the drain land pattern is given to make full
+contact to the drain pad on the PowerPAK package.
+This land pattern can be extended to the left, right, and top
+of the drawn pattern. This extension will serve to increase
+the heat dissipation by decreasing the thermal resistance
+from the foot of the PowerPAK to the PC board and
+therefore to the ambient. Note that increasing the drain land
+area beyond a certain point will yield little decrease
+in foot-to-board and foot-to-ambient thermal resistance.
+Under specific conditions of board configuration, copper
+weight and layer stack, experiments have found that
+more than about 0.25 in2 to 0.5 in2 of additional copper
+(in addition to the drain land) will yield little improvement in
+thermal performance.
+Standard SO-8
+PowerPAK SO-8

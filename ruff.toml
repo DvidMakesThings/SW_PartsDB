@@ -1,0 +1,21 @@
+# Ruff configuration for PartsDB project
+
+# Target Python version
+target-version = "py310"
+
+# Line length
+line-length = 100
+
+# Enable formatter
+[format]
+quote-style = "double"
+indent-style = "space"
+
+# Linter rules
+[lint]
+select = ["E", "F", "B", "I", "W", "C90"]
+ignore = []
+
+# Import sorting
+[lint.isort]
+known-first-party = ["apps", "partsdb"]

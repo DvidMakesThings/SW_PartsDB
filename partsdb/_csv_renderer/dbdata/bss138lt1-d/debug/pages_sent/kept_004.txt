@@ -1,0 +1,165 @@
+SOT−23 (TO−236) 2.90x1.30x1.00 1.90P
+CASE 318
+ISSUE AU
+DATE 14 AUG 2024
+STYLE 22:
+PIN 1.
+RETURN
+2.
+OUTPUT
+3.
+INPUT
+STYLE 6:
+PIN 1.
+BASE
+2.
+EMITTER
+3.
+COLLECTOR
+STYLE 7:
+PIN 1.
+EMITTER
+2.
+BASE
+3.
+COLLECTOR
+STYLE 8:
+PIN 1.
+ANODE
+2.
+NO CONNECTION
+3.
+CATHODE
+STYLE 9:
+PIN 1.
+ANODE
+2.
+ANODE
+3.
+CATHODE
+STYLE 10:
+PIN 1.
+DRAIN
+2.
+SOURCE
+3.
+GATE
+STYLE 11:
+PIN 1.
+ANODE
+2.
+CATHODE
+3.
+CATHODE−ANODE
+STYLE 12:
+PIN 1.
+CATHODE
+2.
+CATHODE
+3.
+ANODE
+STYLE 13:
+PIN 1.
+SOURCE
+2.
+DRAIN
+3.
+GATE
+STYLE 14:
+PIN 1.
+CATHODE
+2.
+GATE
+3.
+ANODE
+STYLE 15:
+PIN 1.
+GATE
+2.
+CATHODE
+3.
+ANODE
+STYLE 16:
+PIN 1.
+ANODE
+2.
+CATHODE
+3.
+CATHODE
+STYLE 17:
+PIN 1.
+NO CONNECTION
+2.
+ANODE
+3.
+CATHODE
+STYLE 18:
+PIN 1.
+NO CONNECTION
+2.
+CATHODE
+3.
+ANODE
+STYLE 19:
+PIN 1.
+CATHODE
+2.
+ANODE
+3.
+CATHODE−ANODE
+STYLE 23:
+PIN 1.
+ANODE
+2.
+ANODE
+3.
+CATHODE
+STYLE 20:
+PIN 1.
+CATHODE
+2.
+ANODE
+3.
+GATE
+STYLE 21:
+PIN 1.
+GATE
+2.
+SOURCE
+3.
+DRAIN
+STYLE 1 THRU 5:
+CANCELLED
+STYLE 24:
+PIN 1. GATE
+ 2. DRAIN
+ 3. SOURCE
+STYLE 25:
+PIN 1. ANODE
+ 2. CATHODE
+ 3. GATE
+STYLE 26:
+PIN 1. CATHODE
+ 2. ANODE
+ 3. NO CONNECTION
+STYLE 27:
+PIN 1. CATHODE
+ 2. CATHODE
+ 3. CATHODE
+STYLE 28:
+PIN 1. ANODE
+ 2. ANODE
+ 3. ANODE
+onsemi and                     are trademarks of Semiconductor Components Industries, LLC dba onsemi or its subsidiaries in the United States and/or other countries. onsemi reserves
+the right to make changes without further notice to any products herein. onsemi makes no warranty, representation or guarantee regarding the suitability of its products for any particular
+purpose, nor does onsemi assume any liability arising out of the application or use of any product or circuit, and specifically disclaims any and all liability, including without limitation
+special, consequential or incidental damages. onsemi does not convey any license under its patent rights nor the rights of others.
+98ASB42226B
+DOCUMENT NUMBER:
+DESCRIPTION:
+Electronic versions are uncontrolled except when accessed directly from the Document Repository.
+Printed  versions are uncontrolled  except when stamped  “CONTROLLED COPY” in red.
+PAGE 2 OF 2
+SOT−23 (TO−236) 2.90x1.30x1.00 1.90P
+©  Semiconductor Components Industries, LLC, 2019
+www.onsemi.com

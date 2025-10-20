@@ -1,0 +1,228 @@
+Package Information
+www.vishay.com
+Vishay Siliconix
+ 
+Revison: 13-Feb-17
+1
+Document Number: 71655
+THIS DOCUMENT IS SUBJECT TO CHANGE WITHOUT NOTICE. THE PRODUCTS DESCRIBED HEREIN AND THIS DOCUMENT
+ARE SUBJECT TO SPECIFIC DISCLAIMERS, SET FORTH AT www.vishay.com/doc?91000
+PowerPAK® SO-8, (Single/Dual)
+DIM.
+MILLIMETERS
+INCHES
+MIN.
+NOM.
+MAX.
+MIN.
+NOM.
+MAX.
+A
+0.97
+1.04
+1.12
+0.038
+0.041
+0.044
+A1
+-
+0.05
+0
+-
+0.002
+b
+0.33
+0.41
+0.51
+0.013
+0.016
+0.020
+c
+0.23
+0.28
+0.33
+0.009
+0.011
+0.013
+D
+5.05
+5.15
+5.26
+0.199
+0.203
+0.207
+D1
+4.80
+4.90
+5.00
+0.189
+0.193
+0.197
+D2
+3.56
+3.76
+3.91
+0.140
+0.148
+0.154
+D3
+1.32
+1.50
+1.68
+0.052
+0.059
+0.066
+D4
+0.57 typ.
+0.0225 typ.
+D5
+3.98 typ.
+0.157 typ.
+E
+6.05
+6.15
+6.25
+0.238
+0.242
+0.246
+E1
+5.79
+5.89
+5.99
+0.228
+0.232
+0.236
+E2
+3.48
+3.66
+3.84
+0.137
+0.144
+0.151
+E3
+3.68
+3.78
+3.91
+0.145
+0.149
+0.154
+ E4
+0.75 typ.
+0.030 typ.
+e
+1.27 BSC
+0.050 BSC
+K
+1.27 typ.
+0.050 typ.
+K1
+0.56
+-
+-
+0.022
+-
+-
+H
+0.51
+0.61
+0.71
+0.020
+0.024
+0.028
+L
+0.51
+0.61
+0.71
+0.020
+0.024
+0.028
+L1
+0.06
+0.13
+0.20
+0.002
+0.005
+0.008
+
+0°
+-
+12°
+0°
+-
+12°
+W
+0.15
+0.25
+0.36
+0.006
+0.010
+0.014
+M
+0.125 typ.
+0.005 typ.
+ECN: S17-0173-Rev. L, 13-Feb-17
+DWG: 5881
+3. Dimensions exclusive of mold flash and cutting burrs.
+1.
+Notes
+2
+Inch will govern.
+Dimensions exclusive of mold gate burrs.
+Backside View of Single Pad
+Backside View of Dual Pad
+Detail Z
+D
+D1
+D2
+c
+θ
+A
+θ
+E1
+θ
+D1
+E2
+D2
+e
+b
+1
+2
+3
+4
+H
+4
+3
+2
+1
+θ
+1
+2
+3
+4
+b
+L
+D2
+D3 (2x)
+Z
+A1
+K1
+K
+D
+E
+W
+L1
+D5
+E3
+D4
+E4
+E4
+K
+L
+H
+E2
+D4
+D5
+M
+E3
+2
+2

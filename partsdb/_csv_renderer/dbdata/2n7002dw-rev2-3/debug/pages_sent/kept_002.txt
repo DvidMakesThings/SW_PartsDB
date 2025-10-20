@@ -1,0 +1,74 @@
+2N7002DW
+Parameter
+Symbol Conditions
+Unit
+min.
+typ.
+max.
+Thermal characteristics
+Thermal resistance, 
+junction - minimal footprint2)
+R thJA
+-
+-
+250
+K/W
+Electrical characteristics, at T j=25 °C, unless otherwise specified
+Static characteristics
+Drain-source breakdown voltage
+V (BR)DSS V GS= 0 V, I D=250 µA
+60
+-
+-
+V
+Gate threshold voltage
+V GS(th)
+V DS=VGS, I D=250 µA
+1.5
+2.1
+2.5
+Drain-source leakage current
+I D (off)
+V DS=60 V, V GS=-10 V, 
+T j=25 °C
+-
+-
+0.1
+µA
+V DS=60 V, 
+V GS=0 V, T j=150 °C
+-
+-
+5
+Gate-source leakage current
+I GSS
+V GS=20 V, V DS=0 V
+-
+1
+10
+nA
+Drain-source on-state resistance
+R DS(on)
+V GS=4.5 V, I D=0.25 A
+-
+2.0
+4
+W
+V GS=10 V, I D=0.5 A
+-
+1.6
+3
+Transconductance
+g fs
+|V DS|>2|I D|R DS(on)max, 
+I D=0.24 A
+0.2
+0.36
+-
+S
+Values
+2) Perfomed on a 40x40mm2 FR4 PCB with both sided Cu sense-force traces, each 1mm wide, 70μm thick and 20mm 
+long.
+ Rev.2.3
+page 2
+2014-09-19

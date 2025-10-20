@@ -1,0 +1,93 @@
+2N7002DW
+5 Typ. output characteristics
+6 Typ. drain-source on resistance
+I D=f(V DS); T j=25 °C
+R DS(on)=f(I D); T j=25 °C
+parameter: V GS
+parameter: V GS
+7 Typ. transfer characteristics
+8 Typ. forward transconductance
+I D=f(V GS); |V DS|>2|I D|R DS(on)max
+g fs=f(I D); T j=25 °C
+2.9 V 
+3.2 V 
+3.5 V 
+4 V 
+4.5 V 
+5 V 
+7 V 
+10 V 
+0
+1
+2
+3
+4
+5
+6
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+RDS(on)  [W] 
+ID [A] 
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0
+1
+2
+3
+4
+5
+ID [A] 
+VGS [V] 
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+0.45
+0.5
+0.00
+0.10
+0.20
+0.30
+0.40
+gfs [S] 
+ID [A] 
+2.9 V 
+3.2 V 
+3.5 V 
+4 V 
+4.5 V 
+5 V 
+7 V 
+10 V 
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0
+1
+2
+3
+4
+5
+ID [A] 
+VDS [V] 
+ Rev.2.3
+page 5
+2014-09-19

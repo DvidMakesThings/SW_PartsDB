@@ -1,0 +1,78 @@
+2N7002DW
+9 Drain-source on-state resistance
+10 Typ. gate threshold voltage
+R DS(on)=f(T j); I D=0.3 A; V GS=10 V
+V GS(th)=f(T j); V DS=VGS; I D=250 µA
+parameter: I D
+11 Typ. capacitances
+12 Forward characteristics of reverse diode
+C =f(V DS); V GS=0 V; f =1 MHz; Tj=25°C
+I F=f(V SD)
+parameter: T j
+typ 
+98 % 
+0.0
+1.0
+2.0
+3.0
+4.0
+5.0
+6.0
+-60
+-20
+20
+60
+100
+140
+RDS(on) [W] 
+Tj [°C] 
+typ 
+98 % 
+2 % 
+0
+0.4
+0.8
+1.2
+1.6
+2
+2.4
+2.8
+3.2
+-60
+-20
+20
+60
+100
+140
+VGS(th) [V] 
+Tj [°C] 
+Ciss 
+Coss 
+Crss 
+100 
+101 
+102 
+0
+10
+20
+30
+C [pF] 
+VDS [V] 
+25 °C 
+150 °C 
+25 °C, 98% 
+150 °C, 98% 
+10-3 
+10-2 
+10-1 
+100 
+0
+0.4
+0.8
+1.2
+1.6
+IF [A] 
+VSD [V] 
+ Rev.2.3
+page 6
+2014-09-19

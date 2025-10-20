@@ -1,0 +1,115 @@
+DATA SHEET
+www.onsemi.com
+©  Semiconductor Components Industries, LLC, 2016
+April, 2024 − Rev. 14
+1
+Publication Order Number:
+BSS138LT1/D
+MOSFET – Power, 
+N-Channel, SOT-23
+200 mA, 50 V
+BSS138L, BVSS138L
+Typical applications are DC−DC converters, power management in
+portable and battery−powered products such as computers, printers,
+PCMCIA cards, cellular and cordless telephones.
+Features
+• Low Threshold Voltage (VGS(th): 0.85 V−1.5 V) Makes it Ideal for
+Low Voltage Applications
+• Miniature SOT−23 Surface Mount Package Saves Board Space
+• HBM Class 0A, MM Class M1A, CDM Class IV (Note 3)
+• BVSS Prefix for Automotive and Other Applications Requiring
+Unique Site and Control Change Requirements; AEC−Q101
+Qualified and PPAP Capable
+• These Devices are Pb−Free, Halogen Free/BFR Free and are RoHS
+Compliant
+MAXIMUM RATINGS (TA = 25°C unless otherwise noted)
+Rating
+Symbol
+Value
+Unit
+Drain−to−Source Voltage
+VDSS
+50
+Vdc
+Gate−to−Source Voltage − Continuous
+VGS
+± 20
+Vdc
+Drain Current
+− Continuous @ TA = 25°C
+− Pulsed Drain Current (tp ≤ 10 s)
+ID
+IDM
+200
+800
+mA
+Total Power Dissipation @ TA = 25°C
+PD
+225
+mW
+Operating and Storage Temperature
+Range
+TJ, Tstg
+−55 to 150
+°C
+Thermal Resistance,
+Junction−to−Ambient
+RJA
+556
+°C/W
+Maximum Lead Temperature for
+Soldering Purposes, for 10 seconds
+TL
+260
+°C
+Stresses exceeding those listed in the Maximum Ratings table may damage the
+device. If any of these limits are exceeded, device functionality should not be
+assumed, damage may occur and reliability may be affected.
+3
+1
+2
+Device
+Package
+Shipping†
+ORDERING INFORMATION
+N−Channel
+SOT−23
+CASE 318
+STYLE 21
+J1 M
+
+MARKING
+DIAGRAM
+2
+1
+3
+200 mA, 50 V
+RDS(on) = 3.5 
+BSS138LT1G,
+BVSS138LT1G
+SOT−23
+(Pb−Free)
+3,000 / Tape & Reel
+BSS138LT7G
+SOT−23
+(Pb−Free)
+3,500 / Tape & Reel
+†For information on tape and reel specifications,
+including part orientation and tape sizes, please
+refer to our Tape and Reel Packaging Specifications
+Brochure, BRD8011/D.
+1
+J1
+= Device Code
+M
+= Date Code*
+
+= Pb−Free Package
+*Date Code orientation and/or overbar may
+vary depending upon manufacturing location.
+BSS138LT3G,
+BVSS138LT3G
+SOT−23
+(Pb−Free)
+10,000 / Tape & Reel
+(Note: Microdot may be in either location)

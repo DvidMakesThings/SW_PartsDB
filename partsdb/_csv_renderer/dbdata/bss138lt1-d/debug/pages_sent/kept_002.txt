@@ -1,0 +1,103 @@
+BSS138L, BVSS138L
+www.onsemi.com
+2
+ELECTRICAL CHARACTERISTICS (TA = 25°C unless otherwise noted)
+Characteristic
+Symbol
+Min
+Typ
+Max
+Unit
+OFF CHARACTERISTICS
+Drain−to−Source Breakdown Voltage
+(VGS = 0 Vdc, ID = 250 Adc)
+V(BR)DSS
+50
+−
+−
+Vdc
+Zero Gate Voltage Drain Current
+(VDS = 25 Vdc, VGS = 0 Vdc, 25°C)
+(VDS = 50 Vdc, VGS = 0 Vdc, 25°C)
+(VDS = 50 Vdc, VGS = 0 Vdc, 150°C)
+IDSS
+−
+−
+−
+−
+−
+−
+0.1
+0.5
+5.0
+Adc
+Gate−Source Leakage Current (VGS = ± 20 Vdc, VDS = 0 Vdc)
+IGSS
+−
+−
+±0.1
+Adc
+ON CHARACTERISTICS (Note 1)
+Gate−Source Threshold Voltage
+(VDS = VGS, ID = 1.0 mAdc)
+VGS(th)
+0.85
+−
+1.5
+Vdc
+Static Drain−to−Source On−Resistance
+(VGS = 2.75 Vdc, ID < 200 mAdc, TA = −40°C to +85°C)
+(VGS = 5.0 Vdc, ID = 200 mAdc)
+rDS(on)
+−
+−
+5.6
+−
+10
+3.5
+
+Forward Transconductance
+(VDS = 25 Vdc, ID = 200 mAdc, f = 1.0 kHz)
+gfs
+100
+−
+−
+mmhos
+DYNAMIC CHARACTERISTICS
+Input Capacitance
+(VDS = 25 Vdc, VGS = 0, f = 1  MHz)
+Ciss
+−
+40
+50
+pF
+Output Capacitance
+(VDS = 25 Vdc, VGS = 0, f = 1  MHz)
+Coss
+−
+12
+25
+Transfer Capacitance
+(VDG = 25 Vdc, VGS = 0, f = 1  MHz)
+Crss
+−
+3.5
+5.0
+SWITCHING CHARACTERISTICS (Note 2)
+Turn−On Delay Time
+(VDD = 30 Vdc, ID = 0.2 Adc,)
+td(on)
+−
+−
+20
+ns
+Turn−Off Delay Time
+td(off)
+−
+−
+20
+Product parametric performance is indicated in the Electrical Characteristics for the listed test conditions, unless otherwise noted. Product
+performance may not be indicated by the Electrical Characteristics if operated under different conditions.
+1. Pulse Test: Pulse Width ≤300 s, Duty Cycle ≤ 2%.
+2. Switching characteristics are independent of operating junction temperature.
+3. ESD between the gate and source serves only, no gate overvoltage rating is implied.

@@ -1,0 +1,29 @@
+2N7002DW
+Published by
+Infineon Technologies AG
+81726 Munich, Germany
+© 2008 Infineon Technologies AG
+All Rights Reserved.
+Legal Disclaimer
+The information given in this document shall in no event be regarded as a guarantee of
+conditions or characteristics. With respect to any examples or hints given herein, any typical
+values stated herein and/or any information regarding the application of the device,
+Infineon Technologies hereby disclaims any and all warranties and liabilities of any kind,
+including without limitation, warranties of non-infringement of intellectual property rights
+of any third party.
+Information
+For further information on technology, delivery terms and conditions and prices, please
+contact the nearest Infineon Technologies Office (www.infineon.com).
+Warnings
+Due to technical requirements, components may contain dangerous substances. For information
+on the types in question, please contact the nearest Infineon Technologies Office.
+Infineon Technologies components may be used in life-support devices or systems only with
+the express written approval of Infineon Technologies, if a failure of such components can
+reasonably be expected to cause the failure of that life-support device or system or to affect
+the safety or effectiveness of that device or system. Life support devices or systems are
+intended to be implanted in the human body or to support and/or maintain and sustain
+and/or protect human life. If they fail, it is reasonable to assume that the health of the user
+or other persons may be endangered.
+ Rev.2.3
+page 9
+2014-09-19

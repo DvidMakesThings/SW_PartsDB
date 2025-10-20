@@ -1,0 +1,32 @@
+URL: https://www.onsemi.com/pdf/datasheet/nvmfd6h846nl-d.pdf
+Model: gpt-oss:20b   Host: http://localhost:11434
+Total pages: 8
+Pages kept: 5  Indices kept: [1, 2, 6, 7, 8]
+Pages skipped: 3  Indices skipped: [3, 4, 5]
+
+---- Final extracted values by field ----
+MPN: 'NVMFD6H846NL'
+Quantity: ''
+Value: '80 V'
+FET Type: 'N-channel MOSFET'
+Technology: ''
+Drain to Source Voltage (Vdss): '80 V'
+Current - Continuous Drain (Id) @ 25°C: '31 A'
+Drive Voltage (Max Rds On, Min Rds On): '10 V (Min Rds On), 4.5 V (Max Rds On)'
+Rds On (Max) @ Id, Vgs: '15.1 mΩ @ Id=5 A, Vgs=4.5 V'
+Vgs(th) (Max) @ Id: '2.0 V'
+Gate Charge (Qg) (Max) @ Vgs: '8 nC @ Vgs=4.5 V'
+Vgs (Max): '±20 V'
+Input Capacitance (Ciss) (Max) @ Vds: '900 pF @ Vds=40 V'
+FET Feature: 'Small Footprint, Low RDS(on), Low QG, Wettable Flank Option, AEC-Q101 Qualified, Pb-Free, RoHS'
+Power Dissipation (Max): '34 W'
+Operating Temperature: '-55 to +175°C'
+Grade: 'AEC-Q101 Qualified'
+Qualification: 'AEC-Q101 Qualified'
+Mounting Type: 'SMD'
+Package / Case: 'DFN8 5x6 (SO8FL)'
+Supplier Device Package: 'DFN8'
+Manufacturer: 'ON Semiconductor'
+Series: 'NVMF'
+Description: 'MOSFET – Power, Dual N-Channel 80 V, 15 mΩ, 31 A'
+Datasheet: ''

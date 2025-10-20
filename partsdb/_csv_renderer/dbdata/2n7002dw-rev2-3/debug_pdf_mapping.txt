@@ -1,0 +1,32 @@
+URL: https://www.infineon.com/assets/row/public/documents/24/49/2n7002dw-rev2-3.pdf
+Model: gpt-oss:20b   Host: http://localhost:11434
+Total pages: 9
+Pages kept: 9  Indices kept: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+Pages skipped: 0  Indices skipped: []
+
+---- Final extracted values by field ----
+MPN: '2N7002DW'
+Quantity: '3000 pcs/reel'
+Value: ''
+FET Type: 'N-Channel MOSFET'
+Technology: 'Enhancement mode'
+Drain to Source Voltage (Vdss): '60 V'
+Current - Continuous Drain (Id) @ 25°C: '0.30 A'
+Drive Voltage (Max Rds On, Min Rds On): '4.5 V-10 V'
+Rds On (Max) @ Id, Vgs: '4 Ω'
+Vgs(th) (Max) @ Id: '2.5 V'
+Gate Charge (Qg) (Max) @ Vgs: ''
+Vgs (Max): '±20 V'
+Input Capacitance (Ciss) (Max) @ Vds: ''
+FET Feature: 'Dual N-channel, Enhancement mode, Logic level, Avalanche rated, Fast switching'
+Power Dissipation (Max): '0.5 W'
+Operating Temperature: '-55 ... 150 °C'
+Grade: ''
+Qualification: 'AEC Q101'
+Mounting Type: 'Tape and Reel'
+Package / Case: 'SOT363'
+Supplier Device Package: 'PG-SOT363 H6327'
+Manufacturer: 'Infineon Technologies AG'
+Series: '2N7002'
+Description: '2N7002DW N-channel MOSFET'
+Datasheet: ''

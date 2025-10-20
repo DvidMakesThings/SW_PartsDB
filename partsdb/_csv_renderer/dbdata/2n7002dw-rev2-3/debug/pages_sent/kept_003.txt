@@ -1,0 +1,113 @@
+2N7002DW
+Parameter
+Symbol Conditions
+Unit
+min.
+typ.
+max.
+Dynamic characteristics
+Input capacitance
+C iss
+-
+13
+20
+pF
+Output capacitance
+C oss
+-
+4.1
+6
+Reverse transfer capacitance
+Crss
+-
+2.0
+3
+Turn-on delay time
+t d(on)
+-
+3.0
+4.5
+ns
+Rise time
+t r
+-
+3.3
+5
+Turn-off delay time
+t d(off)
+-
+5.5
+9
+Fall time
+t f
+-
+3.1
+5
+Gate Charge Characteristics
+Gate to source charge
+Q gs
+-
+0.05
+0.1
+nC
+Gate to drain charge
+Q gd
+-
+0.2
+0.4
+Gate charge total
+Q g
+-
+0.4
+0.6
+Gate plateau voltage
+V plateau
+-
+4.0
+-
+V
+Reverse Diode
+Diode continous forward current
+I S
+-
+-
+0.3
+A
+Diode pulse current
+I S,pulse
+-
+-
+1.2
+Diode forward voltage
+V SD
+V GS=0 V, I F=0.5 A, 
+T j=25 °C
+-
+0.96
+1.2
+V
+Reverse recovery time
+t rr
+-
+8.5
+13
+ns
+Reverse recovery charge
+Q rr
+-
+2.4
+4
+nC
+V R=30 V, I F=0.5 A, 
+di F/dt =100 A/µs
+T A=25 °C
+Values
+V GS=0 V, V DS=25 V, 
+f =1 MHz
+V DD=30 V, V GS=10 V, 
+I D=0.5 A, R G,ext=6 W
+V DD=48 V, I D=0.5 A, 
+V GS=0 to 10 V
+ Rev.2.3
+page 3
+2014-09-19

@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --text: #f8f9fa;
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --border: #2d2d2d;
+  --accent: #007bff;
+}
+
+@layer base {
+  body {
+    @apply bg-default text-default;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

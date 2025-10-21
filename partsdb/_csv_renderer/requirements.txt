@@ -1,0 +1,7 @@
+pdf2image 
+pytesseract 
+pymupdf
+pdfminer.six 
+pdfminer
+requests
+python-dotenv

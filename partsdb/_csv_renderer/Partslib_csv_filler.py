@@ -15,6 +15,7 @@ Short summary:
 import os, sys, re, csv, json, html, tempfile, pathlib
 from collections import defaultdict, OrderedDict
 from datetime import datetime as _dt
+import subprocess
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
@@ -309,6 +310,9 @@ class DMTGUI(tk.Tk):
 
         self._build_menu()
         self._build_form()
+        self._manual_page_picks = None           # set by dialog to override _resolve_picks
+        self._load_ollama_models()               # fill self.ollama_models for the dropdown
+
         self._build_table()
         self._refresh_table()
         self._populate_tt()
@@ -1120,6 +1124,144 @@ class DMTGUI(tk.Tk):
 
     # --------------------- PDF download + OCR ---------------------
 
+    def _load_ollama_models(self):
+        """
+        Prefill available agent names by calling `ollama list`.
+        Falls back to a small set if unavailable.
+        """
+        models = []
+        try:
+            # Try JSON first
+            out = subprocess.check_output(["ollama", "list"], stderr=subprocess.STDOUT, timeout=5)
+            text = out.decode("utf-8", errors="ignore").strip()
+            # `ollama list` default output is a table; parse first column as model names
+            # Example header: NAME    ID    SIZE    MODIFIED
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            if lines and lines[0].lower().startswith("name"):
+                for ln in lines[1:]:
+                    name = ln.split()[0]
+                    if name and name not in models:
+                        models.append(name)
+            else:
+                # best effort: one per line
+                for ln in lines:
+                    parts = ln.split()
+                    if parts:
+                        nm = parts[0]
+                        if nm and nm not in models:
+                            models.append(nm)
+        except Exception:
+            pass
+
+        if not models:
+            models = [
+                "mixtral:8x7b",
+                "gpt-oss:20b",
+                "gemma2:9b",
+            ]
+        self.ollama_models = models
+
+    def _parse_page_ranges(self, s: str, max_pages: int):
+        """
+        Parse human page ranges into 0-based indices, clamped to [0, max_pages-1].
+        Accepts: '1,2,5-7, 10' -> [0,1,4,5,6,9]
+        Empty/invalid -> []
+        """
+        if not isinstance(s, str):
+            return []
+        s = s.strip()
+        if not s:
+            return []
+
+        picks = set()
+        for part in s.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if "-" in part:
+                a, b = part.split("-", 1)
+                try:
+                    start = max(1, int(a.strip()))
+                    end = max(1, int(b.strip()))
+                    if start > end:
+                        start, end = end, start
+                    for p in range(start, end + 1):
+                        if 1 <= p <= max_pages:
+                            picks.add(p - 1)
+                except Exception:
+                    continue
+            else:
+                try:
+                    p = int(part)
+                    if 1 <= p <= max_pages:
+                        picks.add(p - 1)
+                except Exception:
+                    continue
+        return sorted(picks)
+
+    def _ask_prefill_options(self, default_url: str = "", default_pages: str = "", default_agent: str = "", default_host: str = ""):
+        """
+        Show a modal dialog that asks for: URL, Pages, Agent, Host.
+        Returns dict or None if cancelled.
+        """
+        dlg = tk.Toplevel(self)
+        dlg.title("Prefill Options")
+        dlg.transient(self)
+        dlg.grab_set()
+        dlg.resizable(False, False)
+
+        url_var   = tk.StringVar(value=default_url)
+        pages_var = tk.StringVar(value=default_pages)
+        agent_var = tk.StringVar(value=default_agent or (self.ollama_models[0] if getattr(self, "ollama_models", []) else "llama3:8b"))
+        host_var  = tk.StringVar(value=default_host or os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
+
+        frm = ttk.Frame(dlg, padding=10)
+        frm.pack(fill="both", expand=True)
+
+        ttk.Label(frm, text="Datasheet PDF URL:").grid(row=0, column=0, sticky="e", padx=6, pady=6)
+        url_entry = ttk.Entry(frm, textvariable=url_var, width=72)
+        url_entry.grid(row=0, column=1, sticky="we", padx=6, pady=6)
+
+        ttk.Label(frm, text="Pages (e.g. 1-3,5,9):").grid(row=1, column=0, sticky="e", padx=6, pady=6)
+        pages_entry = ttk.Entry(frm, textvariable=pages_var, width=32)
+        pages_entry.grid(row=1, column=1, sticky="w", padx=6, pady=6)
+
+        ttk.Label(frm, text="Agent (Ollama model):").grid(row=2, column=0, sticky="e", padx=6, pady=6)
+        agent_cb = ttk.Combobox(frm, textvariable=agent_var, values=getattr(self, "ollama_models", []), width=36, state="readonly")
+        agent_cb.grid(row=2, column=1, sticky="w", padx=6, pady=6)
+        if getattr(self, "ollama_models", []):
+            agent_cb.set(agent_var.get())
+
+        ttk.Label(frm, text="Host:").grid(row=3, column=0, sticky="e", padx=6, pady=6)
+        host_entry = ttk.Entry(frm, textvariable=host_var, width=36)
+        host_entry.grid(row=3, column=1, sticky="w", padx=6, pady=6)
+
+        btns = ttk.Frame(frm)
+        btns.grid(row=4, column=0, columnspan=2, sticky="e", pady=(8,0))
+        ok = {"clicked": False}
+        def on_ok():
+            ok["clicked"] = True
+            dlg.destroy()
+        def on_cancel():
+            dlg.destroy()
+        ttk.Button(btns, text="Cancel", command=on_cancel).pack(side="right", padx=4)
+        ttk.Button(btns, text="OK", command=on_ok).pack(side="right", padx=4)
+
+        frm.columnconfigure(1, weight=1)
+        url_entry.focus_set()
+        self.wait_window(dlg)
+
+        if not ok["clicked"]:
+            return None
+
+        return {
+            "url": url_var.get().strip(),
+            "pages": pages_var.get().strip(),
+            "agent": agent_var.get().strip(),
+            "host": host_var.get().strip(),
+        }
+
+
     def _download_pdf(self, url: str, target_dir: str, filename: str) -> str:
         import requests
 
@@ -1131,75 +1273,130 @@ class DMTGUI(tk.Tk):
                 if chunk:
                     f.write(chunk)
         return pdf_path
+    
+    def _resolve_picks(self, path: str):
+        """
+        Decide which pages to extract:
+        - If self._manual_page_picks is set (0-based indices), use it.
+        - else: only_5_page=True -> first 5 pages
+                only_5_page=False -> smart anchor-based selection
+        """
+        # Manual override from dialog?
+        if isinstance(getattr(self, "_manual_page_picks", None), list) and self._manual_page_picks:
+            return list(self._manual_page_picks)
 
-    def _pdf_to_pages(
-        self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None
-    ):
-        """
-        MASTER extractor: prefer PyMuPDF (fitz). If unavailable / broken, fallback to pdfminer.six.
-        OCR is intentionally disabled. Returns list[{"text": str, "tables": list}].
-        """
-        # 1) Try PyMuPDF
+        only_5_page = bool(self.app_config.get("only_5_page", False))
         try:
-            pages = self._pdf_to_pages_text_tables_structured(path)
-            if pages and any((p.get("text") or "").strip() for p in pages):
-                return pages
-            self._dbg("PyMuPDF returned empty text; will try pdfminer.six fallback.")
+            import fitz
+            with fitz.open(path) as doc:
+                if only_5_page:
+                    return list(range(min(5, doc.page_count)))
+                return self._choose_pages(path, head=5, scan_upto=20)
+        except Exception:
+            return list(range(5))
+
+
+    def _pdf_to_pages(self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None):
+        """
+        MASTER extractor with selectable page strategy:
+        - self.app_config['page_select'] == 'first5'  -> strict first 5 pages
+        - self.app_config['page_select'] == 'smart'   -> head + anchor windows
+        Pipeline:
+        1) PyMuPDF layout-based text
+        2) Tuned pdfminer fallback
+        3) OCR if forced or needed
+        4) Vector table pass (Camelot) for selected pages
+        5) Your existing graph-page filtering
+        Returns list[{"text": str, "tables": list[list[str]]}]
+        """
+        # 0) decide which pages to process
+        picks = self._resolve_picks(path)
+        if not picks:
+            self._dbg("No picks resolved; defaulting to [0..4].")
+            picks = list(range(5))
+
+        # 1) PyMuPDF layout first
+        pages = []
+        try:
+            layout_pages = self._pdf_to_pages_text_tables_structured(path)  # returns ALL pages
+            pages = [layout_pages[i] for i in picks if i < len(layout_pages)]
         except Exception as e:
             self._dbg(f"Structured extractor failed: {e}")
 
-        # 2) Fallback: pdfminer.six
-        try:
-            pages = self._pdf_to_pages_text_tables_pdfminer(path)
-            if pages and any((p.get("text") or "").strip() for p in pages):
-                return pages
-            raise RuntimeError("pdfminer.six produced no text.")
-        except Exception as e:
-            self._dbg(f"pdfminer fallback failed: {e}")
+        # 2) pdfminer fallback if needed
+        if not pages or not any((p.get("text") or "").strip() for p in pages):
+            try:
+                miner_pages = self._pdf_to_pages_text_tables_pdfminer(path)  # returns ALL pages
+                pages = [miner_pages[i] for i in picks if i < len(miner_pages)]
+            except Exception as e:
+                self._dbg(f"pdfminer fallback failed: {e}")
 
-        # 3) Final: give up (do NOT OCR)
-        raise RuntimeError("No text extracted from PDF via PyMuPDF/pdfminer.")
+        # 3) OCR if forced or still empty and it's likely scanned/hybrid
+        need_ocr = force_ocr or (not any((p.get("text") or "").strip() for p in pages) and self._is_scanned_pdf(path))
+        if need_ocr:
+            try:
+                ocr_pages = self._pdf_to_pages_ocr(path, dpi=dpi, debug_dir=debug_dir)  # returns ALL pages
+                pages = [ocr_pages[i] for i in picks if i < len(ocr_pages)]
+            except Exception as e:
+                self._dbg(f"OCR extractor failed: {e}")
+
+        # 4) Vector-table pass per selected pages
+        try:
+            if getattr(self, "app_config", {}).get("use_camelot", True):
+                page_tables = self._extract_tables_vector(path, target_pages=picks)  # {page_idx: [tables]}
+                for local_idx, global_idx in enumerate(picks):
+                    if local_idx < len(pages) and page_tables.get(global_idx):
+                        pages[local_idx]["tables"].extend(page_tables[global_idx])
+        except Exception as e:
+            self._dbg(f"Vector table extraction skipped/failed: {e}")
+
+        # 5) Final filtering with your existing logic
+        filtered, kept_idx, skipped_idx, total = self._filter_pages_for_llm(pages)
+        return filtered
 
     def _pdf_to_pages_text_tables_pdfminer(self, path: str):
         """
-        Pure-Python fallback using pdfminer.six to extract per-page text without OCR.
-        - Requires: pip install pdfminer.six
-        - Returns: [{"text": <page_text>, "tables": []}, ...]
+        Tuned pdfminer.six fallback with guarded imports.
+        Returns ALL pages; caller will subselect. If pdfminer.six is unavailable, returns [].
         """
-        from pdfminer.high_level import extract_pages
-        from pdfminer.layout import LTTextContainer, LTTextLine, LTAnno
+        try:
+            from pdfminer.high_level import extract_pages
+            from pdfminer.layout import LAParams, LTTextContainer, LTTextLine
+        except Exception as e:
+            self._dbg(f"pdfminer import unavailable/broken: {e}")
+            return []
+
+        laparams = LAParams(char_margin=2.0, line_margin=0.4, word_margin=0.1, detect_vertical=False)
 
         pages = []
-        # iterate layout pages; accumulate visible text in approximate reading order
-        for page_layout in extract_pages(path):
-            lines = []
-            for element in page_layout:
-                if isinstance(element, LTTextContainer):
-                    for text_line in element:
-                        if isinstance(text_line, LTTextLine):
-                            s = text_line.get_text()
-                            if s:
-                                lines.append(s.rstrip("\n"))
-            page_text = "\n".join(lines)
-            # normalize NBSP and collapse stray whitespace a little
-            page_text = (page_text or "").replace("\u00a0", " ")
-            pages.append({"text": page_text, "tables": []})
+        try:
+            for _, layout in enumerate(extract_pages(path, laparams=laparams)):
+                lines = []
+                for el in layout:
+                    if isinstance(el, LTTextContainer):
+                        for tl in el:
+                            if isinstance(tl, LTTextLine):
+                                s = tl.get_text()
+                                if s:
+                                    lines.append(s.rstrip("\n"))
+                txt = "\n".join(self._normalize_text(lines))
+                txt = self._unit_normalize(txt).replace("\u00a0", " ")
+                pages.append({"text": txt, "tables": []})
+        except Exception as e:
+            self._dbg(f"pdfminer processing failed: {e}")
+            return []
         return pages
+
 
     def _pdf_to_pages_text_tables_structured(self, path: str):
         """
-        PyMuPDF-based extractor.
-        - Requires: pip install pymupdf
-        - Returns: [{"text": <page_text>, "tables": []}, ...]
-        Notes:
-        - We normalize NBSP to spaces to reduce false negatives in header detection.
-        - If the import fails with a 'frontend' message, it's almost always a broken wheel
-        or a local name conflict (e.g., a local file called 'fitz.py'). Reinstall pymupdf.
+        PyMuPDF extractor using rawdict (blocks/lines/spans) with light header/footer stripping
+        and multi-column ordering. Falls back to pg.get_text('text') if structured pass is thin.
+        Returns ALL pages as: [{"text": <page_text>, "tables": []}, ...]
         """
         try:
             import fitz  # PyMuPDF
         except Exception as imp_err:
-            # Surface a helpful message upward so _pdf_to_pages can report it and try pdfminer.
             raise RuntimeError(
                 f"PyMuPDF import failed: {imp_err}. Reinstall with 'pip install --upgrade pymupdf' and ensure no local fitz.py shadows it."
             )
@@ -1208,31 +1405,125 @@ class DMTGUI(tk.Tk):
         with fitz.open(path) as doc:
             for i in range(doc.page_count):
                 pg = doc.load_page(i)
-                # 'text' gives reading-order text which works best for section/heading detection
-                txt = pg.get_text("text") or ""
-                txt = txt.replace("\u00a0", " ")  # NBSP → space
+
+                # Structured attempt
+                txt_struct = ""
+                try:
+                    rd = pg.get_text("rawdict")
+                    blocks = rd.get("blocks", []) if isinstance(rd, dict) else []
+                    blocks = self._strip_headers_footers(blocks, pg.rect.height, top_band=36, bottom_band=48)
+                    cols = self._group_blocks_into_columns(blocks, min_gap_px=int(getattr(self, "app_config", {}).get("column_gap_px", 40)))
+
+                    lines = []
+                    for col in cols:
+                        # read order: top→bottom, then left→right inside column
+                        for b in sorted(col, key=lambda b: (b["bbox"][1], b["bbox"][0])):
+                            for l in b.get("lines", []):
+                                spans = [s.get("text", "") for s in l.get("spans", []) if s.get("text", "").strip()]
+                                if spans:
+                                    lines.append("".join(spans))
+                    txt_struct = "\n".join(self._normalize_text(lines))
+                except Exception:
+                    txt_struct = ""
+
+                # Plain reading-order fallback if structured is too thin
+                raw_txt = pg.get_text("text") or ""
+                if len((txt_struct or "").strip()) < 40 and raw_txt.strip():
+                    txt = raw_txt
+                else:
+                    txt = txt_struct or raw_txt
+
+                txt = self._unit_normalize((txt or "").replace("\u00a0", " "))
                 pages.append({"text": txt, "tables": []})
         return pages
 
+
+
+    def _pdf_to_pages(self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None):
+        """
+        MASTER extractor with switchable page strategy (via _resolve_picks / only_5_page).
+        Pipeline:
+        1) PyMuPDF layout-based text
+        2) Tuned pdfminer fallback (if available)
+        3) OCR if forced OR if text is still effectively empty (unconditional fallback)
+        4) Vector table pass (Camelot) for selected pages
+        5) Graph-page filtering
+        Returns list[{"text": str, "tables": list[list[str]]}]
+        """
+        picks = self._resolve_picks(path)
+        if not picks:
+            picks = list(range(5))
+
+        pages = []
+
+        # 1) PyMuPDF layout first
+        try:
+            layout_pages = self._pdf_to_pages_text_tables_structured(path)  # returns ALL pages
+            pages = [layout_pages[i] for i in picks if i < len(layout_pages)]
+        except Exception as e:
+            self._dbg(f"Structured extractor failed: {e}")
+
+        def _has_text(plist):
+            return bool(plist) and any((p.get("text") or "").strip() for p in plist)
+
+        # 2) pdfminer fallback if needed
+        if not _has_text(pages):
+            try:
+                miner_pages = self._pdf_to_pages_text_tables_pdfminer(path)  # returns ALL pages
+                pages = [miner_pages[i] for i in picks if i < len(miner_pages)]
+            except Exception as e:
+                self._dbg(f"pdfminer fallback failed: {e}")
+
+        # 3) OCR if forced OR still no text (unconditional safety net)
+        if force_ocr or not _has_text(pages):
+            try:
+                ocr_pages = self._pdf_to_pages_ocr(path, dpi=dpi, debug_dir=debug_dir)  # returns ALL pages
+                pages = [ocr_pages[i] for i in picks if i < len(ocr_pages)]
+            except Exception as e:
+                self._dbg(f"OCR extractor failed: {e}")
+
+        # 4) Vector-table pass per selected pages
+        try:
+            page_tables = self._extract_tables_vector(path, target_pages=picks)  # {page_idx: [tables]}
+            for local_idx, global_idx in enumerate(picks):
+                if local_idx < len(pages) and page_tables.get(global_idx):
+                    pages[local_idx]["tables"].extend(page_tables[global_idx])
+        except Exception as e:
+            self._dbg(f"Vector table extraction failed: {e}")
+
+        # 5) Final filtering with your existing logic
+        filtered, kept_idx, skipped_idx, total = self._filter_pages_for_llm(pages)
+        return filtered
+
+
+
     def _pdf_to_pages_ocr(self, path: str, dpi: int = 350, debug_dir: str = None):
+        """
+        OCR extractor for scanned/hybrid PDFs.
+        Honors app_config 'ocr_langs' (default ['eng']) and returns ALL pages.
+        """
         from pdf2image import convert_from_path
         import pytesseract
+        import os
+
+        ocr_langs = getattr(self, "app_config", {}).get("ocr_langs", ["eng"])
+        lang = "+".join(ocr_langs) if ocr_langs else "eng"
 
         pil_pages = convert_from_path(path, dpi=dpi)
         out = []
 
         for idx, img in enumerate(pil_pages, 1):
             if debug_dir:
-                img_out = os.path.join(debug_dir, f"page_{idx:03}.png")
-                img.save(img_out)
+                try:
+                    os.makedirs(debug_dir, exist_ok=True)
+                    img_out = os.path.join(debug_dir, f"page_{idx:03}.png")
+                    img.save(img_out)
+                except Exception:
+                    pass
 
-            page_text = pytesseract.image_to_string(img, lang="eng", config="--psm 6")
-
+            page_text = pytesseract.image_to_string(img, lang=lang, config="--psm 6")
             tsv_df = pytesseract.image_to_data(
-                img,
-                lang="eng",
-                config="--psm 6",
-                output_type=pytesseract.Output.DATAFRAME,
+                img, lang=lang, config="--psm 6", output_type=pytesseract.Output.DATAFRAME
             )
 
             if debug_dir and tsv_df is not None and len(tsv_df) > 0:
@@ -1243,13 +1534,18 @@ class DMTGUI(tk.Tk):
                     pass
 
             tables = self._tesseract_lines_to_tables(tsv_df)
-            out.append({"text": page_text or "", "tables": tables})
+            txt = "\n".join(self._normalize_text([page_text or ""]))
+            txt = self._unit_normalize(txt)
+            out.append({"text": txt, "tables": tables})
 
         return out
 
-    def _tesseract_lines_to_tables(
-        self, tsv_df, gap_factor: float = 1.8, min_cols: int = 3
-    ):
+
+    def _tesseract_lines_to_tables(self, tsv_df, gap_factor: float = 1.8, min_cols: int = 3):
+        """
+        Group OCR words into rows by detecting large x-gaps, then aggregate rows
+        into simple tables when enough columns appear consecutively.
+        """
         import numpy as np
         import pandas as pd
 
@@ -1257,27 +1553,36 @@ class DMTGUI(tk.Tk):
             return []
 
         df = tsv_df.copy()
-        df = df[df["text"].astype(str).str.strip() != ""]
+        # keep only confident, non-empty words
+        if "conf" in df.columns:
+            df = df[df["conf"].fillna(-1) >= 0]
+        df["text"] = df["text"].astype(str)
+        df = df[df["text"].str.strip() != ""]
         if df.empty:
             return []
 
-        df["line_key"] = list(zip(df["block_num"], df["par_num"], df["line_num"]))
+        # Build a key per OCR line
+        key_cols = [c for c in ("block_num", "par_num", "line_num") if c in df.columns]
+        if not key_cols:
+            return []
 
+        df["line_key"] = list(zip(*[df[k] for k in key_cols]))
         line_rows = []
+
         for key, g in df.groupby("line_key"):
             g = g.sort_values("left")
             xs = g["left"].to_numpy()
             words = g["text"].astype(str).tolist()
-            if len(words) == 0:
+            if not words:
                 continue
 
-            gaps = np.diff(xs)
-            med = np.median(gaps) if len(gaps) else 0
-            threshold = max(12, med * gap_factor)
+            gaps = np.diff(xs) if len(xs) > 1 else np.array([])
+            med = float(np.median(gaps)) if len(gaps) else 0.0
+            threshold = max(12.0, med * float(gap_factor))
             row_cells, current = [], []
-            current.append(words[0])
-            last_x = xs[0]
+            last_x = xs[0] if len(xs) else 0.0
 
+            current.append(words[0])
             for w, x in zip(words[1:], xs[1:]):
                 if (x - last_x) > threshold:
                     row_cells.append(" ".join(current).strip())
@@ -1290,7 +1595,7 @@ class DMTGUI(tk.Tk):
 
         tables, current_tbl = [], []
         for row in line_rows:
-            if len(row) >= min_cols:
+            if len(row) >= int(min_cols):
                 current_tbl.append(row)
             else:
                 if len(current_tbl) >= 2:
@@ -1300,6 +1605,182 @@ class DMTGUI(tk.Tk):
             tables.append(current_tbl)
 
         return tables
+
+    def _choose_pages(self, path: str, head: int = 5, scan_upto: int = 20):
+        """
+        Return a sorted list of page indices: first 'head' pages plus a small window
+        around important anchor sections found within the first 'scan_upto' pages.
+        """
+        import fitz
+        anchors = (
+            "absolute maximum ratings",
+            "electrical characteristics",
+            "recommended operating conditions",
+            "pin configuration",
+            "pin descriptions",
+            "pin assignment",
+            "ordering information",
+            "package information",
+        )
+        picks = set()
+        with fitz.open(path) as doc:
+            head = max(0, int(head))
+            scan_upto = min(int(scan_upto), doc.page_count)
+            for i in range(min(head, doc.page_count)):
+                picks.add(i)
+            for i in range(scan_upto):
+                t = (doc.load_page(i).get_text("text") or "").lower()
+                if any(a in t for a in anchors):
+                    for j in (i - 1, i, i + 1, i + 2):
+                        if 0 <= j < doc.page_count:
+                            picks.add(j)
+        return sorted(picks)
+
+    def _is_scanned_pdf(self, path: str, sample_pages: int = 3) -> bool:
+        """
+        Heuristic: pages with almost no selectable text but with embedded images.
+        """
+        import fitz
+        img_pages = 0
+        with fitz.open(path) as doc:
+            for i in range(min(int(sample_pages), doc.page_count)):
+                pg = doc.load_page(i)
+                has_text = bool((pg.get_text("text") or "").strip())
+                has_imgs = bool(pg.get_images(full=True))
+                if (not has_text) and has_imgs:
+                    img_pages += 1
+        return img_pages >= 1
+
+    def _strip_headers_footers(self, blocks, page_height: float, top_band: int = 50, bottom_band: int = 50):
+        """
+        Remove blocks near top/bottom bands unless they look like important section titles.
+        """
+        keep_phrases = (
+            "absolute maximum ratings",
+            "electrical characteristics",
+            "recommended operating conditions",
+            "pin configuration",
+            "ordering information",
+            "package information",
+        )
+        filtered = []
+        for b in blocks:
+            if "bbox" not in b:
+                continue
+            x0, y0, x1, y1 = b["bbox"]
+            near_top = y0 <= top_band
+            near_bottom = y1 >= (page_height - bottom_band)
+
+            text = "".join(
+                s.get("text", "")
+                for l in b.get("lines", [])
+                for s in l.get("spans", [])
+            ).strip().lower()
+
+            if (near_top or near_bottom) and text:
+                if any(k in text for k in keep_phrases):
+                    filtered.append(b)
+                # else drop as header/footer
+                continue
+            filtered.append(b)
+        return filtered
+
+    def _group_blocks_into_columns(self, blocks, min_gap_px: int = 40):
+        """
+        Group blocks into 1..3 columns by detecting big gaps between x-centers.
+        No external deps. Returns list of column-lists.
+        """
+        if not blocks:
+            return [[]]
+
+        # compute x-centers
+        items = []
+        for b in blocks:
+            if "bbox" not in b:
+                continue
+            x0, y0, x1, y1 = b["bbox"]
+            xc = (x0 + x1) / 2.0
+            items.append((xc, b))
+        if not items:
+            return [blocks]
+
+        items.sort(key=lambda t: t[0])
+        xcs = [t[0] for t in items]
+
+        # find large gaps
+        gaps = []
+        for i in range(1, len(xcs)):
+            gaps.append((xcs[i] - xcs[i - 1], i))
+        # pick up to 2 largest gaps that exceed min_gap_px
+        big = [g for g in sorted(gaps, reverse=True) if g[0] >= min_gap_px][:2]
+        split_indices = sorted([i for _, i in big])
+
+        cols = []
+        start = 0
+        for idx in split_indices:
+            cols.append([b for _, b in items[start:idx]])
+            start = idx
+        cols.append([b for _, b in items[start:]])
+        # ensure left-to-right order
+        cols = sorted(cols, key=lambda col: sum((bb["bbox"][0] + bb["bbox"][2]) / 2.0 for bb in col) / max(len(col), 1))
+        return cols
+
+    def _normalize_text(self, lines):
+        import re, unicodedata
+        out = []
+        for s in lines:
+            s = unicodedata.normalize("NFKC", s).replace("\u00a0", " ")
+            s = s.replace("ﬁ", "fi").replace("ﬂ", "fl")
+            s = re.sub(r"(\S)-\n(\S)", r"\1\2", s)        # dehyphenate wrapped words
+            s = s.replace("\r", "")
+            s = re.sub(r"[ \t]+\n", "\n", s)
+            out.append(s)
+        return out
+
+    def _unit_normalize(self, s: str) -> str:
+        # normalize common datasheet glyphs to ASCII
+        repl = {
+            "Ω": " Ohm",
+            "µF": " uF", "µH": " uH", "µA": " uA", "µV": " uV", "µs": " us",
+            "°C": " C",
+            "±": " +/- ",
+        }
+        for k, v in repl.items():
+            s = s.replace(k, v)
+        return s
+
+    def _extract_tables_vector(self, path: str, target_pages):
+        """
+        Try Camelot lattice on specific pages (vector tables with ruling lines).
+        Returns dict: {page_index: [table_rows, ...]}, where table_rows is list[list[str]].
+        Silently no-ops if Camelot isn't available.
+        """
+        out = {}
+        try:
+            import camelot
+        except Exception:
+            return out
+
+        # Camelot uses 1-based page numbers; we supply a comma list
+        if not target_pages:
+            return out
+        pages_str = ",".join(str(p + 1) for p in sorted(set(target_pages)))
+        try:
+            tables = camelot.read_pdf(path, pages=pages_str, flavor="lattice")
+        except Exception:
+            return out
+
+        # Camelot returns a flat list; map each to its page
+        for t in tables:
+            try:
+                page_1based = int(getattr(t, "page", t.parsing_report.get("page", "1")))
+                page_idx = page_1based - 1
+                rows = [list(map(str, row)) for row in t.df.values.tolist()]
+                if rows:
+                    out.setdefault(page_idx, []).append(rows)
+            except Exception:
+                continue
+        return out
 
     # --------------------- page filtering (graphs) ---------------------
 
@@ -1596,19 +2077,20 @@ class DMTGUI(tk.Tk):
 
     # --------------------- Ollama call ---------------------
 
-    def _ollama_extract_page(
-        self, host: str, model: str, page_text: str, fields: list
-    ) -> dict:
-        import requests
+    def _ollama_extract_page(self, host: str, model: str, page_text: str, fields: list) -> dict:
+        import requests, json
 
         sys_prompt = (
             "You extract fielded data from electronics datasheet pages. "
             "Return ONLY a single JSON object with EXACTLY the requested keys. "
             "For any field not present on this page, return an empty string. "
             "Preserve units/symbols as written (e.g., '±', 'Ω', 'V', 'A', 'mΩ'). "
-            "If you reach graph heavy content, return empty strings for all fields. "
+            "If you reach graph-heavy content, return empty strings for all fields. "
             "No prose."
         )
+
+        if len(page_text) > 12000:
+            page_text = page_text[:12000] + " [...]"
 
         user_prompt = (
             "DATASHEET PAGE (single page; may not include all fields):\n"
@@ -1618,7 +2100,6 @@ class DMTGUI(tk.Tk):
             f"{json.dumps(fields, ensure_ascii=False)}\n"
             'If a value is not found on THIS PAGE, set it to "".\n'
             "JSON only."
-            "If you reach graph heavy content, return empty strings for all fields. "
         )
 
         payload = {
@@ -1629,6 +2110,7 @@ class DMTGUI(tk.Tk):
             ],
             "temperature": 0.1,
             "stream": False,
+            "format": "json"
         }
 
         url = host.rstrip("/") + "/api/chat"
@@ -1640,17 +2122,11 @@ class DMTGUI(tk.Tk):
             obj = self._extract_json_object(content)
             if not isinstance(obj, dict):
                 self._dbg("Ollama returned non-dict or unparsable JSON for this page.")
-                return {}
-            clean = {
-                k: (
-                    obj.get(k) if isinstance(obj.get(k), str) else str(obj.get(k) or "")
-                )
-                for k in fields
-            }
-            return clean
+                return {k: "" for k in fields}
+            return {k: (obj.get(k) if isinstance(obj.get(k), str) else str(obj.get(k) or "")) for k in fields}
         except Exception as e:
             self._dbg(f"Ollama page call failed: {e}")
-            return {}
+            return {k: "" for k in fields}
 
     def _extract_json_object(self, s: str):
         s = s.strip()
@@ -1671,28 +2147,42 @@ class DMTGUI(tk.Tk):
 
     def on_prefill_from_pdf(self):
         """
-        Full pipeline:
+        Full pipeline with GUI:
+        - popup with URL + Pages + Agent + Host
         - download PDF → dbdata/<name>/<name>.pdf
-        - parse with PyMuPDF
-        - filter out graphs/typical characteristics
-        - send ONLY kept pages to LLM
-        - write mapping + kept/skipped indices
-        - delete the downloaded PDF
+        - optional manual page override (from dialog)
+        - parse & filter
+        - ask Ollama page-by-page with chosen agent
+        - save debug + fill form
+        - delete PDF
         """
-        from tkinter import simpledialog, messagebox
         import pathlib, json, os
 
-        url = simpledialog.askstring(
-            "Datasheet PDF URL", "Paste a direct PDF URL (… .pdf):", parent=self
+        # --- 1) Ask options
+        default_url = ""
+        try:
+            clip = self.clipboard_get()
+            if isinstance(clip, str) and clip.strip().lower().endswith(".pdf"):
+                default_url = clip.strip()
+        except Exception:
+            pass
+
+        opts = self._ask_prefill_options(
+            default_url=default_url,
+            default_pages="",
+            default_agent=(self.ollama_models[0] if getattr(self, "ollama_models", []) else "llama3:8b"),
+            default_host=os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
         )
-        if not url:
+        if not opts:
             return
-        url = url.strip()
+
+        url  = opts["url"]
         if not (url.lower().startswith("http") and url.lower().endswith(".pdf")):
-            messagebox.showwarning(
-                "Prefill", "Please paste a direct PDF URL ending with .pdf"
-            )
+            messagebox.showwarning("Prefill", "Please paste a direct PDF URL ending with .pdf")
             return
+        pages_str = opts.get("pages", "")
+        chosen_model = opts.get("agent") or "llama3:8b"
+        host = opts.get("host") or "http://localhost:11434"
 
         save_debug = bool(self.app_config.get("save_debug_assets", True))
         skip_graphs = bool(self.app_config.get("skip_graph_pages", True))
@@ -1701,46 +2191,49 @@ class DMTGUI(tk.Tk):
         ds_dir, dbg_dir = self._ensure_dirs(base_dir, ds_name, save_debug)
 
         pdf_path = None
+        self._manual_page_picks = None  # reset before run
         try:
             self._dbg(f"PDF prefill (page-by-page) started. URL={url}")
             pdf_filename = f"{ds_name}.pdf"
             pdf_path = self._download_pdf(url, ds_dir, pdf_filename)
             self._dbg(f"PDF downloaded → {pdf_path}")
 
-            # STRICTLY structured text extraction (PyMuPDF)
+            # --- 2) If user typed pages, compute 0-based picks with real page count
+            try:
+                import fitz
+                with fitz.open(pdf_path) as doc:
+                    max_pages = doc.page_count
+                manual = self._parse_page_ranges(pages_str, max_pages) if pages_str else []
+                if manual:
+                    self._manual_page_picks = manual
+                    self._dbg(f"Manual page picks: {[p+1 for p in manual]}")
+            except Exception as e:
+                self._dbg(f"Manual page parse failed: {e}")
+
+            # --- 3) Extract pages (this will honor self._manual_page_picks if set)
             pages = self._pdf_to_pages(pdf_path, force_ocr=False, debug_dir=None)
             total_pages = len(pages)
             if total_pages == 0:
-                raise RuntimeError("No text extracted from PDF via PyMuPDF.")
+                raise RuntimeError("No text extracted from PDF via PyMuPDF/pdfminer/OCR.")
 
             kept_pages = pages
             kept_idx = list(range(1, total_pages + 1))
             skipped_idx = []
 
+            # --- 4) Filter graphs (optional)
             if skip_graphs:
                 kept_pages, kept_idx, skipped_idx, _ = self._filter_pages_for_llm(pages)
                 self._dbg(f"Graph filtering: kept={kept_idx} skipped={skipped_idx}")
-                self._dbg(
-                    f"Pages kept after filtering: {len(kept_pages)}/{total_pages}."
-                )
+                self._dbg(f"Pages kept after filtering: {len(kept_pages)}/{total_pages}.")
             else:
                 self._dbg("Graph filtering disabled by config.")
 
-            # Save the ACTUAL texts we sent to the LLM (for verification)
-            if dbg_dir and save_debug:
-                pages_dir = os.path.join(dbg_dir, "pages_sent")
-                os.makedirs(pages_dir, exist_ok=True)
-                for j, p in enumerate(kept_pages, 1):
-                    txt = self._serialize_page_for_llm(p)
-                    pathlib.Path(
-                        os.path.join(pages_dir, f"kept_{j:03}.txt")
-                    ).write_text(txt, encoding="utf-8")
-
+            # --- 5) Prepare template fields and run Ollama
             template_fields = list(self.form_inputs.keys())
             self._dbg(f"Template fields (current TT/FF): {template_fields}")
 
-            model = os.environ.get("OLLAMA_MODEL", "gpt-oss:20b")
-            host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+            ai_start_time = _dt.now()
+            self._dbg(f"Starting AI processing at {ai_start_time.strftime('%H:%M:%S')}")
 
             results = []
             replies_dir = None
@@ -1751,23 +2244,15 @@ class DMTGUI(tk.Tk):
             for i, page in enumerate(kept_pages, 1):
                 page_text = self._serialize_page_for_llm(page)
                 self._dbg(f"Ollama ask on page {i}/{len(kept_pages)} …")
-                resp = self._ollama_extract_page(
-                    host, model, page_text, template_fields
-                )
+                resp = self._ollama_extract_page(host, chosen_model, page_text, template_fields)
 
                 if replies_dir:
-                    pathlib.Path(
-                        os.path.join(replies_dir, f"resp_{i:03}.json")
-                    ).write_text(
+                    pathlib.Path(os.path.join(replies_dir, f"resp_{i:03}.json")).write_text(
                         json.dumps(resp, indent=2, ensure_ascii=False), encoding="utf-8"
                     )
-
                 if isinstance(resp, dict):
                     results.append(resp)
-                else:
-                    self._dbg(f"Page {i}: non-dict or empty response; ignored.")
 
-            # Merge: later non-empty wins
             merged = {}
             for d in results:
                 for k in template_fields:
@@ -1775,17 +2260,22 @@ class DMTGUI(tk.Tk):
                     if v not in (None, "", "N/A"):
                         merged[k] = v
 
-            # Mapping report (ALWAYS include kept/skipped indices so you can verify behavior)
+            ai_end_time = _dt.now()
+            ai_duration = ai_end_time - ai_start_time
+            self._dbg(f"AI processing completed at {ai_end_time.strftime('%H:%M:%S')}")
+            self._dbg(f"Total AI processing time: {ai_duration.total_seconds():.2f} seconds")
+            self._dbg(f"Used agent: {chosen_model} at host {host}")
+
+            # Mapping report
             mapping_path = os.path.join(ds_dir, "debug_pdf_mapping.txt")
             lines = []
             lines.append(f"URL: {url}")
-            lines.append(f"Model: {model}   Host: {host}")
-            lines.append(f"Total pages: {total_pages}")
+            lines.append(f"Model: {chosen_model}   Host: {host}")
+            lines.append(f"Total pages (post-extraction object): {total_pages}")
+            lines.append(f"AI processing time: {ai_duration.total_seconds():.2f} seconds")
             if skip_graphs:
                 lines.append(f"Pages kept: {len(kept_pages)}  Indices kept: {kept_idx}")
-                lines.append(
-                    f"Pages skipped: {len(skipped_idx)}  Indices skipped: {skipped_idx}"
-                )
+                lines.append(f"Pages skipped: {len(skipped_idx)}  Indices skipped: {skipped_idx}")
             else:
                 lines.append("Graph filtering disabled.")
             lines.append("\n---- Final extracted values by field ----")
@@ -1800,14 +2290,9 @@ class DMTGUI(tk.Tk):
                 if k in self.form_inputs and v:
                     self.form_inputs[k].set(v)
                     filled += 1
-            self._dbg(
-                f"PDF prefill done. Filled {filled}/{len(template_fields)} fields."
-            )
+            self._dbg(f"PDF prefill done. Filled {filled}/{len(template_fields)} fields.")
             try:
-                messagebox.showinfo(
-                    "Prefill",
-                    f"PDF prefill complete.\nFilled {filled}/{len(template_fields)} fields.",
-                )
+                messagebox.showinfo("Prefill", f"PDF prefill complete.\nFilled {filled}/{len(template_fields)} fields.")
             except Exception:
                 pass
 
@@ -1815,13 +2300,15 @@ class DMTGUI(tk.Tk):
             self._dbg(f"PDF prefill failed: {e}")
             messagebox.showerror("Prefill", f"PDF prefill failed:\n{e}")
         finally:
-            # Always delete the downloaded PDF after extraction
+            # Always clear manual override and delete the PDF
+            self._manual_page_picks = None
             try:
                 if pdf_path and os.path.exists(pdf_path):
                     os.remove(pdf_path)
                     self._dbg("Deleted downloaded PDF.")
             except Exception:
                 pass
+
 
     def _should_normalize_field(self, key: str) -> bool:
         """

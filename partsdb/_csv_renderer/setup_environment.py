@@ -25,7 +25,7 @@ class SetupEnvironment:
         self.is_linux = self.system == "Linux"
         self.ollama_installed = False
         self.model_installed = False
-        self.ollama_model = os.environ.get("OLLAMA_MODEL", "gpt-oss:20b")
+        self.ollama_model = os.environ.get("OLLAMA_MODEL", "mixtral:8x7b-instruct-v0.1-q2_K")
         self.ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
         
         if root:
@@ -77,7 +77,7 @@ class SetupEnvironment:
         self.model_entry.pack(side=tk.LEFT, padx=5)
         
         # Default models dropdown
-        default_models = ["gpt-oss:20b", "llama3:8b", "mistral:7b", "phi3:mini"]
+        default_models = ["mixtral:8x7b-instruct-v0.1-q2_K"]
         self.model_dropdown_var = tk.StringVar()
         model_dropdown = ttk.Combobox(model_frame, textvariable=self.model_dropdown_var, values=default_models, width=15)
         model_dropdown.pack(side=tk.LEFT, padx=5)

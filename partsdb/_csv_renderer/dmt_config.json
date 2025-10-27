@@ -1,5 +1,6 @@
 {
   "last_csv": "G:/_GitHub/SW_PartsDB/partsdb/_csv_renderer/DMT_Partslib.csv",
   "dbdata_dir": "G:/_GitHub/SW_PartsDB/partsdb/_csv_renderer/dbdata",
-  "save_debug_assets": false
+  "save_debug_assets": true,
+  "only_5_page": true
 }

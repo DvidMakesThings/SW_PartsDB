@@ -137,21 +137,26 @@
     },
     {
       "tt": "09",
-      "name": "Connectors and Terminals",
+      "name": "Connectors and Interconnects",
       "families": [
         { "ff": "01", "name": "Board to Board and Mezzanine" },
-        { "ff": "02", "name": "Wire to Board Headers Sockets" },
-        { "ff": "03", "name": "Terminal Blocks and DIN" },
-        { "ff": "04", "name": "Circular and Backshells" },
-        { "ff": "05", "name": "RF Coax" },
-        { "ff": "06", "name": "D Sub and Centronics" },
-        { "ff": "07", "name": "Modular Ethernet RJ" },
-        { "ff": "08", "name": "Memory Edge PCIe Slot" },
-        { "ff": "09", "name": "Power Entry and AC Inlets" },
-        { "ff": "10", "name": "USB HDMI DVI" },
+        { "ff": "02", "name": "Wire to Board and Wire to Wire" },
+        { "ff": "03", "name": "Terminal Blocks and Barrier Strips" },
+        { "ff": "04", "name": "Circular Connectors and Backshells" },
+        { "ff": "05", "name": "RF Coaxial Connectors" },
+        { "ff": "06", "name": "D-Sub and Centronics" },
+        { "ff": "07", "name": "Modular and Ethernet RJ" },
+        { "ff": "08", "name": "Memory Edge and Card Edge" },
+        { "ff": "09", "name": "Power Entry and AC Connectors" },
+        { "ff": "10", "name": "USB HDMI DisplayPort and Video" },
         { "ff": "11", "name": "Heavy Duty and Rectangular Industrial" },
-        { "ff": "12", "name": "Terminals Lugs Splices Ring Spade Quick" },
-        { "ff": "99", "name": "Connector Accessories" }
+        { "ff": "12", "name": "Fiber Optic and Photovoltaic PV" },
+        { "ff": "13", "name": "Banana Barrel and Test Connectors" },
+        { "ff": "14", "name": "Shunts Jumpers and Test Points" },
+        { "ff": "15", "name": "Sockets for ICs and Transistors" },
+        { "ff": "16", "name": "Solid State Lighting Connectors" },
+        { "ff": "17", "name": "Pluggable and Modular Power" },
+        { "ff": "99", "name": "Connector Accessories and Misc" }
       ]
     },
     {
@@ -562,11 +567,20 @@
         "99": "Special"
       },
       "ss": {
-        "01": "SOT23 SC70 small outline",
-        "02": "SOIC TSSOP",
-        "10": "QFN DFN",
+        "01": "SOT23",
+        "02": "SC70",
+        "03": "SOIC",
+        "04": "SOP, MSOP",
+        "05": "QFN, DFN",
+        "06": "TQFN",
+        "07": "SON, WSON",
+        "08": "BGA",
+        "09": "CSP",
+        "10": "WLCSP",
+        "11": "QFN DFN",
+        "12": "DPAK, D2PAK",
+        "13": "SOT223",
         "20": "Module SIP",
-        "30": "Automotive AEC",
         "99": "Other"
       }
     },
@@ -641,33 +655,97 @@
         "10": "IO expander",
         "11": "Sensor detector interfaces",
         "12": "PoE PD or PSE interface",
+        "13": "LVDS Buffers",
         "99": "Special"
       },
       "ss": {
         "01": "Transceiver",
         "02": "Controller",
         "03": "Isolated",
+        "04": "Non-isolated",
+        "05": "Redriver",
+        "06": "Serializer",
+        "07": "Deserializer",
         "10": "Automotive",
         "99": "Other"
       }
     },
     "0306_Logic": {
       "cc": {
-        "01": "Gates Inverters",
-        "02": "Flip flops",
-        "03": "Counters Dividers",
-        "04": "Multiplexers Decoders Switches",
-        "05": "Buffers Drivers Receivers",
-        "06": "FIFOs",
-        "07": "Level shifters",
-        "99": "Special"
+        "01": "AND Gates",
+        "02": "NAND Gates",
+        "03": "OR Gates",
+        "04": "NOR Gates",
+        "05": "XOR Gates",
+        "06": "XNOR Gates",
+        "07": "Inverters NOT",
+        "08": "Buffers Non-Inverting",
+        "09": "Schmitt Trigger Inverters",
+        "10": "Schmitt Trigger Buffers",
+        "11": "Open-Collector Open-Drain Gates",
+        "12": "Tri-State Gates",
+        "13": "Wired-OR Wired-AND Logic",
+        "14": "Bus Transceivers",
+        "15": "Level Shifters Voltage Translators",
+        "16": "Flip flops Latches",
+        "17": "Counters Dividers Timers",
+        "18": "Shift Registers",
+        "19": "Multiplexers",
+        "20": "Demultiplexers",
+        "21": "Decoders",
+        "22": "Encoders",
+        "23": "Comparators Digital Window",
+        "24": "Arithmetic Logic Units Adders Subtractors",
+        "25": "Priority Encoders Arbitrators",
+        "26": "Clock Generators Dividers PLL Support",
+        "27": "Monostables Multivibrators One-Shots",
+        "28": "Clock Buffers Distribution",
+        "29": "Bus Switches QuickSwitch",
+        "30": "Serial-Parallel Parallel-Serial Converters",
+        "31": "FIFOs Dual-Port RAM",
+        "32": "Parity Generators Checkers",
+        "33": "Gray Code Binary Converters",
+        "34": "Johnson Ring Counters",
+        "35": "Synchronizers Debouncers",
+        "36": "GPIO Expanders Logic I/O",
+        "37": "Isolation Logic Digital Isolators",
+        "38": "Reset Supervisors Power-On Reset Logic",
+        "39": "Glue Logic Small Gate Arrays",
+        "40": "Programmable Logic PAL GAL PLD CPLD FPGA",
+        "99": "Special Mixed Logic"
       },
       "ss": {
         "01": "74HC HCT",
-        "02": "74LVC",
-        "03": "74LV",
-        "10": "Multifunction configurable",
-        "99": "Other"
+        "02": "74HCU",
+        "03": "74AC ACT",
+        "04": "74AHC AHCT",
+        "05": "74LVC LVCH",
+        "06": "74ALVC ALVCH",
+        "07": "74LV LVX",
+        "08": "74VHC VHCT",
+        "09": "74AUC AUP",
+        "10": "74LCX LVCX LVT",
+        "11": "74F FAST FCT FCTT ABT ALS AS",
+        "12": "74S LS",
+        "13": "4000 Series CMOS",
+        "14": "TinyLogic AUC AUP AXP NC7 NCV7",
+        "15": "NC7 NCV NCV7",
+        "16": "NCN NCX NCN7 Logic",
+        "17": "QuickSwitch Bus Switches QS QSV",
+        "18": "SN74 Family (TI Logic General)",
+        "19": "HEF Series (Philips/NXP CMOS)",
+        "20": "CD4xxx Series (RCA/ONsemi CMOS)",
+        "21": "TC4S TC7S (Toshiba Logic)",
+        "22": "LC4 LCX (ONsemi Logic)",
+        "23": "MC74 MC14000 (Motorola Logic)",
+        "24": "IDT Logic Family (FCT LVQ etc.)",
+        "25": "Fairchild TinyLogic Gated Logic",
+        "26": "ALVT LVT ELVT Logic",
+        "27": "AVC AXC Logic (High-Speed Low-Power)",
+        "28": "CBT CBTLV CB3Q QuickSwitch",
+        "29": "Digital Bus Buffers and Translators",
+        "30": "Multifunction Configurable Universal Logic",
+        "99": "Other or Unknown"
       }
     },
     "0307_MemoryICs": {
@@ -691,7 +769,6 @@
         "99": "Other"
       }
     },
-
     "0308_Microcontrollers_SoC": {
       "notes": "CC encodes core class. SS encodes vendor family bucket so you can locate STM32F1 etc. Use XXX to differentiate individual part numbers inside the same SS.",
       "cc": {
@@ -705,6 +782,9 @@
         "08": "RISC V MCUs",
         "09": "Wireless MCUs (BLE BT Wi Fi Thread Zigbee SubGHz)",
         "10": "DSP MCUs (C2000 Blackfin SHARC etc.)",
+        "11": "ARM Cortex R class (R4 R5 R7 safety MCUs)",
+        "12": "FPGA SoC MCUs (Zynq UltraScale+ etc.)",
+        "13": "32 bit Microcontrollers",
         "99": "Special"
       },
       "ss_vendor_families": {
@@ -768,44 +848,11 @@
         "58": "Sifive RISC V",
         "59": "Other ARM vendor generic",
         "60": "Other RISC V vendor generic",
+        "61": "TI TMS570 Hercules",
+        "62": "TI RM4x Hercules",
         "99": "Other or Unknown"
-      },
-      "examples": [
-        {
-          "part": "STM32F103C8T6",
-          "ttff": "0308",
-          "cc": "04",
-          "ss": "03",
-          "explain": "Integrated Circuits -> Microcontrollers and SoC -> ARM Cortex M3 -> ST STM32 F1",
-          "code_example": "DMT-03080403XXX"
-        },
-        {
-          "part": "STM32F107VCT6",
-          "ttff": "0308",
-          "cc": "05",
-          "ss": "03",
-          "explain": "Cortex M4 or M7 would be 05 for M4/M7, but STM32F107 is Cortex M3. Use cc 04. Keep ss 03 for STM32F1.",
-          "corrected_code_example": "DMT-03080403XXX"
-        },
-        {
-          "part": "RP2040",
-          "ttff": "0308",
-          "cc": "03",
-          "ss": "49",
-          "explain": "ARM Cortex M0+ -> Raspberry Pi RP2040",
-          "code_example": "DMT-03080349XXX"
-        },
-        {
-          "part": "ESP32 WROOM 32",
-          "ttff": "0308",
-          "cc": "09",
-          "ss": "37",
-          "explain": "Wireless MCU -> Espressif ESP32 classic",
-          "code_example": "DMT-03080937XXX"
-        }
-      ]
+      }
     },
-
     "0309_DSP_FPGA_CPLD_PLD": {
       "cc": {
         "01": "CPLD",
@@ -837,24 +884,31 @@
         "99": "Other"
       }
     },
-
     "0310_SensorInterfaceICs": {
       "cc": {
         "01": "Capacitive touch",
-        "02": "Bridge amp ADC",
-        "03": "Hall interface",
-        "04": "AFE misc",
+        "02": "Temperature",
+        "03": "Bridge amp ADC",
+        "04": "Hall interface",
+        "05": "Current shunt",
+        "06": "Optical",
+        "07": "Bio sensor AFE",
+        "08": "Thermocouple RTD",
+        "09": "Piezo vibration",
+        "10": "Misc AFE",
         "99": "Other"
       },
       "ss": {
         "01": "I2C",
         "02": "SPI",
-        "10": "Analog",
+        "03": "UART",
+        "04": "Analog",
+        "05": "PWM",
+        "06": "1-Wire",
         "99": "Other"
       }
     },
-
-    "03099_SpecializedICs": {
+    "0399_SpecializedICs": {
       "cc": {
         "01": "Energy metering",
         "02": "Security crypto",
@@ -1002,24 +1056,348 @@
         "99": "Other"
       }
     },
-
-    "090x_Connectors_Generic": {
+    
+    "0901_BoardToBoard_Mezzanine": {
       "cc": {
-        "01": "Through hole",
+        "01": "Pin headers",
+        "02": "Socket headers",
+        "03": "Board-to-board mezzanine",
+        "04": "Card edge board-mate",
+        "05": "Press-fit",
+        "06": "High-speed arrays",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "TH",
         "02": "SMT",
-        "10": "Right angle",
-        "11": "Vertical",
-        "12": "Panel mount",
-        "20": "Shielded",
-        "30": "With magnetics RJ",
-        "90": "Accessories",
-        "95": "Adapters",
-        "99": "Special"
+        "03": "Right angle",
+        "04": "Vertical",
+        "05": "Shrouded",
+        "06": "Unshrouded",
+        "99": "Other"
+      }
+    },
+
+    "0902_WireBoard_WireWire": {
+      "cc": {
+        "01": "Rectangular headers housings",
+        "02": "Crimp housings",
+        "03": "Crimp terminals",
+        "04": "IDC",
+        "05": "Poke-home spring clamp",
+        "06": "Press-fit board-in",
+        "07": "Power (Mini-Fit/Micro-Fit class)",
+        "08": "JST style",
+        "09": "Barrier/screw (wire-to-board)",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount TH",
+        "02": "Board mount SMT",
+        "03": "Cable mount",
+        "04": "Free hanging",
+        "05": "Panel mount",
+        "06": "Plug",
+        "07": "Receptacle",
+        "08": "Right angle",
+        "09": "Vertical",
+        "99": "Other"
+      }
+    },
+
+    "0903_TerminalBlocks_BarrierStrips": {
+      "cc": {
+        "01": "Barrier strip",
+        "02": "Pluggable terminal block",
+        "03": "Screw clamp",
+        "04": "Spring clamp",
+        "05": "Feed-through DIN",
+        "06": "High-current power",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "TH",
+        "02": "SMT",
+        "03": "DIN-rail",
+        "04": "Panel mount",
+        "05": "Vertical",
+        "06": "Right angle",
+        "99": "Other"
+      }
+    },
+
+    "0904_Circular_BackShells": {
+      "cc": {
+        "01": "M-series metric (M5–M12)",
+        "02": "MIL/industrial circular",
+        "03": "Push-pull (LEMO style)",
+        "04": "Audio XLR/TRS",
+        "05": "Power circular",
+        "06": "Backshells/strains",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Cable plug",
+        "02": "Cable receptacle",
+        "03": "Panel receptacle",
+        "04": "Right angle",
+        "05": "Shielded",
+        "06": "Waterproof",
+        "99": "Other"
+      }
+    },
+
+    "0905_RF_Coaxial": {
+      "cc": {
+        "01": "SMA/SMB/SMC",
+        "02": "BNC/TNC",
+        "03": "U.FL/IPEX/MHF",
+        "04": "MCX/MMCX",
+        "05": "N/7-16 DIN",
+        "06": "RP variants",
+        "99": "Other"
       },
       "ss": {
         "01": "Board mount",
-        "02": "Cable mount",
-        "03": "Free hanging",
+        "02": "Cable plug",
+        "03": "Cable jack",
+        "04": "Bulkhead",
+        "05": "Right angle",
+        "06": "Vertical",
+        "99": "Other"
+      }
+    },
+
+    "0906_DSub_Centronics": {
+      "cc": {
+        "01": "D-Sub standard",
+        "02": "D-Sub high-density",
+        "03": "D-Sub combo power/coax",
+        "04": "Centronics",
+        "05": "Hoods/backshells",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Plug",
+        "02": "Receptacle",
+        "03": "Right angle",
+        "04": "Vertical",
+        "05": "Panel mount",
+        "06": "Screw-lock",
+        "99": "Other"
+      }
+    },
+
+    "0907_Modular_Ethernet_RJ": {
+      "cc": {
+        "01": "RJ11/RJ12",
+        "02": "RJ45 unshielded",
+        "03": "RJ45 shielded",
+        "04": "RJ45 with magnetics",
+        "05": "Industrial Ethernet",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount TH",
+        "02": "Board mount SMT",
+        "03": "Panel mount",
+        "04": "Right angle",
+        "05": "Vertical",
+        "06": "Single port",
+        "07": "Multiport",
+        "99": "Other"
+      }
+    },
+
+    "0908_MemoryEdge_CardEdge": {
+      "cc": {
+        "01": "DIMM/SO-DIMM",
+        "02": "PCI/PCIe",
+        "03": "M.2/NGFF edge",
+        "04": "CFexpress/other card edge",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Vertical",
+        "02": "Right angle",
+        "03": "Card guide",
+        "04": "Retainer/clip",
+        "99": "Other"
+      }
+    },
+
+    "0909_PowerEntry_AC": {
+      "cc": {
+        "01": "IEC inlets (C14/C20 etc.)",
+        "02": "Filtered/fused IEC",
+        "03": "AC screw terminals",
+        "04": "Power entry modules",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Panel snap-in",
+        "02": "Panel screw",
+        "03": "Right angle PCB",
+        "04": "Vertical PCB",
+        "99": "Other"
+      }
+    },
+
+    "0910_USB_HDMI_DisplayPort_Video": {
+      "cc": {
+        "01": "USB-A/B/mini/micro",
+        "02": "USB Type-C",
+        "03": "HDMI",
+        "04": "DisplayPort",
+        "05": "DVI",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount TH",
+        "02": "Board mount SMT",
+        "03": "Cable plug",
+        "04": "Panel mount",
+        "05": "Right angle",
+        "06": "Vertical",
+        "99": "Other"
+      }
+    },
+
+    "0911_HeavyDuty_Rectangular_Industrial": {
+      "cc": {
+        "01": "Rectangular industrial housings",
+        "02": "Insert modules",
+        "03": "High-current power",
+        "04": "Signal modules",
+        "05": "Hybrid power+signal",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Panel mount",
+        "02": "Cable hood",
+        "03": "Surface/board",
+        "04": "Locking lever",
+        "05": "Waterproof",
+        "99": "Other"
+      }
+    },
+
+    "0912_FiberOptic_and_PV": {
+      "cc": {
+        "01": "Fiber connectors (LC/SC/ST/MPO)",
+        "02": "Fiber adapters",
+        "03": "PV connectors (MC4 etc.)",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Panel mount",
+        "02": "Cable plug",
+        "03": "Cable receptacle",
+        "04": "Field-attachable",
+        "99": "Other"
+      }
+    },
+
+    "0913_Banana_Barrel_Test": {
+      "cc": {
+        "01": "Banana jacks/plugs",
+        "02": "Binding posts",
+        "03": "Barrel power DC",
+        "04": "Test clips/probes",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Panel mount",
+        "02": "Board mount",
+        "03": "Cable",
+        "04": "Stackable",
+        "99": "Other"
+      }
+    },
+
+    "0914_Shunts_Jumpers_TestPoints": {
+      "cc": {
+        "01": "Shunts/jumpers",
+        "02": "Test points",
+        "03": "Shorting links",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "TH",
+        "02": "SMT",
+        "03": "Loop",
+        "04": "Pad only",
+        "99": "Other"
+      }
+    },
+
+    "0915_Sockets_ICs_Transistors": {
+      "cc": {
+        "01": "DIP sockets",
+        "02": "PGA/LGA sockets",
+        "03": "ZIF/lever sockets",
+        "04": "Transistor/TO sockets",
+        "05": "BGA test sockets",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "TH",
+        "02": "SMT",
+        "03": "Open frame",
+        "04": "Closed frame",
+        "99": "Other"
+      }
+    },
+
+    "0916_SolidStateLighting": {
+      "cc": {
+        "01": "COB holders",
+        "02": "LED board connectors",
+        "03": "Wire-to-board lighting",
+        "04": "Strip/array connectors",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "TH",
+        "02": "SMT",
+        "03": "Push-in",
+        "04": "Locking",
+        "99": "Other"
+      }
+    },
+
+    "0917_Pluggable_Modular_Power": {
+      "cc": {
+        "01": "Pluggable power blocks",
+        "02": "Blade type power",
+        "03": "High-current board connectors",
+        "04": "Busbar/feeding connectors",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount",
+        "02": "Panel mount",
+        "03": "Plug",
+        "04": "Receptacle",
+        "05": "Right angle",
+        "06": "Vertical",
+        "99": "Other"
+      }
+    },
+
+    "0999_Connector_Accessories": {
+      "cc": {
+        "01": "Contacts/pins/sockets",
+        "02": "Hoods/backshells",
+        "03": "Strain reliefs/boots",
+        "04": "Caps/dust covers",
+        "05": "Coding keys",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "For board mount",
+        "02": "For cable",
+        "03": "For panel",
         "99": "Other"
       }
     },
@@ -1083,81 +1461,5 @@
     "Assign XXX as a running sequence per unique TTFFCCSS so items are unique.",
     "If a part could fit multiple families, prefer the most specific electrical function over mechanical form.",
     "For dev kits or eval boards, use the base IC family but CC=92 or SS=92 only if you store them together with components. Otherwise store dev boards under TT 19."
-  ],
-  "worked_examples": [
-    {
-      "input": "STM32F103C8T6",
-      "tt": "03",
-      "ff": "08",
-      "cc": "04",
-      "ss": "03",
-      "xxx": "001",
-      "explain": "Integrated Circuits -> Microcontrollers and SoC -> Cortex M3 -> ST STM32 F1",
-      "code": "DMT-03080403001"
-    },
-    {
-      "input": "STM32F107VCT6",
-      "tt": "03",
-      "ff": "08",
-      "cc": "04",
-      "ss": "03",
-      "xxx": "002",
-      "explain": "Cortex M3 same family STM32 F1 connectivity line, differentiate with XXX",
-      "code": "DMT-03080403002"
-    },
-    {
-      "input": "RP2040",
-      "tt": "03",
-      "ff": "08",
-      "cc": "03",
-      "ss": "49",
-      "xxx": "001",
-      "code": "DMT-03080349001"
-    },
-    {
-      "input": "ESP32 WROOM 32",
-      "tt": "03",
-      "ff": "08",
-      "cc": "09",
-      "ss": "37",
-      "xxx": "001",
-      "code": "DMT-03080937001"
-    },
-    {
-      "input": "1N4148",
-      "tt": "02",
-      "ff": "01",
-      "cc": "01",
-      "ss": "02",
-      "xxx": "001",
-      "code": "DMT-02010102001"
-    },
-    {
-      "input": "10uF 25V X7R 0805",
-      "tt": "01",
-      "ff": "01",
-      "cc": "01",
-      "ss": "01",
-      "xxx": "001",
-      "code": "DMT-01010101001"
-    },
-    {
-      "input": "RJ45 jack with magnetics",
-      "tt": "09",
-      "ff": "07",
-      "cc": "30",
-      "ss": "01",
-      "xxx": "001",
-      "code": "DMT-09073001001"
-    },
-    {
-      "input": "RJ45 patch cable Cat6 shielded",
-      "tt": "10",
-      "ff": "03",
-      "cc": "10",
-      "ss": "01",
-      "xxx": "001",
-      "code": "DMT-10031001001"
-    }
   ]
 }

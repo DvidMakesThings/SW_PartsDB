@@ -310,8 +310,8 @@ class DMTGUI(tk.Tk):
 
         self._build_menu()
         self._build_form()
-        self._manual_page_picks = None           # set by dialog to override _resolve_picks
-        self._load_ollama_models()               # fill self.ollama_models for the dropdown
+        self._manual_page_picks = None  # set by dialog to override _resolve_picks
+        self._load_ollama_models()  # fill self.ollama_models for the dropdown
 
         self._build_table()
         self._refresh_table()
@@ -614,7 +614,7 @@ class DMTGUI(tk.Tk):
             left_key, right_key = combined_key.split(" @ ", 1)
 
             # Use unique internal names tied to the combined column
-            left_internal  = f"{combined_key}::L"
+            left_internal = f"{combined_key}::L"
             right_internal = f"{combined_key}::R"
 
             # at_join_map maps the combined CSV column -> (internal_left, internal_right)
@@ -628,18 +628,21 @@ class DMTGUI(tk.Tk):
 
             # Left entry (no sublabel)
             var_l = tk.StringVar()
-            ttk.Entry(wrap, textvariable=var_l).grid(row=0, column=0, sticky="we", padx=(0, 6))
+            ttk.Entry(wrap, textvariable=var_l).grid(
+                row=0, column=0, sticky="we", padx=(0, 6)
+            )
             self.form_inputs[left_internal] = var_l  # <-- store by internal key
 
             # '@' and right sublabel
             ttk.Label(wrap, text="@").grid(row=0, column=1, sticky="w", padx=(0, 6))
-            ttk.Label(wrap, text=f"{right_key}:").grid(row=0, column=2, sticky="e", padx=(0, 6))
+            ttk.Label(wrap, text=f"{right_key}:").grid(
+                row=0, column=2, sticky="e", padx=(0, 6)
+            )
 
             # Right entry
             var_r = tk.StringVar()
             ttk.Entry(wrap, textvariable=var_r).grid(row=0, column=3, sticky="we")
             self.form_inputs[right_internal] = var_r  # <-- store by internal key
-
 
         def _place_side(row, label_col, cell_col, key):
             # Decide label text and widget
@@ -676,8 +679,6 @@ class DMTGUI(tk.Tk):
 
             r += 1
             i += 2
-
-
 
     def _compute_ordered_columns(self, template_fields):
         head = ["MPN", "Quantity", "Value"]
@@ -950,7 +951,9 @@ class DMTGUI(tk.Tk):
 
         # --- 3) Populate inputs
         # Fill split '@' first
-        for combined, (left_key_internal, right_key_internal) in getattr(self, "at_join_map", {}).items():
+        for combined, (left_key_internal, right_key_internal) in getattr(
+            self, "at_join_map", {}
+        ).items():
             v = row.get(combined, "")
             if not isinstance(v, str):
                 v = "" if v is None else str(v)
@@ -967,10 +970,12 @@ class DMTGUI(tk.Tk):
                 else:
                     # tolerant fallbacks:
                     # 1) try trailing frequency (e.g., "300 mA 100 kHz")
-                    m = re.search(r"(\d[\d.,]*\s*(?:[GMk]?Hz))\s*$", s, flags=re.IGNORECASE)
+                    m = re.search(
+                        r"(\d[\d.,]*\s*(?:[GMk]?Hz))\s*$", s, flags=re.IGNORECASE
+                    )
                     if m:
                         rv = m.group(1).strip()
-                        lv = s[:m.start()].strip()
+                        lv = s[: m.start()].strip()
                     else:
                         # 2) comma separated? "300 mA, 100 kHz"
                         if "," in s:
@@ -994,7 +999,8 @@ class DMTGUI(tk.Tk):
         # Now fill simple fields
         subkeys = set()
         for _, (lk, rk) in getattr(self, "at_join_map", {}).items():
-            subkeys.add(lk); subkeys.add(rk)
+            subkeys.add(lk)
+            subkeys.add(rk)
 
         for k, var in self.form_inputs.items():
             if k in subkeys:
@@ -1005,7 +1011,6 @@ class DMTGUI(tk.Tk):
             if self._should_normalize_field(k):
                 val = self._normalize_units(str(val))
             var.set(str(val))
-
 
     def on_open_csv(self):
         initial = (
@@ -1132,7 +1137,9 @@ class DMTGUI(tk.Tk):
         models = []
         try:
             # Try JSON first
-            out = subprocess.check_output(["ollama", "list"], stderr=subprocess.STDOUT, timeout=5)
+            out = subprocess.check_output(
+                ["ollama", "list"], stderr=subprocess.STDOUT, timeout=5
+            )
             text = out.decode("utf-8", errors="ignore").strip()
             # `ollama list` default output is a table; parse first column as model names
             # Example header: NAME    ID    SIZE    MODIFIED
@@ -1199,9 +1206,401 @@ class DMTGUI(tk.Tk):
                     continue
         return sorted(picks)
 
-    def _ask_prefill_options(self, default_url: str = "", default_pages: str = "", default_agent: str = "", default_host: str = ""):
+    def _fv_norm(self, field: str, val: str) -> str:
+        """Normalize a field value for comparison (units, spaces, case)."""
+        if val is None:
+            return ""
+        s = str(val).strip()
+        s = self._unit_normalize(s)  # you already have this
+        s = " ".join(s.split())
+        # field-specific light normalizations
+        low = s.lower()
+        # drop trailing periods and commas
+        low = low.rstrip(".,;")
+        # common label noise
+        low = low.replace("typ.", "typ").replace("max.", "max").replace("min.", "min")
+        return low
+
+    def _is_numeric_field(self, field: str) -> bool:
+        f = (field or "").lower()
+        return any(
+            k in f
+            for k in (
+                "vds",
+                "vdss",
+                "vgs",
+                "rds",
+                "on-resistance",
+                "gate charge",
+                "qg",
+                "threshold",
+                "vth",
+                "current",
+                "id",
+                "idd",
+                "voltage",
+                "capacitance",
+                "ciss",
+                "crss",
+                "cds",
+                "power",
+                "pd",
+                "soA",
+                "junction temperature",
+                "tj",
+                "frequency",
+                "rise",
+                "fall",
+                "delay",
+                "leakage",
+                "esr",
+                "esl",
+                "ron",
+                "tof",
+            )
+        )
+
+    def _parse_num_unit(self, s: str):
+        """Extract first numeric token and its unit; returns (float_or_None, unit_or_'' )."""
+        import re
+
+        if not s:
+            return (None, "")
+        txt = s.replace(",", ".")
+        m = re.search(r"([-+]?\d+(\.\d+)?\s*)([a-zA-ZµuΩohm%VvAaWwHhzZSsnfpkm]*)", txt)
+        if not m:
+            return (None, "")
+        try:
+            num = float(m.group(1))
+        except Exception:
+            num = None
+        unit = m.group(3).strip()
+        unit = unit.replace("Ohm", "Ω").replace("ohm", "Ω")
+        unit = unit.replace("u", "µ") if unit and "µ" not in unit else unit
+        return (num, unit)
+
+    def _sim(self, a: str, b: str) -> float:
+        """Loose similarity (0..1) using difflib."""
+        from difflib import SequenceMatcher
+
+        return SequenceMatcher(None, a, b).ratio()
+
+    def _model_supports_images(self, model_name: str) -> bool:
         """
-        Show a modal dialog that asks for: URL, Pages, Agent, Host.
+        Heuristic: models known to accept images (Ollama/vision family).
+        Extend as needed.
+        """
+        m = (model_name or "").lower()
+        return any(
+            k in m
+            for k in (
+                "gemma3",
+                "llava",
+                "llama3.2-vision",
+                "bakllava",
+                "minicpm-v",
+                "moondream",
+                "kosmos",
+            )
+        )
+
+    def _pdf_page_to_image(
+        self, pdf_path: str, page_index: int, dpi: int, out_dir: str
+    ):
+        """
+        Render a single PDF page to PNG using PyMuPDF (no temp files).
+        Saves to out_dir and returns the image path. page_index is 0-based.
+        """
+        import os
+
+        os.makedirs(out_dir, exist_ok=True)
+
+        try:
+            import fitz  # PyMuPDF
+        except Exception as e:
+            self._dbg(f"PyMuPDF not available for page rendering: {e}")
+            return None
+
+        try:
+            with fitz.open(pdf_path) as doc:
+                if page_index < 0 or page_index >= doc.page_count:
+                    return None
+                page = doc.load_page(page_index)
+
+                # DPI → zoom
+                zoom = max(1.0, float(dpi) / 72.0)
+                mat = fitz.Matrix(zoom, zoom)
+
+                # Render (alpha=False for smaller files and better OCR)
+                pix = page.get_pixmap(matrix=mat, alpha=False)
+                out_path = os.path.join(out_dir, f"page_{page_index + 1:03}.png")
+                pix.save(out_path)  # writes file directly; no temp
+                # Explicitly drop pixmap to release memory
+                del pix
+            return out_path
+        except Exception as e:
+            self._dbg(f"Failed to render page {page_index+1}: {e}")
+            return None
+
+    def _merge_with_confidence(
+        self,
+        results: list[dict],
+        kept_pages: list[dict],
+        kept_idx_1based: list[int],
+        template_fields: list[str],
+        source_mode: str = "text",
+    ):
+        """
+        Merge page-level dicts into one dict of field->value using confidence 0..1.
+        Returns: (merged: dict[str,str], conf_map: dict[str,float], debug_rows: list[dict])
+        """
+        from collections import defaultdict, Counter
+        import math
+
+        # ---------- helpers ----------
+        def _fv_norm(field: str, val: str) -> str:
+            if val is None:
+                return ""
+            s = str(val).strip()
+            s = self._unit_normalize(s)
+            s = " ".join(s.split())
+            low = s.lower().rstrip(".,;")
+            low = (
+                low.replace("typ.", "typ").replace("max.", "max").replace("min.", "min")
+            )
+            return low
+
+        def _is_numeric_field(field: str) -> bool:
+            f = (field or "").lower()
+            return any(
+                k in f
+                for k in (
+                    "vds",
+                    "vdss",
+                    "vgs",
+                    "rds",
+                    "on-resistance",
+                    "gate charge",
+                    "qg",
+                    "threshold",
+                    "vth",
+                    "current",
+                    "id",
+                    "idd",
+                    "voltage",
+                    "capacitance",
+                    "ciss",
+                    "crss",
+                    "cds",
+                    "power",
+                    "pd",
+                    "soa",
+                    "junction temperature",
+                    "tj",
+                    "frequency",
+                    "rise",
+                    "fall",
+                    "delay",
+                    "leakage",
+                    "esr",
+                    "esl",
+                    "ron",
+                    "tof",
+                )
+            )
+
+        def _parse_num_unit(s: str):
+            import re
+
+            if not s:
+                return (None, "")
+            txt = str(s).replace(",", ".")
+            m = re.search(
+                r"([-+]?\d+(?:\.\d+)?)\s*([a-zA-ZµuΩ%VvAaWwHhZzSsNnFfPpKkMm]*)", txt
+            )
+            if not m:
+                return (None, "")
+            try:
+                num = float(m.group(1))
+            except Exception:
+                num = None
+            unit = (m.group(2) or "").strip()
+            unit = unit.replace("Ohm", "Ω").replace("ohm", "Ω")
+            if "µ" not in unit:
+                unit = unit.replace("u", "µ")
+            return (num, unit)
+
+        def _sim(a: str, b: str) -> float:
+            from difflib import SequenceMatcher
+
+            return SequenceMatcher(None, a, b).ratio()
+
+        # ---------- weights per page ----------
+        weights = []
+        for page in kept_pages:
+            w = 1.0
+            if isinstance(page, dict) and page.get("tables"):
+                w += 0.25
+            if source_mode == "both":
+                w += 0.0
+            weights.append(float(w))
+
+        # ---------- collect candidates ----------
+        field_to_candidates = defaultdict(
+            list
+        )  # field -> [(raw, norm, page_idx, weight, model_conf)]
+        for pi, d in enumerate(results):
+            if not isinstance(d, dict):
+                continue
+            for f in template_fields:
+                if f not in d:
+                    continue
+                v = d.get(f)
+                model_conf = None
+                if isinstance(v, dict):
+                    model_conf = v.get("confidence") or v.get("conf") or None
+                    v = v.get("value", "")
+                v_str = "" if v is None else str(v)
+                vn = _fv_norm(f, v_str)
+                if vn:
+                    # guard page index and weight types
+                    try:
+                        w = float(weights[pi])
+                    except Exception:
+                        w = 1.0
+                    field_to_candidates[f].append((v_str, vn, pi, w, model_conf))
+
+        merged = {}
+        conf_map = {}
+        debug_rows = []
+
+        for f in template_fields:
+            cands = field_to_candidates.get(f, [])
+            if not cands:
+                merged[f] = ""
+                conf_map[f] = 0.0
+                continue
+
+            # --- cluster by similarity ---
+            clusters: list[list[tuple[int, tuple]]] = []
+            sim_thr = 0.92
+            for idx, c in enumerate(cands):
+                placed = False
+                for cluster in clusters:
+                    rep_norm = cluster[0][1][1]  # vn of first in cluster
+                    if _sim(rep_norm, c[1]) >= sim_thr:
+                        cluster.append((idx, c))
+                        placed = True
+                        break
+                if not placed:
+                    clusters.append([(idx, c)])
+
+            # --- score clusters ---
+            total_weight = float(sum(c[3] for c in cands)) or 1.0
+            cluster_scores = []
+
+            for cluster in clusters:
+                # votes
+                wsum = float(sum(c[1][3] for c in cluster)) if cluster else 0.0
+                vote_score = max(0.0, min(1.0, wsum / total_weight))
+
+                # model confidence (avg if present)
+                mcs = [c[1][4] for c in cluster if c[1][4] is not None]
+                try:
+                    mc_avg = (
+                        float(sum(float(x) for x in mcs) / len(mcs)) if mcs else None
+                    )
+                except Exception:
+                    mc_avg = None
+
+                # numeric plausibility bonuses
+                var_bonus = 0.0
+                unit_bonus = 0.0
+                if _is_numeric_field(f):
+                    nums, units = [], []
+                    for _, cand in cluster:
+                        n, u = _parse_num_unit(
+                            cand[0]
+                        )  # use raw so we don't strip symbols
+                        if n is not None:
+                            nums.append(float(n))
+                            units.append(u)
+                    if len(nums) >= 2:
+                        try:
+                            import statistics
+
+                            mean = statistics.mean(nums)
+                            stdev = statistics.pstdev(nums)
+                            rel = abs(stdev) / (abs(mean) if mean else 1.0)
+                            var_bonus = max(
+                                0.0, 0.25 - min(0.25, rel)
+                            )  # tighter -> more bonus
+                        except Exception:
+                            var_bonus = 0.0
+                    if units:
+                        from collections import Counter as _Ctr
+
+                        c_u = _Ctr([u or "" for u in units])
+                        if (
+                            c_u
+                            and (c_u.most_common(1)[0][1] / max(1, len(units))) >= 0.7
+                        ):
+                            unit_bonus = 0.1
+
+                score = vote_score + (var_bonus + unit_bonus)
+                if mc_avg is not None:
+                    # blend in model’s self-reported confidence gently
+                    score = 0.7 * score + 0.3 * max(0.0, min(1.0, float(mc_avg)))
+
+                # representative raw = most frequent raw in cluster
+                raw_vals = [cand[0] for _, cand in cluster]
+                from collections import Counter as _Ctr2
+
+                rep_raw = _Ctr2(raw_vals).most_common(1)[0][0] if raw_vals else ""
+
+                cluster_scores.append((float(score), rep_raw, cluster))
+
+            cluster_scores.sort(key=lambda t: t[0], reverse=True)
+            best_score, best_value, best_cluster = cluster_scores[0]
+
+            # --- debug rows (SAFE: stringify everything; cast page index to int) ---
+            for sc, raw, cl in cluster_scores:
+                # pages 1-based
+                pages_list = []
+                for _, c in cl:
+                    try:
+                        pi = int(c[2])
+                    except Exception:
+                        # last ditch: try to parse from string
+                        try:
+                            pi = int(str(c[2]).strip())
+                        except Exception:
+                            continue
+                    pages_list.append(pi + 1)
+                debug_rows.append(
+                    {
+                        "field": str(f),
+                        "value": str(raw),
+                        "score": float(max(0.0, min(1.0, sc))),
+                        "votes": int(len(cl)),
+                        "pages": pages_list,
+                    }
+                )
+
+            merged[f] = best_value
+            conf_map[f] = float(max(0.0, min(1.0, best_score)))
+
+        return merged, conf_map, debug_rows
+
+    def _ask_prefill_options(
+        self,
+        default_url: str = "",
+        default_pages: str = "",
+        default_agent: str = "",
+        default_host: str = "",
+    ):
+        """
+        Show a modal dialog that asks for: URL, Pages, Agent, Host, Source mode, OCR/Render DPI.
         Returns dict or None if cancelled.
         """
         dlg = tk.Toplevel(self)
@@ -1210,24 +1609,50 @@ class DMTGUI(tk.Tk):
         dlg.grab_set()
         dlg.resizable(False, False)
 
-        url_var   = tk.StringVar(value=default_url)
+        url_var = tk.StringVar(value=default_url)
         pages_var = tk.StringVar(value=default_pages)
-        agent_var = tk.StringVar(value=default_agent or (self.ollama_models[0] if getattr(self, "ollama_models", []) else "llama3:8b"))
-        host_var  = tk.StringVar(value=default_host or os.environ.get("OLLAMA_HOST", "http://localhost:11434"))
+        agent_var = tk.StringVar(
+            value=default_agent
+            or (
+                self.ollama_models[0]
+                if getattr(self, "ollama_models", [])
+                else "llama3:8b"
+            )
+        )
+        host_var = tk.StringVar(
+            value=default_host
+            or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        )
+
+        # source mode + dpi
+        source_mode_var = tk.StringVar(value="text")  # text | image | both
+        dpi_var = tk.IntVar(value=400)
 
         frm = ttk.Frame(dlg, padding=10)
         frm.pack(fill="both", expand=True)
 
-        ttk.Label(frm, text="Datasheet PDF URL:").grid(row=0, column=0, sticky="e", padx=6, pady=6)
+        ttk.Label(frm, text="Datasheet PDF URL:").grid(
+            row=0, column=0, sticky="e", padx=6, pady=6
+        )
         url_entry = ttk.Entry(frm, textvariable=url_var, width=72)
         url_entry.grid(row=0, column=1, sticky="we", padx=6, pady=6)
 
-        ttk.Label(frm, text="Pages (e.g. 1-3,5,9):").grid(row=1, column=0, sticky="e", padx=6, pady=6)
+        ttk.Label(frm, text="Pages (e.g. 1-3,5,9):").grid(
+            row=1, column=0, sticky="e", padx=6, pady=6
+        )
         pages_entry = ttk.Entry(frm, textvariable=pages_var, width=32)
         pages_entry.grid(row=1, column=1, sticky="w", padx=6, pady=6)
 
-        ttk.Label(frm, text="Agent (Ollama model):").grid(row=2, column=0, sticky="e", padx=6, pady=6)
-        agent_cb = ttk.Combobox(frm, textvariable=agent_var, values=getattr(self, "ollama_models", []), width=36, state="readonly")
+        ttk.Label(frm, text="Agent (Ollama model):").grid(
+            row=2, column=0, sticky="e", padx=6, pady=6
+        )
+        agent_cb = ttk.Combobox(
+            frm,
+            textvariable=agent_var,
+            values=getattr(self, "ollama_models", []),
+            width=36,
+            state="readonly",
+        )
         agent_cb.grid(row=2, column=1, sticky="w", padx=6, pady=6)
         if getattr(self, "ollama_models", []):
             agent_cb.set(agent_var.get())
@@ -1236,14 +1661,36 @@ class DMTGUI(tk.Tk):
         host_entry = ttk.Entry(frm, textvariable=host_var, width=36)
         host_entry.grid(row=3, column=1, sticky="w", padx=6, pady=6)
 
+        # Source mode radios
+        ttk.Label(frm, text="Source:").grid(
+            row=4, column=0, sticky="ne", padx=6, pady=6
+        )
+        src_frame = ttk.Frame(frm)
+        src_frame.grid(row=4, column=1, sticky="w", padx=6, pady=6)
+        for label, val in (("Text", "text"), ("Page image", "image"), ("Both", "both")):
+            ttk.Radiobutton(
+                src_frame, text=label, value=val, variable=source_mode_var
+            ).pack(side="left", padx=6)
+
+        # DPI (used for Page image and for OCR if needed)
+        ttk.Label(frm, text="Render DPI (images/OCR):").grid(
+            row=5, column=0, sticky="e", padx=6, pady=6
+        )
+        ttk.Entry(frm, textvariable=dpi_var, width=8).grid(
+            row=5, column=1, sticky="w", padx=6, pady=6
+        )
+
         btns = ttk.Frame(frm)
-        btns.grid(row=4, column=0, columnspan=2, sticky="e", pady=(8,0))
+        btns.grid(row=6, column=0, columnspan=2, sticky="e", pady=(8, 0))
         ok = {"clicked": False}
+
         def on_ok():
             ok["clicked"] = True
             dlg.destroy()
+
         def on_cancel():
             dlg.destroy()
+
         ttk.Button(btns, text="Cancel", command=on_cancel).pack(side="right", padx=4)
         ttk.Button(btns, text="OK", command=on_ok).pack(side="right", padx=4)
 
@@ -1259,8 +1706,9 @@ class DMTGUI(tk.Tk):
             "pages": pages_var.get().strip(),
             "agent": agent_var.get().strip(),
             "host": host_var.get().strip(),
+            "source_mode": source_mode_var.get(),
+            "render_dpi": int(dpi_var.get() or 350),
         }
-
 
     def _download_pdf(self, url: str, target_dir: str, filename: str) -> str:
         import requests
@@ -1273,7 +1721,7 @@ class DMTGUI(tk.Tk):
                 if chunk:
                     f.write(chunk)
         return pdf_path
-    
+
     def _resolve_picks(self, path: str):
         """
         Decide which pages to extract:
@@ -1282,12 +1730,16 @@ class DMTGUI(tk.Tk):
                 only_5_page=False -> smart anchor-based selection
         """
         # Manual override from dialog?
-        if isinstance(getattr(self, "_manual_page_picks", None), list) and self._manual_page_picks:
+        if (
+            isinstance(getattr(self, "_manual_page_picks", None), list)
+            and self._manual_page_picks
+        ):
             return list(self._manual_page_picks)
 
         only_5_page = bool(self.app_config.get("only_5_page", False))
         try:
             import fitz
+
             with fitz.open(path) as doc:
                 if only_5_page:
                     return list(range(min(5, doc.page_count)))
@@ -1295,8 +1747,9 @@ class DMTGUI(tk.Tk):
         except Exception:
             return list(range(5))
 
-
-    def _pdf_to_pages(self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None):
+    def _pdf_to_pages(
+        self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None
+    ):
         """
         MASTER extractor with selectable page strategy:
         - self.app_config['page_select'] == 'first5'  -> strict first 5 pages
@@ -1318,7 +1771,9 @@ class DMTGUI(tk.Tk):
         # 1) PyMuPDF layout first
         pages = []
         try:
-            layout_pages = self._pdf_to_pages_text_tables_structured(path)  # returns ALL pages
+            layout_pages = self._pdf_to_pages_text_tables_structured(
+                path
+            )  # returns ALL pages
             pages = [layout_pages[i] for i in picks if i < len(layout_pages)]
         except Exception as e:
             self._dbg(f"Structured extractor failed: {e}")
@@ -1326,16 +1781,23 @@ class DMTGUI(tk.Tk):
         # 2) pdfminer fallback if needed
         if not pages or not any((p.get("text") or "").strip() for p in pages):
             try:
-                miner_pages = self._pdf_to_pages_text_tables_pdfminer(path)  # returns ALL pages
+                miner_pages = self._pdf_to_pages_text_tables_pdfminer(
+                    path
+                )  # returns ALL pages
                 pages = [miner_pages[i] for i in picks if i < len(miner_pages)]
             except Exception as e:
                 self._dbg(f"pdfminer fallback failed: {e}")
 
         # 3) OCR if forced or still empty and it's likely scanned/hybrid
-        need_ocr = force_ocr or (not any((p.get("text") or "").strip() for p in pages) and self._is_scanned_pdf(path))
+        need_ocr = force_ocr or (
+            not any((p.get("text") or "").strip() for p in pages)
+            and self._is_scanned_pdf(path)
+        )
         if need_ocr:
             try:
-                ocr_pages = self._pdf_to_pages_ocr(path, dpi=dpi, debug_dir=debug_dir)  # returns ALL pages
+                ocr_pages = self._pdf_to_pages_ocr(
+                    path, dpi=dpi, debug_dir=debug_dir
+                )  # returns ALL pages
                 pages = [ocr_pages[i] for i in picks if i < len(ocr_pages)]
             except Exception as e:
                 self._dbg(f"OCR extractor failed: {e}")
@@ -1343,7 +1805,9 @@ class DMTGUI(tk.Tk):
         # 4) Vector-table pass per selected pages
         try:
             if getattr(self, "app_config", {}).get("use_camelot", True):
-                page_tables = self._extract_tables_vector(path, target_pages=picks)  # {page_idx: [tables]}
+                page_tables = self._extract_tables_vector(
+                    path, target_pages=picks
+                )  # {page_idx: [tables]}
                 for local_idx, global_idx in enumerate(picks):
                     if local_idx < len(pages) and page_tables.get(global_idx):
                         pages[local_idx]["tables"].extend(page_tables[global_idx])
@@ -1366,7 +1830,9 @@ class DMTGUI(tk.Tk):
             self._dbg(f"pdfminer import unavailable/broken: {e}")
             return []
 
-        laparams = LAParams(char_margin=2.0, line_margin=0.4, word_margin=0.1, detect_vertical=False)
+        laparams = LAParams(
+            char_margin=2.0, line_margin=0.4, word_margin=0.1, detect_vertical=False
+        )
 
         pages = []
         try:
@@ -1386,7 +1852,6 @@ class DMTGUI(tk.Tk):
             self._dbg(f"pdfminer processing failed: {e}")
             return []
         return pages
-
 
     def _pdf_to_pages_text_tables_structured(self, path: str):
         """
@@ -1411,15 +1876,28 @@ class DMTGUI(tk.Tk):
                 try:
                     rd = pg.get_text("rawdict")
                     blocks = rd.get("blocks", []) if isinstance(rd, dict) else []
-                    blocks = self._strip_headers_footers(blocks, pg.rect.height, top_band=36, bottom_band=48)
-                    cols = self._group_blocks_into_columns(blocks, min_gap_px=int(getattr(self, "app_config", {}).get("column_gap_px", 40)))
+                    blocks = self._strip_headers_footers(
+                        blocks, pg.rect.height, top_band=36, bottom_band=48
+                    )
+                    cols = self._group_blocks_into_columns(
+                        blocks,
+                        min_gap_px=int(
+                            getattr(self, "app_config", {}).get("column_gap_px", 40)
+                        ),
+                    )
 
                     lines = []
                     for col in cols:
                         # read order: top→bottom, then left→right inside column
-                        for b in sorted(col, key=lambda b: (b["bbox"][1], b["bbox"][0])):
+                        for b in sorted(
+                            col, key=lambda b: (b["bbox"][1], b["bbox"][0])
+                        ):
                             for l in b.get("lines", []):
-                                spans = [s.get("text", "") for s in l.get("spans", []) if s.get("text", "").strip()]
+                                spans = [
+                                    s.get("text", "")
+                                    for s in l.get("spans", [])
+                                    if s.get("text", "").strip()
+                                ]
                                 if spans:
                                     lines.append("".join(spans))
                     txt_struct = "\n".join(self._normalize_text(lines))
@@ -1437,9 +1915,9 @@ class DMTGUI(tk.Tk):
                 pages.append({"text": txt, "tables": []})
         return pages
 
-
-
-    def _pdf_to_pages(self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None):
+    def _pdf_to_pages(
+        self, path: str, force_ocr: bool = False, dpi: int = 350, debug_dir: str = None
+    ):
         """
         MASTER extractor with switchable page strategy (via _resolve_picks / only_5_page).
         Pipeline:
@@ -1458,7 +1936,9 @@ class DMTGUI(tk.Tk):
 
         # 1) PyMuPDF layout first
         try:
-            layout_pages = self._pdf_to_pages_text_tables_structured(path)  # returns ALL pages
+            layout_pages = self._pdf_to_pages_text_tables_structured(
+                path
+            )  # returns ALL pages
             pages = [layout_pages[i] for i in picks if i < len(layout_pages)]
         except Exception as e:
             self._dbg(f"Structured extractor failed: {e}")
@@ -1469,7 +1949,9 @@ class DMTGUI(tk.Tk):
         # 2) pdfminer fallback if needed
         if not _has_text(pages):
             try:
-                miner_pages = self._pdf_to_pages_text_tables_pdfminer(path)  # returns ALL pages
+                miner_pages = self._pdf_to_pages_text_tables_pdfminer(
+                    path
+                )  # returns ALL pages
                 pages = [miner_pages[i] for i in picks if i < len(miner_pages)]
             except Exception as e:
                 self._dbg(f"pdfminer fallback failed: {e}")
@@ -1477,14 +1959,18 @@ class DMTGUI(tk.Tk):
         # 3) OCR if forced OR still no text (unconditional safety net)
         if force_ocr or not _has_text(pages):
             try:
-                ocr_pages = self._pdf_to_pages_ocr(path, dpi=dpi, debug_dir=debug_dir)  # returns ALL pages
+                ocr_pages = self._pdf_to_pages_ocr(
+                    path, dpi=dpi, debug_dir=debug_dir
+                )  # returns ALL pages
                 pages = [ocr_pages[i] for i in picks if i < len(ocr_pages)]
             except Exception as e:
                 self._dbg(f"OCR extractor failed: {e}")
 
         # 4) Vector-table pass per selected pages
         try:
-            page_tables = self._extract_tables_vector(path, target_pages=picks)  # {page_idx: [tables]}
+            page_tables = self._extract_tables_vector(
+                path, target_pages=picks
+            )  # {page_idx: [tables]}
             for local_idx, global_idx in enumerate(picks):
                 if local_idx < len(pages) and page_tables.get(global_idx):
                     pages[local_idx]["tables"].extend(page_tables[global_idx])
@@ -1495,53 +1981,90 @@ class DMTGUI(tk.Tk):
         filtered, kept_idx, skipped_idx, total = self._filter_pages_for_llm(pages)
         return filtered
 
-
-
     def _pdf_to_pages_ocr(self, path: str, dpi: int = 350, debug_dir: str = None):
         """
-        OCR extractor for scanned/hybrid PDFs.
-        Honors app_config 'ocr_langs' (default ['eng']) and returns ALL pages.
+        OCR extractor using PyMuPDF to render pages to images (no pdf2image temp files),
+        then Tesseract to read text and TSV. Returns ALL pages as [{"text": str, "tables": [...]}, ...]
         """
-        from pdf2image import convert_from_path
+        import io, os
+        from PIL import Image
         import pytesseract
-        import os
+
+        try:
+            import fitz  # PyMuPDF
+        except Exception as e:
+            raise RuntimeError(f"OCR requires PyMuPDF for rendering: {e}")
 
         ocr_langs = getattr(self, "app_config", {}).get("ocr_langs", ["eng"])
         lang = "+".join(ocr_langs) if ocr_langs else "eng"
 
-        pil_pages = convert_from_path(path, dpi=dpi)
         out = []
+        os.makedirs(debug_dir, exist_ok=True) if debug_dir else None
 
-        for idx, img in enumerate(pil_pages, 1):
-            if debug_dir:
-                try:
-                    os.makedirs(debug_dir, exist_ok=True)
-                    img_out = os.path.join(debug_dir, f"page_{idx:03}.png")
-                    img.save(img_out)
-                except Exception:
-                    pass
+        try:
+            with fitz.open(path) as doc:
+                for idx in range(doc.page_count):
+                    page = doc.load_page(idx)
 
-            page_text = pytesseract.image_to_string(img, lang=lang, config="--psm 6")
-            tsv_df = pytesseract.image_to_data(
-                img, lang=lang, config="--psm 6", output_type=pytesseract.Output.DATAFRAME
-            )
+                    # Render page to a PIL image via in-memory PNG (no disk temp)
+                    zoom = max(1.0, float(dpi) / 72.0)
+                    mat = fitz.Matrix(zoom, zoom)
+                    pix = page.get_pixmap(matrix=mat, alpha=False)
+                    png_bytes = pix.tobytes("png")
+                    del pix  # free pixmap memory
 
-            if debug_dir and tsv_df is not None and len(tsv_df) > 0:
-                csv_out = os.path.join(debug_dir, f"page_{idx:03}_tsv.csv")
-                try:
-                    tsv_df.to_csv(csv_out, index=False)
-                except Exception:
-                    pass
+                    img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
 
-            tables = self._tesseract_lines_to_tables(tsv_df)
-            txt = "\n".join(self._normalize_text([page_text or ""]))
-            txt = self._unit_normalize(txt)
-            out.append({"text": txt, "tables": tables})
+                    # Optional debug save
+                    if debug_dir:
+                        img_out = os.path.join(debug_dir, f"page_{idx+1:03}.png")
+                        try:
+                            img.save(img_out)
+                        except Exception:
+                            pass
 
+                    # OCR text
+                    page_text = pytesseract.image_to_string(
+                        img, lang=lang, config="--psm 6"
+                    )
+
+                    # OCR TSV for table heuristics
+                    tsv_df = pytesseract.image_to_data(
+                        img,
+                        lang=lang,
+                        config="--psm 6",
+                        output_type=pytesseract.Output.DATAFRAME,
+                    )
+
+                    # We can close the PIL image now to release file handles
+                    try:
+                        img.close()
+                    except Exception:
+                        pass
+
+                    # Optional TSV debug
+                    if debug_dir and tsv_df is not None and len(tsv_df) > 0:
+                        csv_out = os.path.join(debug_dir, f"page_{idx+1:03}_tsv.csv")
+                        try:
+                            tsv_df.to_csv(csv_out, index=False)
+                        except Exception:
+                            pass
+
+                    # Build tables from OCR TSV
+                    tables = self._tesseract_lines_to_tables(tsv_df)
+
+                    txt = "\n".join(self._normalize_text([page_text or ""]))
+                    txt = self._unit_normalize(txt)
+
+                    out.append({"text": txt, "tables": tables})
+        except Exception as e:
+            self._dbg(f"OCR pass failed: {e}")
+            return out  # may be partial
         return out
 
-
-    def _tesseract_lines_to_tables(self, tsv_df, gap_factor: float = 1.8, min_cols: int = 3):
+    def _tesseract_lines_to_tables(
+        self, tsv_df, gap_factor: float = 1.8, min_cols: int = 3
+    ):
         """
         Group OCR words into rows by detecting large x-gaps, then aggregate rows
         into simple tables when enough columns appear consecutively.
@@ -1612,6 +2135,7 @@ class DMTGUI(tk.Tk):
         around important anchor sections found within the first 'scan_upto' pages.
         """
         import fitz
+
         anchors = (
             "absolute maximum ratings",
             "electrical characteristics",
@@ -1641,6 +2165,7 @@ class DMTGUI(tk.Tk):
         Heuristic: pages with almost no selectable text but with embedded images.
         """
         import fitz
+
         img_pages = 0
         with fitz.open(path) as doc:
             for i in range(min(int(sample_pages), doc.page_count)):
@@ -1651,7 +2176,9 @@ class DMTGUI(tk.Tk):
                     img_pages += 1
         return img_pages >= 1
 
-    def _strip_headers_footers(self, blocks, page_height: float, top_band: int = 50, bottom_band: int = 50):
+    def _strip_headers_footers(
+        self, blocks, page_height: float, top_band: int = 50, bottom_band: int = 50
+    ):
         """
         Remove blocks near top/bottom bands unless they look like important section titles.
         """
@@ -1671,11 +2198,15 @@ class DMTGUI(tk.Tk):
             near_top = y0 <= top_band
             near_bottom = y1 >= (page_height - bottom_band)
 
-            text = "".join(
-                s.get("text", "")
-                for l in b.get("lines", [])
-                for s in l.get("spans", [])
-            ).strip().lower()
+            text = (
+                "".join(
+                    s.get("text", "")
+                    for l in b.get("lines", [])
+                    for s in l.get("spans", [])
+                )
+                .strip()
+                .lower()
+            )
 
             if (near_top or near_bottom) and text:
                 if any(k in text for k in keep_phrases):
@@ -1722,16 +2253,21 @@ class DMTGUI(tk.Tk):
             start = idx
         cols.append([b for _, b in items[start:]])
         # ensure left-to-right order
-        cols = sorted(cols, key=lambda col: sum((bb["bbox"][0] + bb["bbox"][2]) / 2.0 for bb in col) / max(len(col), 1))
+        cols = sorted(
+            cols,
+            key=lambda col: sum((bb["bbox"][0] + bb["bbox"][2]) / 2.0 for bb in col)
+            / max(len(col), 1),
+        )
         return cols
 
     def _normalize_text(self, lines):
         import re, unicodedata
+
         out = []
         for s in lines:
             s = unicodedata.normalize("NFKC", s).replace("\u00a0", " ")
             s = s.replace("ﬁ", "fi").replace("ﬂ", "fl")
-            s = re.sub(r"(\S)-\n(\S)", r"\1\2", s)        # dehyphenate wrapped words
+            s = re.sub(r"(\S)-\n(\S)", r"\1\2", s)  # dehyphenate wrapped words
             s = s.replace("\r", "")
             s = re.sub(r"[ \t]+\n", "\n", s)
             out.append(s)
@@ -1741,7 +2277,11 @@ class DMTGUI(tk.Tk):
         # normalize common datasheet glyphs to ASCII
         repl = {
             "Ω": " Ohm",
-            "µF": " uF", "µH": " uH", "µA": " uA", "µV": " uV", "µs": " us",
+            "µF": " uF",
+            "µH": " uH",
+            "µA": " uA",
+            "µV": " uV",
+            "µs": " us",
             "°C": " C",
             "±": " +/- ",
         }
@@ -2075,58 +2615,339 @@ class DMTGUI(tk.Tk):
             ).strip()
         return str(page or "")
 
-    # --------------------- Ollama call ---------------------
+    def _infer_expectations_from_label(self, label: str) -> dict:
+        """
+        Device-agnostic expectations from a label.
+        Returns: {"kind": "numeric"|"text", "units": [...], "allow_sign": bool}
+        """
+        import re
+        s = (label or "").lower()
 
-    def _ollama_extract_page(self, host: str, model: str, page_text: str, fields: list) -> dict:
-        import requests, json
+        U = {
+            "voltage": ["V","mV","kV"],
+            "current": ["A","mA","µA","uA"],
+            "resistance": ["Ω","Ohm","mΩ","mohm","kΩ","MΩ"],
+            "capacitance": ["F","mF","µF","uF","nF","pF"],
+            "inductance": ["H","mH","µH","uH","nH"],
+            "power": ["W","mW","kW"],
+            "charge": ["C","mC","µC","uC","nC","pC"],
+            "frequency": ["Hz","kHz","MHz","GHz"],
+            "time": ["s","ms","µs","us","ns","ps"],
+            "temperature": ["°C","C","K"],
+            "energy": ["J","mJ","µJ","uJ","nJ"],
+            "percentage": ["%"],
+            "dimension": ["mm","cm","in"],
+            "conductance": ["S","mS","µS","uS"],
+        }
+        KEY = [
+            (r"\bvoltage\b|\bv(in|out|gs|ds|dss)\b", "voltage", True),
+            (r"\bcurrent\b|\bid\b|\bicc?\b|\bioh?\b", "current", False),
+            (r"\bresistan", "resistance", False),
+            (r"\bcapacit", "capacitance", False),
+            (r"\binduct", "inductance", False),
+            (r"\bpower\b|\bpd\b", "power", False),
+            (r"\bcharge\b|\bqg\b|\bqoss\b", "charge", False),
+            (r"\bfrequency\b|\bfreq\b|\bosc", "frequency", False),
+            (r"\btime\b|\brise\b|\bfall\b|\bdelay\b|\bt(on|off)\b", "time", False),
+            (r"\btemp|\btemperature|\btj\b|\bta\b", "temperature", True),
+            (r"\benergy\b|\bjoule", "energy", False),
+            (r"\bpercent|\b%\b", "percentage", False),
+            (r"\b(mm|cm|inch|in)\b", "dimension", False),
+            (r"\bconductance\b|\bsiemens\b|\bgs\b", "conductance", False),
+        ]
+
+        expect = {"kind": "text", "units": [], "allow_sign": False}
+        for rx, bucket, allow_sign in KEY:
+            if re.search(rx, s):
+                expect["kind"] = "numeric"
+                expect["units"] = U[bucket]
+                expect["allow_sign"] = allow_sign
+                return expect
+
+        # if label already contains unit tokens, consider numeric
+        unit_hits = []
+        for _, units in U.items():
+            for u in units:
+                if u.lower() in s:
+                    unit_hits.append(u)
+        if unit_hits:
+            expect["kind"] = "numeric"
+            expect["units"] = sorted(set(unit_hits), key=len, reverse=True)
+            expect["allow_sign"] = any(u in ["V","°C","C","K"] for u in unit_hits)
+        return expect
+
+
+    # --------------------- Ollama call ---------------------
+    def _parse_template_fields_into_schema(self, template_fields: list[str]):
+        """
+        Build a schema from GUI fields with VC semantics:
+        - base = part before '@' (trimmed)
+        - if we see both '<base> @ ...::L' and '...::R', it's a Value/Condition pair.
+        - expectations inferred generically from <base>.
+        Returns: (schema_dict, base_order)
+        schema[base] = {"mode": "VC"|"VALUE_ONLY", "expect": {...}, "cond_label": "<after @ or ''>"}
+        """
+        schema, order = {}, {}
+        # Track where L/R exist to detect VC
+        seen = {}
+
+        for raw in template_fields:
+            if not isinstance(raw, str) or not raw.strip():
+                continue
+            s = raw.strip()
+
+            side = None
+            if s.endswith("::L"):
+                side = "L"; s = s[:-3].strip()
+            elif s.endswith("::R"):
+                side = "R"; s = s[:-3].strip()
+
+            if "@" in s:
+                base, cond = s.split("@", 1)
+                base = base.strip()
+                cond_label = cond.strip()
+            else:
+                base = s.strip()
+                cond_label = ""
+
+            base = " ".join(base.split())
+
+            if base not in schema:
+                schema[base] = {
+                    "mode": "VALUE_ONLY",
+                    "expect": self._infer_expectations_from_label(base),
+                    "cond_label": cond_label
+                }
+                order[len(order)] = base  # preserve order
+
+            # record sides to decide VC mode
+            if side:
+                rec = seen.setdefault(base, set())
+                rec.add(side)
+
+        # finalize VC mode
+        for base, sides in seen.items():
+            if "L" in sides and "R" in sides:
+                schema[base]["mode"] = "VC"
+
+        # build ordered list
+        base_order = [order[i] for i in sorted(order)]
+        return schema, base_order
+
+    def _flatten_schema_result_to_gui(self, model_json: dict, schema: dict, template_fields: list[str]) -> dict:
+        """
+        VC semantics mapping:
+        - '<base> ...::L' -> '<value> <unit>' (trimmed)
+        - '<base> ...::R' -> '<condition>'
+        - '<base>'        -> '<value> <unit>'
+        Generic repairs:
+        - If 'value' looks like a condition (contains Id=, V=, '@', Hz...), try to extract first number+allowed unit.
+        - Units normalized via self._unit_normalize.
+        Also exposes '__condition__:<base>' for logging.
+        """
+        import re
+        out = {k: "" for k in template_fields}
+        if not isinstance(model_json, dict):
+            return out
+
+        arr = model_json.get("fields", [])
+        if not isinstance(arr, list):
+            return out
+
+        # index by base
+        idx = {}
+        for obj in arr:
+            try:
+                nm = (obj.get("name") or "").strip()
+                if not nm: 
+                    continue
+                idx[nm] = {
+                    "value": str(obj.get("value","") or ""),
+                    "unit":  str(obj.get("unit","") or ""),
+                    "COND":  str(obj.get("condition","") or "")
+                }
+            except Exception:
+                continue
+
+        def norm_units(s: str) -> str:
+            return self._unit_normalize((s or "").replace("\u00a0"," ")).strip()
+
+        def looks_condition(s: str) -> bool:
+            t = (s or "").lower()
+            return any(tok in t for tok in ("id=","v=","vgs","vds","@", "hz","khz","mhz","ghz"))
+
+        def extract_num_unit(s: str, allowed_units: list[str]):
+            if not s: return ("","")
+            t = norm_units(s)
+            for u in (allowed_units or []):
+                m = re.search(rf"([-+]?\d+(?:\.\d+)?|\.\d+)\s*{re.escape(u)}\b", t, re.IGNORECASE)
+                if m: return (m.group(1), u)
+            m = re.search(r"[-+]?\d+(?:\.\d+)?|\.\d+", t)
+            return (m.group(0), "") if m else ("", "")
+
+        for raw in template_fields:
+            s = (raw or "").strip()
+            side = None
+            if s.endswith("::L"):
+                side = "L"; key = s[:-3].strip()
+            elif s.endswith("::R"):
+                side = "R"; key = s[:-3].strip()
+            else:
+                key = s
+
+            base = key.split("@",1)[0].strip() if "@" in key else key
+            rec  = idx.get(base)
+            exp  = schema.get(base, {}).get("expect", {"kind":"text","units":[]})
+            units_allowed = exp.get("units") or []
+            kind = (exp.get("kind") or "text").lower()
+
+            if not rec:
+                out[raw] = ""
+                continue
+
+            val = norm_units(rec.get("value",""))
+            unt = norm_units(rec.get("unit",""))
+            cond = norm_units(rec.get("COND",""))
+
+            # repair: numeric fields should not contain conditions
+            if kind == "numeric":
+                if looks_condition(val) or (units_allowed and not any(u.lower() in (val+" "+unt).lower() for u in units_allowed)):
+                    vn, un = extract_num_unit(val + (" " + unt if unt else ""), units_allowed)
+                    if not vn and cond:
+                        vn, un = extract_num_unit(cond, units_allowed)
+                    if vn:
+                        val, unt = vn, (un or (unt if unt else (units_allowed[0] if units_allowed else "")))
+
+            if side == "R":
+                out[raw] = cond  # condition
+            else:
+                # ::L or no side -> value + unit
+                out[raw] = norm_units((val + " " + unt).strip()) if (val or unt) else ""
+
+            # also expose condition for logs
+            out[f"__condition__:{base}"] = cond
+
+        return out
+
+
+
+    def _ollama_extract_page(self, host: str, model: str, page_text: str, fields: list, image_path: str = None):
+        """
+        Generic extraction with VC semantics:
+        For each <base>:
+            {"name":"<base>", "value":"", "unit":"", "condition":""}
+        - 'value' is the measured number/text ONLY (no 'Id=...' etc).
+        - 'unit' is the engineering unit (if numeric), else "".
+        - 'condition' is the test condition string (tokens like Id=..., V=..., '@ ...', frequency, etc).
+        Maps back:
+        '<base> ...::L' -> value + ' ' + unit (trim)
+        '<base> ...::R' -> condition
+        '<base>' (no side) -> value + unit
+        """
+        import os, json, re, requests, base64
+
+        def _b64(path: str):
+            try:
+                with open(path, "rb") as f:
+                    return base64.b64encode(f.read()).decode("ascii")
+            except Exception:
+                return None
+
+        def _parse_json_from_response(data):
+            content = ""
+            try:
+                content = data.get("message", {}).get("content", "")
+                if isinstance(content, list):
+                    content = "".join(part.get("text","") if isinstance(part,dict) else str(part) for part in content)
+            except Exception:
+                content = ""
+            m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", content)
+            if m:
+                try:
+                    return json.loads(m.group(0))
+                except Exception:
+                    pass
+            return {}
+
+        # Build schema
+        schema, base_order = self._parse_template_fields_into_schema(fields)
+
+        # Expectations text (generic)
+        exp_lines = []
+        for b in base_order:
+            e = schema[b]["expect"]
+            kind = e.get("kind","text")
+            units = ", ".join(e.get("units") or [])
+            exp_lines.append(f'- name: "{b}"  kind: {kind}  allowed_units: [{units}]')
 
         sys_prompt = (
-            "You extract fielded data from electronics datasheet pages. "
-            "Return ONLY a single JSON object with EXACTLY the requested keys. "
-            "For any field not present on this page, return an empty string. "
-            "Preserve units/symbols as written (e.g., '±', 'Ω', 'V', 'A', 'mΩ'). "
-            "If you reach graph-heavy content, return empty strings for all fields. "
-            "No prose."
+            "You extract technical specs from datasheets (text or images).\n"
+            "Return ONLY JSON with exactly:\n"
+            '{ "fields": [ {"name":"<base>","value":"", "unit":"", "condition":""}, ... ] }\n'
+            "Rules:\n"
+            "- 'value' = the measured value ONLY; numbers or short text. No 'Id=..'/'V=..' tokens here.\n"
+            "- If numeric, put the unit in 'unit' (e.g., V, A, mΩ, pF). If not applicable, leave unit empty.\n"
+            "- 'condition' = test conditions or qualifiers (e.g., 'Id=8 A, Vgs=10 V', '@ Vds=40 V', 'f=1 MHz').\n"
+            "- Use empty strings for unknowns. Do not add keys or commentary."
         )
-
-        if len(page_text) > 12000:
-            page_text = page_text[:12000] + " [...]"
 
         user_prompt = (
-            "DATASHEET PAGE (single page; may not include all fields):\n"
-            "--------------------------------------------------------\n"
-            f"{page_text}\n\n"
-            "Return one JSON object with EXACTLY these keys:\n"
-            f"{json.dumps(fields, ensure_ascii=False)}\n"
-            'If a value is not found on THIS PAGE, set it to "".\n'
-            "JSON only."
+            "Base fields (with inferred expectations):\n" +
+            "\n".join(exp_lines) +
+            "\n\nProvide one object per base field in the same order. "
+            "Extract from the provided page only."
         )
-
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0.1,
-            "stream": False,
-            "format": "json"
-        }
+        if page_text and not image_path:
+            user_prompt += f"\n\nPAGE TEXT:\n{page_text[:120000]}"
 
         url = host.rstrip("/") + "/api/chat"
+        message = {"role": "user", "content": user_prompt}
+        if image_path and self._model_supports_images(model) and os.path.exists(image_path):
+            b64 = _b64(image_path)
+            if b64:
+                message["images"] = [b64]
+
+        payload = {
+            "model": model, "stream": False,
+            "options": {"temperature": 0.0},
+            "messages": [
+                {"role": "system", "content": sys_prompt},
+                message
+            ]
+        }
+
+        parsed = {}
         try:
-            r = requests.post(url, json=payload, timeout=180)
+            r = requests.post(url, json=payload, timeout=120)
             r.raise_for_status()
-            jr = r.json()
-            content = (jr.get("message") or {}).get("content") or ""
-            obj = self._extract_json_object(content)
-            if not isinstance(obj, dict):
-                self._dbg("Ollama returned non-dict or unparsable JSON for this page.")
-                return {k: "" for k in fields}
-            return {k: (obj.get(k) if isinstance(obj.get(k), str) else str(obj.get(k) or "")) for k in fields}
+            parsed = _parse_json_from_response(r.json())
         except Exception as e:
-            self._dbg(f"Ollama page call failed: {e}")
+            self._dbg(f"Ollama vision/text request failed: {e}")
+
+        # Fallback: text-only if the image path failed
+        if not parsed and image_path and page_text:
+            try:
+                payload2 = {
+                    "model": model, "stream": False, "options": {"temperature": 0.0},
+                    "messages": [
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": f"{user_prompt}\n\nPAGE TEXT:\n{page_text[:120000]}"},
+                    ]
+                }
+                r2 = requests.post(url, json=payload2, timeout=120)
+                r2.raise_for_status()
+                parsed = _parse_json_from_response(r2.json())
+            except Exception as e2:
+                self._dbg(f"Ollama text-only fallback failed: {e2}")
+                parsed = {}
+
+        # Map to GUI (VC semantics)
+        try:
+            return self._flatten_schema_result_to_gui(parsed, schema, fields)
+        except Exception as e:
+            self._dbg(f"Schema flattening failed: {e}")
             return {k: "" for k in fields}
+
 
     def _extract_json_object(self, s: str):
         s = s.strip()
@@ -2147,18 +2968,31 @@ class DMTGUI(tk.Tk):
 
     def on_prefill_from_pdf(self):
         """
-        Full pipeline with GUI:
-        - popup with URL + Pages + Agent + Host
-        - download PDF → dbdata/<name>/<name>.pdf
-        - optional manual page override (from dialog)
-        - parse & filter
-        - ask Ollama page-by-page with chosen agent
-        - save debug + fill form
-        - delete PDF
-        """
-        import pathlib, json, os
+        End-to-end PDF prefill with confidence-based merging.
 
-        # --- 1) Ask options
+        Popup collects:
+        - URL (PDF)
+        - Pages (e.g. "1-3,5,9"; optional)
+        - Agent (Ollama model)
+        - Host
+        - Source mode: text | image | both
+        - Render DPI (for image/vision + OCR)
+
+        Pipeline:
+        1) Download -> local dbdata dir
+        2) Optional manual page override (0-based indices)
+        3) Extract pages (PyMuPDF -> pdfminer -> OCR)
+        4) Optional graph page filtering
+        5) Per-page LLM calls (text/image/both)
+        6) Merge with confidence score (0..1); highest wins
+        7) Fill GUI fields + write debug artifacts
+        8) Cleanup
+        """
+        import os, pathlib, json, csv, traceback
+        from datetime import datetime as _dt
+        from tkinter import messagebox
+
+        # ------------------- 1) Ask Options -------------------
         default_url = ""
         try:
             clip = self.clipboard_get()
@@ -2170,137 +3004,294 @@ class DMTGUI(tk.Tk):
         opts = self._ask_prefill_options(
             default_url=default_url,
             default_pages="",
-            default_agent=(self.ollama_models[0] if getattr(self, "ollama_models", []) else "llama3:8b"),
+            default_agent=(getattr(self, "ollama_models", [None])[0] or "gemma2:9b"),
             default_host=os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
         )
         if not opts:
-            return
+            return  # user cancelled
 
-        url  = opts["url"]
-        if not (url.lower().startswith("http") and url.lower().endswith(".pdf")):
-            messagebox.showwarning("Prefill", "Please paste a direct PDF URL ending with .pdf")
+        url = (opts.get("url") or "").strip()
+        pages_str = (opts.get("pages") or "").strip()
+        chosen_model = (opts.get("agent") or "").strip()
+        host = (opts.get("host") or "").strip() or "http://localhost:11434"
+        source_mode = (
+            (opts.get("source_mode") or "text").strip().lower()
+        )  # text | image | both
+        render_dpi = int(opts.get("render_dpi") or 350)
+
+        if not url.lower().endswith(".pdf"):
+            try:
+                messagebox.showwarning(
+                    "Prefill", "Please provide a direct PDF URL (ending with .pdf)."
+                )
+            except Exception:
+                pass
             return
-        pages_str = opts.get("pages", "")
-        chosen_model = opts.get("agent") or "llama3:8b"
-        host = opts.get("host") or "http://localhost:11434"
 
         save_debug = bool(self.app_config.get("save_debug_assets", True))
         skip_graphs = bool(self.app_config.get("skip_graph_pages", True))
-        base_dir = self.app_config.get("dbdata_dir") or here_path("dbdata")
+        base_dir = self.app_config.get("dbdata_dir") or os.path.join(
+            os.getcwd(), "dbdata"
+        )
+
         ds_name = self._sanitize_ds_name(url)
         ds_dir, dbg_dir = self._ensure_dirs(base_dir, ds_name, save_debug)
 
         pdf_path = None
-        self._manual_page_picks = None  # reset before run
+        replies_dir = None
+        img_out_dir = os.path.join(ds_dir, "rendered_pages")
+        self._manual_page_picks = None  # used by _resolve_picks if present
+
         try:
             self._dbg(f"PDF prefill (page-by-page) started. URL={url}")
             pdf_filename = f"{ds_name}.pdf"
             pdf_path = self._download_pdf(url, ds_dir, pdf_filename)
             self._dbg(f"PDF downloaded → {pdf_path}")
 
-            # --- 2) If user typed pages, compute 0-based picks with real page count
+            # ------------------- 2) Manual page override (optional) -------------------
             try:
                 import fitz
+
                 with fitz.open(pdf_path) as doc:
                     max_pages = doc.page_count
-                manual = self._parse_page_ranges(pages_str, max_pages) if pages_str else []
-                if manual:
-                    self._manual_page_picks = manual
-                    self._dbg(f"Manual page picks: {[p+1 for p in manual]}")
+                if pages_str:
+                    manual = self._parse_page_ranges(pages_str, max_pages)
+                    if manual:
+                        self._manual_page_picks = manual  # 0-based indices
+                        self._dbg(f"Manual page picks: {[p+1 for p in manual]}")
             except Exception as e:
                 self._dbg(f"Manual page parse failed: {e}")
 
-            # --- 3) Extract pages (this will honor self._manual_page_picks if set)
+            # ------------------- 3) Extract pages -------------------
             pages = self._pdf_to_pages(pdf_path, force_ocr=False, debug_dir=None)
+            if not pages:
+                raise RuntimeError(
+                    "No text extracted from PDF via PyMuPDF/pdfminer/OCR."
+                )
             total_pages = len(pages)
-            if total_pages == 0:
-                raise RuntimeError("No text extracted from PDF via PyMuPDF/pdfminer/OCR.")
+            self._dbg(f"Extracted page objects: {total_pages}")
 
+            # ------------------- 4) Filter graphs (optional) -------------------
             kept_pages = pages
-            kept_idx = list(range(1, total_pages + 1))
+            kept_idx = list(
+                range(1, total_pages + 1)
+            )  # 1-based placeholders if filter not used
             skipped_idx = []
-
-            # --- 4) Filter graphs (optional)
             if skip_graphs:
                 kept_pages, kept_idx, skipped_idx, _ = self._filter_pages_for_llm(pages)
                 self._dbg(f"Graph filtering: kept={kept_idx} skipped={skipped_idx}")
-                self._dbg(f"Pages kept after filtering: {len(kept_pages)}/{total_pages}.")
+                self._dbg(
+                    f"Pages kept after filtering: {len(kept_pages)}/{total_pages}."
+                )
             else:
                 self._dbg("Graph filtering disabled by config.")
 
-            # --- 5) Prepare template fields and run Ollama
+            if not kept_pages:
+                raise RuntimeError("All pages were filtered out; nothing to process.")
+
+            # ------------------- 5) Per-page LLM calls -------------------
             template_fields = list(self.form_inputs.keys())
-            self._dbg(f"Template fields (current TT/FF): {template_fields}")
+            self._dbg(f"Template fields: {template_fields}")
 
             ai_start_time = _dt.now()
             self._dbg(f"Starting AI processing at {ai_start_time.strftime('%H:%M:%S')}")
 
             results = []
-            replies_dir = None
             if dbg_dir and save_debug:
                 replies_dir = os.path.join(dbg_dir, "ollama_responses")
                 os.makedirs(replies_dir, exist_ok=True)
 
+            model_supports_images = self._model_supports_images(chosen_model)
+
             for i, page in enumerate(kept_pages, 1):
-                page_text = self._serialize_page_for_llm(page)
-                self._dbg(f"Ollama ask on page {i}/{len(kept_pages)} …")
-                resp = self._ollama_extract_page(host, chosen_model, page_text, template_fields)
+                # TEXT
+                page_text = ""
+                if source_mode in ("text", "both"):
+                    page_text = self._serialize_page_for_llm(page)
+
+                # IMAGE (render only if requested and model supports it)
+                image_path = None
+                if source_mode in ("image", "both") and model_supports_images:
+                    try:
+                        orig_idx_0based = (kept_idx[i - 1] - 1) if kept_idx else (i - 1)
+                        image_path = self._pdf_page_to_image(
+                            pdf_path, orig_idx_0based, render_dpi, img_out_dir
+                        )
+                    except Exception as e:
+                        self._dbg(f"Page render failed (page {i}): {e}")
+                        image_path = None
+
+                use_image = bool(image_path and model_supports_images)
+
+                # Call Ollama
+                self._dbg(
+                    f"Ollama ask on page {i}/{len(kept_pages)} … (mode={source_mode}, image={bool(use_image)})"
+                )
+                try:
+                    resp = self._ollama_extract_page(
+                        host=host,
+                        model=chosen_model,
+                        page_text=(
+                            page_text
+                            if (source_mode != "image" or not use_image)
+                            else ""
+                        ),
+                        fields=template_fields,
+                        image_path=(image_path if use_image else None),
+                    )
+                except Exception as e:
+                    self._dbg(f"Ollama request failed on page {i}: {e}")
+                    resp = {}
 
                 if replies_dir:
-                    pathlib.Path(os.path.join(replies_dir, f"resp_{i:03}.json")).write_text(
-                        json.dumps(resp, indent=2, ensure_ascii=False), encoding="utf-8"
-                    )
+                    try:
+                        pathlib.Path(
+                            os.path.join(replies_dir, f"resp_{i:03}.json")
+                        ).write_text(
+                            json.dumps(resp, indent=2, ensure_ascii=False),
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        pass
+
                 if isinstance(resp, dict):
                     results.append(resp)
+                else:
+                    results.append({})
 
-            merged = {}
-            for d in results:
-                for k in template_fields:
-                    v = (d or {}).get(k)
-                    if v not in (None, "", "N/A"):
-                        merged[k] = v
+            # ------------------- 6) Merge with confidence -------------------
+            try:
+                merged, conf_map, dbg_rows = self._merge_with_confidence(
+                    results=results,
+                    kept_pages=kept_pages,
+                    kept_idx_1based=kept_idx,
+                    template_fields=template_fields,
+                    source_mode=source_mode,
+                )
+            except AttributeError:
+                # Fallback: simple "last non-empty wins"
+                merged = {}
+                for d in results:
+                    for k in template_fields:
+                        v = (d or {}).get(k)
+                        if v not in (None, "", "N/A"):
+                            merged[k] = v
+                conf_map = {k: 0.0 for k in template_fields}
+                dbg_rows = []
 
+            # Log some confidence telemetry
+            try:
+                low_conf = sorted(conf_map.items(), key=lambda t: t[1])[:8]
+                high_conf = sorted(conf_map.items(), key=lambda t: t[1], reverse=True)[
+                    :8
+                ]
+                self._dbg(
+                    f"Lowest-confidence fields: {[(k, round(v,3)) for k,v in low_conf]}"
+                )
+                self._dbg(
+                    f"Highest-confidence fields: {[(k, round(v,3)) for k,v in high_conf]}"
+                )
+            except Exception:
+                pass
+
+            # ------------------- 7) Debug artifacts + fill form -------------------
             ai_end_time = _dt.now()
             ai_duration = ai_end_time - ai_start_time
             self._dbg(f"AI processing completed at {ai_end_time.strftime('%H:%M:%S')}")
-            self._dbg(f"Total AI processing time: {ai_duration.total_seconds():.2f} seconds")
-            self._dbg(f"Used agent: {chosen_model} at host {host}")
+            self._dbg(
+                f"Total AI processing time: {ai_duration.total_seconds():.2f} seconds"
+            )
+            self._dbg(
+                f"Used agent: {chosen_model} at host {host}  (mode={source_mode}, dpi={render_dpi})"
+            )
 
-            # Mapping report
-            mapping_path = os.path.join(ds_dir, "debug_pdf_mapping.txt")
-            lines = []
-            lines.append(f"URL: {url}")
-            lines.append(f"Model: {chosen_model}   Host: {host}")
-            lines.append(f"Total pages (post-extraction object): {total_pages}")
-            lines.append(f"AI processing time: {ai_duration.total_seconds():.2f} seconds")
-            if skip_graphs:
-                lines.append(f"Pages kept: {len(kept_pages)}  Indices kept: {kept_idx}")
-                lines.append(f"Pages skipped: {len(skipped_idx)}  Indices skipped: {skipped_idx}")
-            else:
-                lines.append("Graph filtering disabled.")
-            lines.append("\n---- Final extracted values by field ----")
-            for k in template_fields:
-                lines.append(f"{k}: {merged.get(k, '')!r}")
-            pathlib.Path(mapping_path).write_text("\n".join(lines), encoding="utf-8")
-            self._dbg(f"Wrote mapping report → {mapping_path}")
+            if dbg_dir and save_debug:
+                # mapping report (ensure everything is string)
+                mapping_path = os.path.join(ds_dir, "debug_pdf_mapping.txt")
+                lines = []
+                lines.append(f"URL: {url}")
+                lines.append(f"Model: {chosen_model}   Host: {host}")
+                lines.append(f"Source mode: {source_mode}   Render DPI: {render_dpi}")
+                lines.append(f"Total extracted pages: {total_pages}")
+                if skip_graphs:
+                    lines.append(
+                        f"Pages kept: {len(kept_pages)}  Indices kept: {kept_idx}"
+                    )
+                    lines.append(f"Pages skipped: {skipped_idx}")
+                else:
+                    lines.append("Graph filtering disabled.")
+                lines.append(
+                    f"AI processing time: {ai_duration.total_seconds():.2f} seconds"
+                )
+                lines.append("\n---- Final extracted values by field ----")
+                for k in template_fields:
+                    v = merged.get(k, "")
+                    cf = conf_map.get(k, 0.0)
+                    try:
+                        lines.append(f"{k}: {v!r}   (conf={round(float(cf),3)})")
+                    except Exception:
+                        # last-resort stringify
+                        lines.append(
+                            str(k) + ": " + str(v) + "   (conf=" + str(cf) + ")"
+                        )
+                try:
+                    pathlib.Path(mapping_path).write_text(
+                        "\n".join(lines), encoding="utf-8"
+                    )
+                    self._dbg(f"Wrote mapping report → {mapping_path}")
+                except Exception as e:
+                    self._dbg(f"Failed to write mapping report: {e}")
 
-            # Fill the form
+                # confidence CSV (STRINGIFY ALL CELLS)
+                if dbg_rows:
+                    try:
+                        conf_csv = os.path.join(dbg_dir, "field_confidence.csv")
+                        with open(conf_csv, "w", newline="", encoding="utf-8") as f:
+                            fieldnames = ["field", "value", "score", "votes", "pages"]
+                            w = csv.DictWriter(f, fieldnames=fieldnames)
+                            w.writeheader()
+                            for r in dbg_rows:
+                                row = {
+                                    "field": str(r.get("field", "")),
+                                    "value": str(r.get("value", "")),
+                                    "score": f"{float(r.get('score',0.0)):.4f}",
+                                    "votes": str(r.get("votes", "")),
+                                    "pages": ",".join(
+                                        str(p) for p in (r.get("pages") or [])
+                                    ),
+                                }
+                                w.writerow(row)
+                        self._dbg(f"Wrote field confidence report → {conf_csv}")
+                    except Exception as e:
+                        self._dbg(
+                            f"Failed to write confidence CSV: {e}\n{traceback.format_exc()}"
+                        )
+
+            # Fill the form (highest-confidence winners already picked in `merged`)
             filled = 0
             for k, v in merged.items():
-                if k in self.form_inputs and v:
+                if k in self.form_inputs and v is not None:
                     self.form_inputs[k].set(v)
                     filled += 1
-            self._dbg(f"PDF prefill done. Filled {filled}/{len(template_fields)} fields.")
+            self._dbg(
+                f"PDF prefill done. Filled {filled}/{len(template_fields)} fields."
+            )
             try:
-                messagebox.showinfo("Prefill", f"PDF prefill complete.\nFilled {filled}/{len(template_fields)} fields.")
+                messagebox.showinfo(
+                    "Prefill",
+                    f"PDF prefill complete.\nFilled {filled}/{len(template_fields)} fields.",
+                )
             except Exception:
                 pass
 
         except Exception as e:
-            self._dbg(f"PDF prefill failed: {e}")
-            messagebox.showerror("Prefill", f"PDF prefill failed:\n{e}")
+            self._dbg(f"PDF prefill failed: {e}\n{traceback.format_exc()}")
+            try:
+                messagebox.showerror("Prefill", f"PDF prefill failed:\n{e}")
+            except Exception:
+                pass
         finally:
-            # Always clear manual override and delete the PDF
+            # Always clear manual override and delete the PDF file
             self._manual_page_picks = None
             try:
                 if pdf_path and os.path.exists(pdf_path):
@@ -2308,7 +3299,6 @@ class DMTGUI(tk.Tk):
                     self._dbg("Deleted downloaded PDF.")
             except Exception:
                 pass
-
 
     def _should_normalize_field(self, key: str) -> bool:
         """
@@ -2412,6 +3402,9 @@ class DMTGUI(tk.Tk):
             r"MΩ",
             r"mΩ",
             r"Ω",
+            r"R",
+            r"k",
+            r"M",
             r"kHz",
             r"MHz",
             r"GHz",

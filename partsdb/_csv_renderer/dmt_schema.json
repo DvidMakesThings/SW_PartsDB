@@ -156,6 +156,7 @@
         { "ff": "15", "name": "Sockets for ICs and Transistors" },
         { "ff": "16", "name": "Solid State Lighting Connectors" },
         { "ff": "17", "name": "Pluggable and Modular Power" },
+        { "ff": "18", "name": "FFC FPC Connectors" },
         { "ff": "99", "name": "Connector Accessories and Misc" }
       ]
     },
@@ -367,7 +368,30 @@
         { "ff": "02", "name": "UPS Systems" },
         { "ff": "99", "name": "Distribution Accessories" }
       ]
+    },
+    {
+      "tt": "29",
+      "name": "Project PCBs and Assemblies",
+      "families": [
+        { "ff": "01", "name": "Development and Evaluation Boards" },
+        { "ff": "02", "name": "Interface and Communication Boards" },
+        { "ff": "03", "name": "Network and Ethernet Boards" },
+        { "ff": "04", "name": "Power Supply and Power Management Boards" },
+        { "ff": "05", "name": "Sensor and IO Boards" },
+        { "ff": "06", "name": "Display and HMI Boards" },
+        { "ff": "07", "name": "Audio and Video Boards" },
+        { "ff": "08", "name": "Expansion and Adapter Boards" },
+        { "ff": "09", "name": "PCIe and Computer Module Carriers" },
+        { "ff": "10", "name": "Relay and Switching Boards" },
+        { "ff": "11", "name": "Measurement and Data Acquisition Boards" },
+        { "ff": "12", "name": "Test Fixtures and Programming Adapters" },
+        { "ff": "13", "name": "Prototyping and Breakout Boards" },
+        { "ff": "14", "name": "Custom Project Boards and Assemblies" },
+        { "ff": "90", "name": "Kits and Multi-Board Sets" },
+        { "ff": "99", "name": "Miscellaneous or Accessories" }
+      ]
     }
+
   ],
   "family_cc_ss_guidelines": {
     "0101_Capacitors": {
@@ -1021,6 +1045,7 @@
         "02": "Industrial",
         "03": "Desktop",
         "04": "Wall plug",
+        "05": "PCB mount",
         "99": "Other"
       }
     },
@@ -1128,7 +1153,7 @@
 
     "0904_Circular_BackShells": {
       "cc": {
-        "01": "M-series metric (M5–M12)",
+        "01": "M-series metric (M5-M12)",
         "02": "MIL/industrial circular",
         "03": "Push-pull (LEMO style)",
         "04": "Audio XLR/TRS",
@@ -1384,6 +1409,29 @@
         "99": "Other"
       }
     },
+    "0918_FFC_FPC_Connectors": {
+      "cc": {
+        "01": "ZIF vertical",
+        "02": "ZIF right angle",
+        "03": "LIF vertical",
+        "04": "LIF right angle",
+        "05": "Back-flip/flip-lock",
+        "06": "Bottom contact",
+        "07": "Top contact",
+        "08": "Dual contact",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "0.30 mm pitch",
+        "02": "0.50 mm pitch",
+        "03": "1.00 mm pitch",
+        "04": "≤10 pos",
+        "05": "11–30 pos",
+        "06": "31–60 pos",
+        "07": ">60 pos",
+        "99": "Other"
+      }
+    },
 
     "0999_Connector_Accessories": {
       "cc": {
@@ -1402,19 +1450,303 @@
       }
     },
 
-    "100x_Cables_Generic": {
+    "1001_Cable Assemblies General": {
       "cc": {
-        "01": "Patch Short",
-        "02": "General assembly",
-        "10": "Shielded",
-        "20": "Outdoor UV",
-        "30": "High flex",
-        "90": "Accessories",
+        "01": "USB",
+        "02": "Display/Video (HDMI DP DVI)",
+        "03": "Audio (3.5mm XLR RCA)",
+        "04": "DC Power Barrel",
+        "05": "AC Mains Cords",
+        "06": "Data Serial (UART RS232 RS485)",
+        "07": "Industrial Circular (M8 M12)",
+        "08": "Internal PC Cables (SATA PCIe Fan)",
+        "20": "Rugged Outdoor IP-rated",
+        "30": "High-flex Drag-chain",
+        "40": "Panel Feedthrough Jumpers",
+        "90": "Adapters Splitters Converters",
         "99": "Special"
       },
       "ss": {
-        "01": "Overmolded",
-        "02": "Custom",
+        "01": "Male-Male",
+        "02": "Male-Female",
+        "03": "Female-Female",
+        "10": "Right-angle",
+        "11": "Locking/Latch",
+        "12": "Panel-mount end",
+        "20": "Shielded",
+        "21": "Unshielded",
+        "30": "High-current/PD E-Marker",
+        "40": "Short ≤0.5 m",
+        "41": "1-2 m",
+        "42": ">2 m",
+        "99": "Other"
+      }
+    },
+    "1002_RF Coax Assemblies": {
+      "cc": {
+        "01": "50 Ω",
+        "02": "75 Ω",
+        "03": "93 Ω",
+        "10": "Antenna Pigtails",
+        "20": "Low-loss Test",
+        "30": "Phase-stable",
+        "40": "High-power",
+        "90": "Coax Adapters",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "SMA",
+        "02": "RP-SMA",
+        "03": "U.FL IPEX",
+        "04": "MMCX",
+        "05": "N-Type",
+        "06": "BNC",
+        "07": "F-Type",
+        "10": "RG-174",
+        "11": "RG-316",
+        "12": "LMR-100/200/400",
+        "20": "Bulkhead Panel-mount",
+        "21": "Right-angle",
+        "30": "Semi-rigid/Hand-formable",
+        "40": "High-flex",
+        "99": "Other"
+      }
+    },
+    "1003_Ethernet Modular Cables": {
+      "cc": {
+        "01": "Cat5e",
+        "02": "Cat6",
+        "03": "Cat6A",
+        "04": "Cat7",
+        "05": "Cat8",
+        "10": "M12 X-coded Industrial",
+        "20": "Flat Ultra-thin",
+        "30": "Short Patch Jumpers",
+        "40": "Outdoor UV/Gel",
+        "50": "PoE/PoE+ 60-90 W",
+        "90": "Keystone Couplers",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "UTP",
+        "02": "F-UTP",
+        "03": "S-FTP",
+        "04": "SF-UTP",
+        "10": "Stranded Patch",
+        "11": "Solid Riser",
+        "12": "Plenum CMP",
+        "13": "LSZH",
+        "20": "Booted Snagless",
+        "21": "Unbooted",
+        "22": "Right-angle",
+        "30": "M12-to-RJ45",
+        "31": "IP67 RJ45",
+        "99": "Other"
+      }
+    },
+    "1004_FFC FPC Flat Ribbon": {
+      "cc": {
+        "01": "FFC",
+        "02": "FPC",
+        "10": "A-type Same-side Contacts",
+        "11": "B-type Opposite-side Contacts",
+        "20": "Pitch 0.30 mm",
+        "21": "Pitch 0.50 mm",
+        "22": "Pitch 1.00 mm",
+        "30": "High-flex",
+        "31": "Shielded/EMI",
+        "40": "Stiffener/Reinforced",
+        "90": "Jumpers/Adapters",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "≤50 mm",
+        "02": "51-150 mm",
+        "03": "151-300 mm",
+        "04": ">300 mm",
+        "10": "6-12 pos",
+        "11": "13-20 pos",
+        "12": "21-40 pos",
+        "13": ">40 pos",
+        "20": "ZIF",
+        "21": "LIF",
+        "30": "Pre-folded/Custom shape",
+        "99": "Other"
+      }
+    },
+    "1005_Power Line and Extensions": {
+      "cc": {
+        "01": "EU Schuko",
+        "02": "UK",
+        "03": "US NEMA",
+        "04": "AU",
+        "05": "IEC C13/C14",
+        "06": "IEC C19/C20",
+        "07": "C7/C8 Figure-8",
+        "08": "C5/C6 Cloverleaf",
+        "20": "Extension Cords",
+        "30": "Splitters/Y-Cables",
+        "40": "Switch/Fused Cords",
+        "50": "Hospital Grade",
+        "60": "High-temp Silicone",
+        "90": "Plug Adapters/Converters",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "0.5-1 m",
+        "02": "1.5-2 m",
+        "03": "3-5 m",
+        "04": ">5 m",
+        "10": "0.75 mm²",
+        "11": "1.0 mm²",
+        "12": "1.5 mm²",
+        "13": "2.5 mm²",
+        "20": "Angled Plug",
+        "21": "Right-angle IEC",
+        "30": "With Fuse",
+        "31": "With Switch",
+        "40": "Outdoor IP44",
+        "99": "Other"
+      }
+    },
+    "1006_Fiber Optic Cables": {
+      "cc": {
+        "01": "Single-mode OS2",
+        "02": "Multimode OM1",
+        "03": "OM2",
+        "04": "OM3",
+        "05": "OM4",
+        "06": "OM5",
+        "10": "Simplex",
+        "11": "Duplex",
+        "20": "Breakout/Fanout",
+        "30": "MPO/MTP",
+        "40": "Armored",
+        "50": "Bend-insensitive",
+        "90": "Adapters/Attenuators",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "LC-LC",
+        "02": "SC-SC",
+        "03": "LC-SC",
+        "04": "ST-ST",
+        "05": "E2000",
+        "10": "UPC",
+        "11": "APC",
+        "20": "1-3 m",
+        "21": "5-10 m",
+        "22": ">10 m",
+        "30": "Indoor",
+        "31": "Outdoor",
+        "99": "Other"
+      }
+    },
+    "1007_Wire Hook Up Multi Conductor": {
+      "cc": {
+        "01": "Hook-up Single Conductor",
+        "02": "Multi-conductor Cable",
+        "03": "Ribbon IDC",
+        "10": "Shielded",
+        "11": "Unshielded",
+        "20": "Tinned Copper",
+        "21": "High-flex Stranded",
+        "30": "PVC Jacket",
+        "31": "PUR Jacket",
+        "32": "TPE Jacket",
+        "33": "PTFE Jacket",
+        "40": "High Temperature",
+        "41": "Low Temperature",
+        "50": "UL Styles 1007 1015 2464",
+        "60": "Drag-chain Rated",
+        "90": "Color Kits",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "AWG 28-26",
+        "02": "AWG 24-22",
+        "03": "AWG 20-18",
+        "04": "AWG 16-12",
+        "10": "Pair count 1-2",
+        "11": "3-5",
+        "12": "6-10",
+        "13": ">10",
+        "20": "Foil Shield",
+        "21": "Braid Shield",
+        "22": "Foil+Braid",
+        "30": "Drain Wire",
+        "31": "Twisted Pairs",
+        "40": "LSZH",
+        "41": "Plenum",
+        "99": "Other"
+      }
+    },
+    "1090_Cable Management (Ties Shrink Sleeving Labels Ducts)": {
+      "cc": {
+        "01": "Cable Ties",
+        "02": "Heat Shrink Tubing",
+        "03": "Braided Sleeving",
+        "04": "Spiral Wrap",
+        "05": "Conduit/Duct/Raceway",
+        "06": "Clips/Clamps/Saddles",
+        "07": "Labels/Markers",
+        "08": "Grommets/Bushings",
+        "10": "Cable Glands",
+        "30": "Hook-and-Loop Straps",
+        "90": "Assortment Kits",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "Nylon",
+        "02": "Stainless",
+        "03": "Releasable",
+        "04": "Mounting-hole",
+        "10": "Heat-shrink 2:1",
+        "11": "Heat-shrink 3:1",
+        "12": "Adhesive-lined",
+        "20": "PET Sleeving",
+        "21": "Expandable",
+        "22": "EMI Shielding",
+        "30": "Small",
+        "31": "Medium",
+        "32": "Large",
+        "40": "UV Rated",
+        "41": "High Temp",
+        "99": "Other"
+      }
+    },
+    "1099_Cable Accessories": {
+      "cc": {
+        "01": "Boots/Strain Relief",
+        "02": "Ferrules",
+        "03": "Lugs (Ring Spade Fork)",
+        "04": "Splices (Butt Inline)",
+        "05": "Splitters/Couplers",
+        "06": "Keystone Jacks",
+        "07": "Inline Switches",
+        "08": "Cord Grips",
+        "09": "Retractable Reels",
+        "10": "Gender Changers/Adapters",
+        "20": "Test Clips/Hooks",
+        "90": "Tooling/Crimp Aids",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "For RJ45",
+        "02": "For USB",
+        "03": "For Coax",
+        "04": "For DC Barrel",
+        "05": "For IEC",
+        "10": "Color-coded",
+        "11": "Insulated",
+        "12": "Non-insulated",
+        "20": "Right-angle",
+        "21": "Panel-mount",
+        "30": "IP67/IP68",
+        "31": "Heavy-duty Strain Relief",
+        "40": "Ferrule 0.25-1.0 mm²",
+        "41": "Ferrule 1.5-2.5 mm²",
+        "42": "Ferrule 4-10 mm²",
         "99": "Other"
       }
     },
@@ -1436,30 +1768,474 @@
       }
     },
 
-    "120x_Relays_Generic": {
+    "1201_Signal_Relays": {
       "cc": {
-        "01": "Signal",
-        "02": "Power",
-        "03": "Reed",
-        "04": "Solid state",
-        "10": "Automotive",
-        "99": "Special"
+        "01": "General purpose signal relay",
+        "02": "Low current signal relay",
+        "03": "High sensitivity relay",
+        "04": "Latching relay",
+        "05": "Reed type signal relay",
+        "90": "Special function or timing relay",
+        "99": "Other"
       },
       "ss": {
-        "01": "Socketed",
-        "02": "PCB mount",
-        "03": "Panel",
+        "01": "Through-hole",
+        "02": "Surface-mount",
+        "03": "Socket mount",
+        "04": "Single pole",
+        "05": "Double pole",
+        "06": "Latching",
+        "99": "Other"
+      }
+    },
+
+    "1202_Power_Relays": {
+      "cc": {
+        "01": "General purpose power relay",
+        "02": "Automotive relay",
+        "03": "Industrial relay",
+        "04": "HVAC relay",
+        "05": "Power PCB relay",
+        "06": "DIN rail relay module",
+        "90": "Special high-current relay",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Through-hole",
+        "02": "Panel mount",
+        "03": "Socket mount",
+        "04": "DIN rail",
+        "05": "Plug-in type",
+        "06": "SPST",
+        "07": "SPDT",
+        "08": "DPDT",
+        "99": "Other"
+      }
+    },
+
+    "1203_Reed_Relays": {
+      "cc": {
+        "01": "Dry reed relay",
+        "02": "Mercury wetted relay",
+        "03": "RF reed relay",
+        "04": "High isolation relay",
+        "90": "Precision or low thermal EMF type",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Through-hole",
+        "02": "SMD",
+        "03": "Single channel",
+        "04": "Multi channel",
+        "05": "Shielded",
+        "99": "Other"
+      }
+    },
+
+    "1204_Solid_State_Relays": {
+      "cc": {
+        "01": "AC output SSR",
+        "02": "DC output SSR",
+        "03": "AC/DC universal output SSR",
+        "04": "Panel mount SSR",
+        "05": "PCB mount SSR",
+        "06": "DIN rail SSR",
+        "07": "Zero-cross type",
+        "08": "Random turn-on type",
+        "90": "Opto-isolated control module",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single channel",
+        "02": "Dual channel",
+        "03": "4-channel",
+        "04": "8-channel",
+        "05": "Panel mount",
+        "06": "DIN rail mount",
+        "07": "PCB mount",
+        "99": "Other"
+      }
+    },
+
+    "1205_Contactors_Electromechanical_or_Solid_State": {
+      "cc": {
+        "01": "Electromechanical contactor",
+        "02": "Solid-state contactor",
+        "03": "3-phase contactor",
+        "04": "Miniature contactor",
+        "05": "Definite purpose contactor",
+        "06": "Reversing contactor",
+        "07": "Motor starter contactor",
+        "90": "HV contactor",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "DIN rail mount",
+        "02": "Panel mount",
+        "03": "Screw terminal",
+        "04": "Plug-in base",
+        "05": "With auxiliary contacts",
+        "99": "Other"
+      }
+    },
+
+    "1299_Relay_Sockets_and_Accessories": {
+      "cc": {
+        "01": "Relay socket",
+        "02": "Retainer clip",
+        "03": "DIN mount base",
+        "04": "Panel mount base",
+        "05": "Protection diode or RC snubber",
+        "06": "Label or cover",
+        "90": "Accessory kit",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "For signal relay",
+        "02": "For power relay",
+        "03": "For SSR",
+        "04": "For contactor",
+        "05": "Universal type",
+        "99": "Other"
+      }
+    },
+
+    "2901_Development_and_Evaluation_Boards": {
+      "cc": {
+        "01": "MCU evaluation board",
+        "02": "MPU or SoC evaluation board",
+        "03": "FPGA development board",
+        "04": "Microcontroller module",
+        "05": "AI accelerator module",
+        "06": "Demo board (vendor reference)",
+        "07": "Educational or starter kit",
+        "90": "Accessory or add-on",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Standalone board",
+        "02": "With expansion header",
+        "03": "With display or HMI",
+        "04": "Carrier-based system",
+        "05": "Stackable modular",
+        "06": "Compact / Mini",
+        "99": "Other"
+      }
+    },
+    "2902_Interface_and_Communication_Boards": {
+      "cc": {
+        "01": "USB interface",
+        "02": "UART/RS232/RS485 converter",
+        "03": "CAN or LIN interface",
+        "04": "I2C or SPI bridge",
+        "05": "GPIO expander",
+        "06": "Serial multiplexer or hub",
+        "07": "Isolated interface board",
+        "08": "Wireless transceiver (BT/WiFi/LoRa)",
+        "90": "Adapter or dongle",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount",
+        "02": "Plug-in module",
+        "03": "USB dongle",
+        "04": "DIN-rail mount",
+        "05": "Isolated version",
+        "06": "Industrial version",
+        "99": "Other"
+      }
+    },
+    "2903_Network_and_Ethernet_Boards": {
+      "cc": {
+        "01": "Ethernet PHY or MAC board",
+        "02": "Ethernet controller module",
+        "03": "Ethernet switch",
+        "04": "PoE injector or splitter",
+        "05": "Network hub or bridge",
+        "06": "Firewall or router board",
+        "07": "WiFi or network interface",
+        "08": "Fiber or SFP board",
+        "90": "Accessory or adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single port",
+        "02": "Dual port",
+        "03": "4-port",
+        "04": "8-port or higher",
+        "05": "PoE-enabled",
+        "06": "Managed",
+        "07": "Unmanaged",
+        "99": "Other"
+      }
+    },
+    "2904_Power_Supply_and_Power_Management_Boards": {
+      "cc": {
+        "01": "DC-DC converter board",
+        "02": "AC-DC converter board",
+        "03": "USB-PD board",
+        "04": "Battery charger board",
+        "05": "UPS or backup module",
+        "06": "Power monitor/meter",
+        "07": "Power distributor",
+        "08": "Regulator module (buck/boost/LDO)",
+        "90": "Protection or fuse board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single output",
+        "02": "Multi output",
+        "03": "High current",
+        "04": "Isolated",
+        "05": "Programmable",
+        "06": "Compact form",
+        "07": "High voltage",
+        "99": "Other"
+      }
+    },
+    "2905_Sensor_and_IO_Boards": {
+      "cc": {
+        "01": "Environmental sensor",
+        "02": "Current or voltage sensor",
+        "03": "Motion or position sensor",
+        "04": "Optical or proximity sensor",
+        "05": "Touch or HMI input board",
+        "06": "Digital IO expander",
+        "07": "Analog IO interface",
+        "08": "Mixed IO module",
+        "90": "Evaluation daughterboard",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Analog output",
+        "02": "Digital output",
+        "03": "SPI interface",
+        "04": "I2C interface",
+        "05": "UART interface",
+        "06": "Wireless interface",
+        "07": "Isolated IO",
+        "99": "Other"
+      }
+    },
+    "2906_Display_and_HMI_Boards": {
+      "cc": {
+        "01": "Character LCD module",
+        "02": "Graphic LCD or TFT module",
+        "03": "OLED module",
+        "04": "ePaper module",
+        "05": "Touch controller board",
+        "06": "LED indicator or bargraph",
+        "07": "Button or keypad board",
+        "90": "Accessory interface board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "SPI interface",
+        "02": "I2C interface",
+        "03": "Parallel interface",
+        "04": "HDMI or DSI",
+        "05": "With touch panel",
+        "06": "Without touch",
+        "99": "Other"
+      }
+    },
+    "2907_Audio_and_Video_Boards": {
+      "cc": {
+        "01": "Audio codec or amplifier",
+        "02": "Microphone or preamp board",
+        "03": "Speaker driver board",
+        "04": "Video capture or encoder",
+        "05": "Camera interface",
+        "06": "Video output board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Mono",
+        "02": "Stereo",
+        "03": "Multi-channel",
+        "04": "Analog",
+        "05": "Digital I2S/TDM",
+        "06": "USB",
+        "99": "Other"
+      }
+    },
+    "2908_Expansion_and_Adapter_Boards": {
+      "cc": {
+        "01": "GPIO expansion board",
+        "02": "Protocol converter",
+        "03": "Bus adapter",
+        "04": "Level shifter",
+        "05": "Isolator module",
+        "06": "Bridge or interface card",
+        "07": "Stacking header board",
+        "08": "Backplane adapter",
+        "90": "Breakout or test adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single board",
+        "02": "Stackable",
+        "03": "Right angle",
+        "04": "Vertical",
+        "05": "DIN mount",
+        "99": "Other"
+      }
+    },
+    "2909_PCIe_and_Computer_Module_Carriers": {
+      "cc": {
+        "01": "PCIe card",
+        "02": "Mini PCIe board",
+        "03": "M.2 adapter",
+        "04": "Compute module carrier (CM4/CM5)",
+        "05": "NVMe adapter board",
+        "06": "Backplane extension",
+        "90": "Mechanical adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "x1",
+        "02": "x4",
+        "03": "x8",
+        "04": "x16",
+        "05": "Half length",
+        "06": "Full length",
+        "07": "Low profile",
+        "99": "Other"
+      }
+    },
+    "2910_Relay_and_Switching_Boards": {
+      "cc": {
+        "01": "Mechanical relay board",
+        "02": "Solid-state relay board",
+        "03": "High-current PDU module",
+        "04": "Signal relay board",
+        "05": "MOSFET switching board",
+        "06": "Triac or AC switching board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single channel",
+        "02": "Dual channel",
+        "03": "4-channel",
+        "04": "8-channel",
+        "05": "Isolated",
+        "06": "DIN mount",
+        "99": "Other"
+      }
+    },
+    "2911_Measurement_and_Data_Acquisition_Boards": {
+      "cc": {
+        "01": "ADC board",
+        "02": "DAC board",
+        "03": "DAQ main board",
+        "04": "Signal conditioning board",
+        "05": "Current/voltage monitor board",
+        "06": "Calibration or reference board",
+        "90": "Measurement module",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single channel",
+        "02": "Multi-channel",
+        "03": "Differential",
+        "04": "Isolated",
+        "05": "High speed",
+        "06": "High accuracy",
+        "99": "Other"
+      }
+    },
+    "2912_Test_Fixtures_and_Programming_Adapters": {
+      "cc": {
+        "01": "Programming adapter",
+        "02": "Debug interface board",
+        "03": "Test fixture or jig",
+        "04": "Loopback adapter",
+        "05": "Load or dummy board",
+        "06": "Bed-of-nails interface",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "ISP interface",
+        "02": "JTAG interface",
+        "03": "UART interface",
+        "04": "USB interface",
+        "05": "Ethernet interface",
+        "99": "Other"
+      }
+    },
+    "2913_Prototyping_and_Breakout_Boards": {
+      "cc": {
+        "01": "Universal prototype board",
+        "02": "Breakout board (header/IC)",
+        "03": "Matrix or perf board",
+        "04": "Small component carrier",
+        "05": "Custom project prototype",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "SMD layout",
+        "02": "Through-hole layout",
+        "03": "Breadboard compatible",
+        "04": "With headers",
+        "05": "Without headers",
+        "99": "Other"
+      }
+    },
+    "2914_Custom_Project_Boards_and_Assemblies": {
+      "cc": {
+        "01": "Complete assembly board",
+        "02": "Main functional PCB",
+        "03": "Subassembly or module",
+        "04": "Mechanical interface board",
+        "05": "Client-specific variant",
+        "06": "Revision prototype",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Prototype",
+        "02": "Pre-production",
+        "03": "Production",
+        "04": "Legacy or retired",
+        "99": "Other"
+      }
+    },
+    "2990_Kits_and_Multi_Board_Sets": {
+      "cc": {
+        "01": "Development kit",
+        "02": "Evaluation kit",
+        "03": "Starter bundle",
+        "04": "Training or educational kit",
+        "05": "Accessory pack",
+        "90": "Board and cable set",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single board kit",
+        "02": "Multi board kit",
+        "03": "With enclosure",
+        "04": "With power supply",
+        "05": "With sensors",
+        "99": "Other"
+      }
+    },
+    "2999_Miscellaneous_or_Accessories": {
+      "cc": {
+        "01": "Mounting accessory",
+        "02": "Cable accessory",
+        "03": "Cooling accessory",
+        "04": "Labeling or marking accessory",
+        "05": "Mechanical part",
+        "06": "Replacement part",
+        "90": "Add-on component",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "For main board",
+        "02": "For module",
+        "03": "For test setup",
+        "04": "General purpose",
         "99": "Other"
       }
     }
-  },
-  "classification_rules": [
-    "Select TT by electrical function first.",
-    "Select FF by the closest core family use.",
-    "Choose CC as the subtype inside the family. If unknown, use 99.",
-    "Choose SS as mounting style or vendor bucket as defined for that family. If unknown, use 99.",
-    "Assign XXX as a running sequence per unique TTFFCCSS so items are unique.",
-    "If a part could fit multiple families, prefer the most specific electrical function over mechanical form.",
-    "For dev kits or eval boards, use the base IC family but CC=92 or SS=92 only if you store them together with components. Otherwise store dev boards under TT 19."
-  ]
+  }
 }

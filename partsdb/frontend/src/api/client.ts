@@ -33,6 +33,19 @@ export const api = {
     ),
   getComponent: (id: string) => http<any>(`/components/${id}/`),
 
+  listAttachments: (params: Record<string, any> = {}) =>
+    http<{count:number; next:string|null; previous:string|null; results:any[]}>(
+      `/attachments/?${new URLSearchParams(params as any).toString()}`
+    ),
+
+  uploadAttachment: async (componentId: string, file: File, type: string) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('component_id', componentId);
+    fd.append('type', type);
+    return http<any>('/attachments/', { method: 'POST', body: fd });
+  },
+
   // CSV import
   importCsv: async (file: File, dryRun: boolean, encoding: string = 'latin1') => {
     const fd = new FormData();
@@ -42,3 +55,6 @@ export const api = {
     return http<any>('/import/csv/', { method: 'POST', body: fd });
   },
 };
+
+// Export individual functions for backwards compatibility
+export const { getComponent, listAttachments, uploadAttachment } = api;

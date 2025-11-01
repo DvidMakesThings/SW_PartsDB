@@ -33,7 +33,7 @@ const Attachments: React.FC = () => {
         setComponent(componentData);
         
         // Load attachments
-        const attachmentsData = await listAttachments(id);
+        const attachmentsData = await listAttachments({ component_id: id });
         setAttachments(attachmentsData.results);
       } catch (err: any) {
         setError(`Failed to load data: ${err.message}`);
@@ -55,7 +55,7 @@ const Attachments: React.FC = () => {
       addToast(`${attachmentType} uploaded successfully`, 'success');
       
       // Refresh attachments list
-      const refreshedAttachments = await listAttachments(id);
+      const refreshedAttachments = await listAttachments({ component_id: id });
       setAttachments(refreshedAttachments.results);
       
       // Close modal

@@ -13,18 +13,22 @@ class Attachment(TimeStampedModel):
     """
     TYPE_CHOICES = (
         ('datasheet', 'Datasheet'),
-        ('three_d', '3D Model'),
+        ('three_d', '3D Model (STEP)'),
+        ('eagle_lib', 'Eagle Library'),
         ('photo', 'Photo'),
         ('appnote', 'Application Note'),
+        ('schematic', 'Schematic'),
+        ('layout', 'Layout/PCB'),
         ('other', 'Other'),
     )
-    
+
     component = models.ForeignKey(
-        Component, 
+        Component,
         on_delete=models.CASCADE,
         related_name='attachments'
     )
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    custom_type = models.CharField(max_length=100, null=True, blank=True, help_text='Custom file type when "Other" is selected')
     file = models.FileField(upload_to='uploads/')  # Will be overridden by service
     source_url = models.URLField(null=True, blank=True)
     sha256 = models.CharField(max_length=64, null=True, blank=True, db_index=True)

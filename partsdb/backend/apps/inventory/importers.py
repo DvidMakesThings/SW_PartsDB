@@ -28,8 +28,15 @@ DEFAULT_FIELD_MAP = {
     "current": ["current"],
     "description": ["description"],
     "url_datasheet": ["datasheet", "url_datasheet"],
+    # DMT Classification fields
+    "dmtuid": ["dmtuid"],
+    "dmt_tt": ["tt"],
+    "dmt_ff": ["ff"],
+    "dmt_cc": ["cc"],
+    "dmt_ss": ["ss"],
+    "dmt_xxx": ["xxx"],
     # Special handling for these fields
-    "package": ["package", "package name", "package (lxw)"],
+    "package": ["package", "package name", "package (lxw)", "package / case"],
     "height": ["height", "height - after installation (max.)"],
     # Extra fields that go to the extras JSON
     "resistance": ["resistance"],
@@ -56,14 +63,27 @@ class CSVImporter:
         self.field_map = DEFAULT_FIELD_MAP
         self.categorizer = ComponentCategorizer()
         
+    def clean_text(self, value):
+        """
+        Clean text by fixing encoding issues and normalizing characters
+        """
+        if not value:
+            return value
+        # Fix common encoding issues
+        value = value.replace('\u00c2\u00b0', '\u00b0')  # Fix Â° to °
+        value = value.replace('Â°', '°')  # Another variant
+        value = value.replace('\u00c2', '')  # Remove stray Â
+        # Replace Unicode dashes with ASCII hyphen
+        value = re.sub(r'[\u2010-\u2015]', '-', value)
+        return value.strip()
+
     def normalize_string(self, value):
         """
         Normalize a string by removing extra spaces and converting to uppercase
         """
         if not value:
             return value
-        # Replace Unicode dashes with ASCII hyphen
-        value = re.sub(r'[\u2010-\u2015]', '-', value)
+        value = self.clean_text(value)
         # Remove extra spaces and convert to uppercase
         return re.sub(r'\s+', ' ', value).strip().upper()
     
@@ -119,10 +139,10 @@ class CSVImporter:
                 for header, value in row.items():
                     if header in header_map:
                         model_field = header_map[header]
-                        mapped_row[model_field] = value.strip()
+                        mapped_row[model_field] = self.clean_text(value)
                     else:
                         # Store unknown fields in extras
-                        extras[header.lower()] = value.strip()
+                        extras[header.lower()] = self.clean_text(value)
                 
                 if extras:
                     mapped_row['extras'] = extras
@@ -241,11 +261,18 @@ class CSVImporter:
                     'url_datasheet': row.get('url_datasheet'),
                     'category_l1': category_l1,
                     'category_l2': category_l2,
+                    # DMT Classification
+                    'dmtuid': row.get('dmtuid'),
+                    'dmt_tt': row.get('dmt_tt'),
+                    'dmt_ff': row.get('dmt_ff'),
+                    'dmt_cc': row.get('dmt_cc'),
+                    'dmt_ss': row.get('dmt_ss'),
+                    'dmt_xxx': row.get('dmt_xxx'),
                 }
-                
+
                 if 'extras' in row:
                     component_data['extras'] = row['extras']
-                
+
                 if not self.dry_run:
                     component = Component.objects.create(**component_data)
                     self.results['created'] += 1

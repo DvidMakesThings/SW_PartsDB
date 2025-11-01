@@ -86,15 +86,54 @@ class Component(TimeStampedModel):
     
     # Categorization
     category_l1 = models.CharField(
-        max_length=100, 
+        max_length=100,
         default="Unsorted",
         help_text="Primary category"
     )
     category_l2 = models.CharField(
-        max_length=100, 
-        null=True, 
+        max_length=100,
+        null=True,
         blank=True,
         help_text="Secondary category"
+    )
+
+    # DMT Classification
+    dmtuid = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Full DMT code (e.g., DMT-02030110001)"
+    )
+    dmt_tt = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="Domain code (00-99)"
+    )
+    dmt_ff = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="Family code (00-99)"
+    )
+    dmt_cc = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="Class code (00-99)"
+    )
+    dmt_ss = models.CharField(
+        max_length=2,
+        null=True,
+        blank=True,
+        help_text="Style code (00-99)"
+    )
+    dmt_xxx = models.CharField(
+        max_length=3,
+        null=True,
+        blank=True,
+        help_text="Sequence number (001-999)"
     )
     
     # Integration with other tools
@@ -112,6 +151,8 @@ class Component(TimeStampedModel):
             models.Index(fields=['mpn']),
             models.Index(fields=['manufacturer']),
             models.Index(fields=['category_l1']),
+            models.Index(fields=['dmtuid']),
+            models.Index(fields=['dmt_tt', 'dmt_ff', 'dmt_cc', 'dmt_ss']),
         ]
     
     def __str__(self):
@@ -126,6 +167,12 @@ class Component(TimeStampedModel):
         # Remove extra spaces and convert to uppercase
         return re.sub(r'\s+', ' ', value).strip().upper()
 
+    def generate_dmtuid(self):
+        """Generate DMTUID from DMT classification codes"""
+        if all([self.dmt_tt, self.dmt_ff, self.dmt_cc, self.dmt_ss, self.dmt_xxx]):
+            return f"DMT-{self.dmt_tt}{self.dmt_ff}{self.dmt_cc}{self.dmt_ss}{self.dmt_xxx}"
+        return None
+
     def clean(self):
         """Normalize values before saving"""
         # Store original values
@@ -133,7 +180,11 @@ class Component(TimeStampedModel):
             self.mpn_norm = self.normalize_string(self.mpn)
         if self.manufacturer:
             self.manufacturer_norm = self.normalize_string(self.manufacturer)
-        
+
+        # Generate DMTUID if DMT codes are present
+        if not self.dmtuid and all([self.dmt_tt, self.dmt_ff, self.dmt_cc, self.dmt_ss, self.dmt_xxx]):
+            self.dmtuid = self.generate_dmtuid()
+
         # Parse package dimensions if needed
         # This would be implemented in the importer
 

@@ -1,7 +1,9 @@
 """
 Views for the inventory app.
 """
+import csv
 from django.db.models import Q, Count
+from django.http import HttpResponse
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -24,7 +26,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         filters.OrderingFilter
     ]
     filterset_fields = ['manufacturer', 'category_l1', 'package_name']
-    search_fields = ['mpn', 'manufacturer', 'description']
+    search_fields = ['mpn', 'manufacturer', 'description', 'dmtuid', 'value', 'package_name']
     ordering_fields = ['mpn', 'manufacturer', 'created_at', 'updated_at']
     ordering = ['-created_at']
     
@@ -158,6 +160,66 @@ class ComponentViewSet(viewsets.ModelViewSet):
                 })
         
         return Response(results)
+
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        """
+        Export all components to CSV format
+        """
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="components_export.csv"'
+
+        writer = csv.writer(response)
+
+        # Write header row with all fields
+        header = [
+            'MPN', 'Manufacturer', 'Value', 'Tolerance', 'Package', 'Description',
+            'Datasheet URL', 'Category L1', 'Category L2', 'DMTUID',
+            'Domain (TT)', 'Family (FF)', 'Class (CC)', 'Style (SS)', 'Sequence (XXX)',
+            'RoHS', 'Lifecycle', 'Operating Temperature'
+        ]
+
+        # Get all possible extras keys from the first few components
+        components_sample = Component.objects.exclude(extras__isnull=True)[:100]
+        extras_keys = set()
+        for comp in components_sample:
+            if comp.extras:
+                extras_keys.update(comp.extras.keys())
+
+        # Add extras keys to header
+        header.extend(sorted(extras_keys))
+        writer.writerow(header)
+
+        # Write component data
+        for component in Component.objects.all().iterator():
+            row = [
+                component.mpn,
+                component.manufacturer,
+                component.value or '',
+                component.tolerance or '',
+                component.package_name or '',
+                component.description or '',
+                component.url_datasheet or '',
+                component.category_l1 or '',
+                component.category_l2 or '',
+                component.dmtuid or '',
+                component.dmt_tt or '',
+                component.dmt_ff or '',
+                component.dmt_cc or '',
+                component.dmt_ss or '',
+                component.dmt_xxx or '',
+                'YES' if component.rohs else 'NO' if component.rohs is False else '',
+                component.lifecycle or '',
+                component.temp_grade or '',
+            ]
+
+            # Add extras data
+            for key in sorted(extras_keys):
+                row.append(component.extras.get(key, '') if component.extras else '')
+
+            writer.writerow(row)
+
+        return response
 
 
 class InventoryItemViewSet(viewsets.ModelViewSet):

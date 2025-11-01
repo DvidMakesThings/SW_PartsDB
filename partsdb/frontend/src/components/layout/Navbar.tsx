@@ -1,109 +1,100 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Database, Layers, Upload, Paperclip, Settings, ExternalLink } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { Database, Package, Upload, Settings, ExternalLink, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-interface NavItemProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  isActive: boolean;
-  isExternal?: boolean;
-}
-
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, isActive, isExternal }) => {
-  if (isExternal) {
-    return (
-      <a
-        href={to}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-          "hover:bg-[var(--surface)] hover:text-[var(--accent)]"
-        )}
-      >
-        {icon}
-        <span>{label}</span>
-        <ExternalLink className="h-3 w-3 opacity-70" />
-      </a>
-    );
-  }
-  
-  return (
-    <Link
-      to={to}
-      className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-        isActive 
-          ? "bg-[var(--surface)] text-[var(--accent)]" 
-          : "hover:bg-[var(--surface)] hover:text-[var(--accent)]"
-      )}
-    >
-      {icon}
-      <span>{label}</span>
-    </Link>
-  );
-};
-
-const Navbar: React.FC = () => {
+export default function Navbar() {
   const location = useLocation();
-  const currentPath = location.pathname;
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    // Load theme from localStorage on mount
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } else {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const defaultTheme = prefersDark ? 'dark' : 'light';
+      setTheme(defaultTheme);
+      document.documentElement.setAttribute('data-theme', defaultTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
 
   const navItems = [
-    {
-      to: '/',
-      icon: <Database className="h-4 w-4" />,
-      label: 'Components'
-    },
-    {
-      to: '/inventory',
-      icon: <Layers className="h-4 w-4" />,
-      label: 'Inventory'
-    },
-    {
-      to: '/import',
-      icon: <Upload className="h-4 w-4" />,
-      label: 'Import CSV'
-    },
-    {
-      to: '/attachments',
-      icon: <Paperclip className="h-4 w-4" />,
-      label: 'Attachments'
-    }
+    { path: '/components', label: 'Components', icon: Database },
+    { path: '/inventory', label: 'Inventory', icon: Package },
+    { path: '/import', label: 'Import', icon: Upload },
   ];
 
+  const isActive = (path: string) => location.pathname.startsWith(path);
+
   return (
-    <nav className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-2">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-lg font-semibold mr-6 text-[var(--accent)]">PartsDB</h1>
-          <div className="flex items-center space-x-1">
-            {navItems.map((item) => (
-              <NavItem
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={item.label}
-                isActive={
-                  currentPath === item.to ||
-                  (item.to !== '/' && currentPath.startsWith(item.to))
-                }
-              />
+    <nav className="sticky top-0 z-50 bg-[--surface] border-b border-[--border] backdrop-blur-sm bg-opacity-90">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <Database className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-bold gradient-text">PartsDB</span>
+          </Link>
+
+          {/* Navigation Links */}
+          <div className="flex items-center gap-1">
+            {navItems.map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                to={path}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+                  transition-all duration-150
+                  ${isActive(path)
+                    ? 'bg-[--accent] text-white shadow-lg shadow-blue-500/20'
+                    : 'text-[--text-secondary] hover:text-[--text] hover:bg-[--surface-hover]'
+                  }
+                `}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </Link>
             ))}
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm text-[--text-secondary] hover:text-[--text] hover:bg-[--surface-hover] transition-all duration-150 ml-2 group"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-4 h-4 group-hover:-rotate-12 transition-transform duration-300" />
+              )}
+            </button>
+
+            {/* Admin Link */}
+            <a
+              href="http://127.0.0.1:8000/admin/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-[--text-secondary] hover:text-[--text] hover:bg-[--surface-hover] transition-all duration-150"
+            >
+              <Settings className="w-4 h-4" />
+              Admin
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
-        
-        <NavItem
-          to="/admin"
-          icon={<Settings className="h-4 w-4" />}
-          label="Admin"
-          isActive={false}
-          isExternal={true}
-        />
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

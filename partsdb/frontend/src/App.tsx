@@ -1,37 +1,31 @@
-import { useEffect } from 'react';
-import { Link, Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import Components from './pages/Components';
 import Inventory from './pages/Inventory';
 import ImportCsv from './pages/ImportCsv';
 import ComponentDetail from './pages/ComponentDetail';
-
-function Nav() {
-  useEffect(() => console.info('[UI] Nav mounted'), []);
-  return (
-    <div style={{background:'#161616',borderBottom:'1px solid #2a2d35'}}>
-      <div style={{display:'flex',gap:16,alignItems:'center',padding:'10px 16px',maxWidth:1200,margin:'0 auto'}}>
-        <div style={{fontWeight:700}}>PartsDB</div>
-        <Link to="/components">Components</Link>
-        <Link to="/inventory">Inventory</Link>
-        <Link to="/import">Import</Link>
-        <a href="http://127.0.0.1:8000/admin/" target="_blank" rel="noreferrer" style={{marginLeft:'auto'}}>Admin</a>
-      </div>
-    </div>
-  );
-}
+import Navbar from './components/layout/Navbar';
 
 export default function App() {
   return (
-    <>
-      <Nav />
-      <Routes>
-        <Route path="/" element={<Navigate to="/components" replace />} />
-        <Route path="/components" element={<Components />} />
-        <Route path="/components/:id" element={<ComponentDetail />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/import" element={<ImportCsv />} />
-        <Route path="*" element={<div style={{padding:24}}>Not Found</div>} />
-      </Routes>
-    </>
+    <div className="min-h-screen bg-[--bg]">
+      <Navbar />
+      <main className="container mx-auto px-4 py-6 max-w-7xl">
+        <Routes>
+          <Route path="/" element={<Navigate to="/components" replace />} />
+          <Route path="/components" element={<Components />} />
+          <Route path="/components/:id" element={<ComponentDetail />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/import" element={<ImportCsv />} />
+          <Route path="*" element={
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold mb-2">404 - Not Found</h1>
+                <p className="text-secondary">The page you're looking for doesn't exist.</p>
+              </div>
+            </div>
+          } />
+        </Routes>
+      </main>
+    </div>
   );
 }

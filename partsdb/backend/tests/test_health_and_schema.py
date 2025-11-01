@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 
 def test_health_ok(client):
     """Test that the health check endpoint returns OK."""

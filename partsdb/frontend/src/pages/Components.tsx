@@ -25,6 +25,35 @@ export default function Components() {
     setExpandedRows(newExpanded);
   };
 
+  const handleDatasheetClick = async (e: React.MouseEvent, componentId: string, datasheetUrl: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      // First, try to download the datasheet
+      const response = await fetch(`/api/components/${componentId}/fetch_datasheet/`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // If download successful, open the local file
+        if (result.saved && result.path) {
+          // Construct the media URL
+          const mediaUrl = `/media/${result.path.split('/media/')[1] || result.path}`;
+          window.open(mediaUrl, '_blank');
+        }
+      } else {
+        // If download fails, fall back to opening the original URL
+        window.open(datasheetUrl, '_blank');
+      }
+    } catch (error) {
+      // On error, fall back to opening the original URL
+      console.error('Failed to download datasheet:', error);
+      window.open(datasheetUrl, '_blank');
+    }
+  };
+
   const params = useMemo(() => ({
     page: page > 0 ? String(page) : '1',
     search
@@ -241,15 +270,13 @@ export default function Components() {
                         </td>
                         <td className="px-3 py-3 text-center">
                           {c.url_datasheet ? (
-                            <a
-                              href={c.url_datasheet}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={(e) => handleDatasheetClick(e, c.id, c.url_datasheet)}
                               className="inline-flex items-center gap-1 text-sm text-[--accent] hover:text-[--accent-hover]"
                               title="Download Datasheet"
                             >
                               <Download className="w-4 h-4" />
-                            </a>
+                            </button>
                           ) : (
                             <span className="text-xs text-tertiary">—</span>
                           )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Save } from 'lucide-react';
+import { X, Plus, Trash2, Save, Download, Edit2, MapPin } from 'lucide-react';
 import { api } from '../api/client';
 
 interface ComponentEditModalProps {
@@ -18,7 +18,14 @@ const FILE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+const getFileTypeLabel = (type: string, customType?: string) => {
+  if (customType) return customType;
+  const fileType = FILE_TYPES.find(ft => ft.value === type);
+  return fileType ? fileType.label : type.replace(/_/g, ' ');
+};
+
 export default function ComponentEditModal({ componentId, onClose, onSave }: ComponentEditModalProps) {
+  // v2 - Fixed hook ordering issue
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [component, setComponent] = useState<any>(null);
@@ -34,9 +41,17 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Inventory management
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [editingInventoryId, setEditingInventoryId] = useState<string | null>(null);
+  const [inventoryFormData, setInventoryFormData] = useState<any>({});
+  const [allLocations, setAllLocations] = useState<string[]>([]);
+
   useEffect(() => {
     loadComponent();
     loadAllPropertyNames();
+    loadInventoryItems();
+    loadAllLocations();
   }, [componentId]);
 
   const loadComponent = async () => {
@@ -82,6 +97,27 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
     }
   };
 
+  const loadInventoryItems = async () => {
+    try {
+      const response = await fetch(`/api/inventory/?component=${componentId}`);
+      const data = await response.json();
+      setInventoryItems(data.results || data);
+    } catch (error) {
+      console.error('Failed to load inventory items:', error);
+    }
+  };
+
+  const loadAllLocations = async () => {
+    try {
+      const response = await fetch('/api/inventory/by_location/');
+      const data = await response.json();
+      const locations = data.map((loc: any) => loc.location);
+      setAllLocations(locations.sort());
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -104,6 +140,11 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (selectedFileType === 'other' && !customFileType.trim()) {
+      alert('Please enter a custom file type name');
+      return;
+    }
+
     setUploadingFile(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -114,16 +155,28 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
     }
 
     try {
-      await fetch('/api/attachments/', {
+      console.log('Uploading file:', file.name, 'Type:', selectedFileType);
+      const response = await fetch('/api/attachments/', {
         method: 'POST',
         body: formData,
       });
-      loadComponent();
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed:', response.status, errorText);
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Upload successful:', result);
+
+      await loadComponent();
       setCustomFileType('');
       e.target.value = '';
-    } catch (error) {
+      alert('File uploaded successfully!');
+    } catch (error: any) {
       console.error('Failed to upload file:', error);
-      alert('Failed to upload file');
+      alert(`Failed to upload file: ${error.message}`);
     } finally {
       setUploadingFile(false);
     }
@@ -189,6 +242,56 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
     setFormData({ ...formData, extras: newExtras });
   };
 
+  const startEditingInventory = (item: any) => {
+    setEditingInventoryId(item.id);
+    setInventoryFormData({
+      quantity: item.quantity,
+      uom: item.uom,
+      storage_location: item.storage_location,
+      condition: item.condition,
+      lot_code: item.lot_code || '',
+      date_code: item.date_code || '',
+      supplier: item.supplier || '',
+      price_each: item.price_each || '',
+      note: item.note || '',
+    });
+  };
+
+  const cancelEditingInventory = () => {
+    setEditingInventoryId(null);
+    setInventoryFormData({});
+  };
+
+  const saveInventoryItem = async (itemId: string) => {
+    try {
+      await fetch(`/api/inventory/${itemId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inventoryFormData),
+      });
+      await loadInventoryItems();
+      setEditingInventoryId(null);
+      setInventoryFormData({});
+    } catch (error) {
+      console.error('Failed to save inventory item:', error);
+      alert('Failed to save inventory item');
+    }
+  };
+
+  const deleteInventoryItem = async (itemId: string) => {
+    if (!confirm('Delete this inventory item?')) return;
+
+    try {
+      await fetch(`/api/inventory/${itemId}/`, {
+        method: 'DELETE',
+      });
+      await loadInventoryItems();
+    } catch (error) {
+      console.error('Failed to delete inventory item:', error);
+      alert('Failed to delete inventory item');
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -204,10 +307,11 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
   );
 
   const hasDatasheetFile = component?.attachments?.some((att: any) => att.type === 'datasheet');
+  const stepFile = component?.attachments?.find((att: any) => att.type === 'three_d');
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-[--surface] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-[--surface] rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-[--surface] border-b border-[--border] p-6 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold">Edit Component</h2>
           <button onClick={onClose} className="text-[--text-secondary] hover:text-[--text]">
@@ -275,6 +379,21 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
                   />
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Datasheet URL */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Datasheet</h3>
+            <div className="grid grid-cols-3 gap-4 items-center">
+              <label className="text-sm font-medium">Datasheet URL</label>
+              <input
+                type="text"
+                value={formData.url_datasheet}
+                onChange={(e) => setFormData({ ...formData, url_datasheet: e.target.value })}
+                placeholder="https://example.com/datasheet.pdf"
+                className="col-span-2 px-3 py-2 bg-[--bg] border border-[--border] rounded-lg text-sm"
+              />
             </div>
           </div>
 
@@ -387,6 +506,131 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
             )}
           </div>
 
+          {/* Inventory Items */}
+          {inventoryItems.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Inventory Locations</h3>
+              <div className="space-y-3">
+                {inventoryItems.map((item) => (
+                  <div key={item.id} className="p-4 bg-[--bg] rounded-lg border border-[--border]">
+                    {editingInventoryId === item.id ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-[--text-secondary] mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              value={inventoryFormData.quantity}
+                              onChange={(e) => setInventoryFormData({ ...inventoryFormData, quantity: parseInt(e.target.value) })}
+                              className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-[--text-secondary] mb-1">Unit</label>
+                            <select
+                              value={inventoryFormData.uom}
+                              onChange={(e) => setInventoryFormData({ ...inventoryFormData, uom: e.target.value })}
+                              className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm"
+                            >
+                              <option value="pcs">Pieces</option>
+                              <option value="reel">Reel</option>
+                              <option value="tube">Tube</option>
+                              <option value="tray">Tray</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[--text-secondary] mb-1">Storage Location</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={inventoryFormData.storage_location}
+                              onChange={(e) => setInventoryFormData({ ...inventoryFormData, storage_location: e.target.value })}
+                              list="locations-datalist"
+                              className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm"
+                              placeholder="Enter or select location"
+                            />
+                            <datalist id="locations-datalist">
+                              {allLocations.map((loc) => (
+                                <option key={loc} value={loc} />
+                              ))}
+                            </datalist>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-[--text-secondary] mb-1">Condition</label>
+                            <select
+                              value={inventoryFormData.condition}
+                              onChange={(e) => setInventoryFormData({ ...inventoryFormData, condition: e.target.value })}
+                              className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm"
+                            >
+                              <option value="new">New</option>
+                              <option value="used">Used</option>
+                              <option value="expired">Expired</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-[--text-secondary] mb-1">Lot Code</label>
+                            <input
+                              type="text"
+                              value={inventoryFormData.lot_code}
+                              onChange={(e) => setInventoryFormData({ ...inventoryFormData, lot_code: e.target.value })}
+                              className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={cancelEditingInventory}
+                            className="px-3 py-1.5 text-sm rounded-lg border border-[--border] hover:bg-[--surface-hover]"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => saveInventoryItem(item.id)}
+                            className="px-3 py-1.5 text-sm rounded-lg bg-[--accent] hover:bg-[--accent-hover] text-white"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <MapPin className="w-5 h-5 text-[--accent]" />
+                          <div>
+                            <div className="font-medium">{item.storage_location}</div>
+                            <div className="text-sm text-[--text-secondary]">
+                              {item.quantity} {item.uom} · {item.condition}
+                              {item.lot_code && <span> · Lot: {item.lot_code}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => startEditingInventory(item)}
+                            className="text-[--accent] hover:text-[--accent-hover]"
+                            title="Edit inventory item"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteInventoryItem(item.id)}
+                            className="text-red-500 hover:text-red-600"
+                            title="Delete inventory item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* File Attachments */}
           <div>
             <h3 className="text-lg font-semibold mb-4">File Attachments</h3>
@@ -404,13 +648,23 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
                           {att.file?.split('/').pop()}
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleDeleteAttachment(att.id)}
-                        className="text-red-500 hover:text-red-600"
-                        title="Delete attachment"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={att.file_url || att.file}
+                          download
+                          className="text-[--accent] hover:text-[--accent-hover]"
+                          title="Download file"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => handleDeleteAttachment(att.id)}
+                          className="text-red-500 hover:text-red-600"
+                          title="Delete attachment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -424,20 +678,30 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
                   .map((att: any) => (
                     <div key={att.id} className="flex items-center justify-between p-3 bg-[--bg] rounded-lg border border-[--border]">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium capitalize">
-                          {att.custom_type || att.type.replace('_', ' ')}
+                        <span className="text-sm font-medium">
+                          {getFileTypeLabel(att.type, att.custom_type)}
                         </span>
                         <span className="text-xs text-[--text-secondary]">
                           {att.file?.split('/').pop()}
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleDeleteAttachment(att.id)}
-                        className="text-red-500 hover:text-red-600"
-                        title="Delete attachment"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={att.file_url || att.file}
+                          download
+                          className="text-[--accent] hover:text-[--accent-hover]"
+                          title="Download file"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => handleDeleteAttachment(att.id)}
+                          className="text-red-500 hover:text-red-600"
+                          title="Delete attachment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -479,8 +743,14 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
                     type="file"
                     onChange={handleFileUpload}
                     disabled={uploadingFile}
-                    className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-[--accent] file:text-white hover:file:bg-[--accent-hover]"
+                    className="w-full px-3 py-2 bg-[--surface] border border-[--border] rounded-lg text-sm file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-[--accent] file:text-white hover:file:bg-[--accent-hover] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
+                  {uploadingFile && (
+                    <p className="text-xs text-[--accent] mt-2 flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 border-2 border-[--accent] border-t-transparent rounded-full animate-spin" />
+                      Uploading file...
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

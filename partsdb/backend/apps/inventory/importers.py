@@ -35,6 +35,11 @@ DEFAULT_FIELD_MAP = {
     "dmt_cc": ["cc"],
     "dmt_ss": ["ss"],
     "dmt_xxx": ["xxx"],
+    # Inventory fields
+    "quantity": ["quantity"],
+    "storage_location": ["location", "storage_location"],
+    "uom": ["uom", "unit of measure"],
+    "condition": ["condition"],
     # Special handling for these fields
     "package": ["package", "package name", "package (lxw)", "package / case"],
     "height": ["height", "height - after installation (max.)"],

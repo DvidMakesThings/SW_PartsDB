@@ -39,37 +39,31 @@ def download_datasheet(url):
 def save_datasheet(component, file_content):
     """
     Save a datasheet to the media directory and create an Attachment
+    Stores in {MPN}/{MPN}.pdf format
     """
+    if not component.mpn:
+        raise ValueError("Component must have an MPN to save datasheet")
+
     # Calculate SHA256
     sha256 = hashlib.sha256(file_content).hexdigest()
-    
-    # Check if we already have this file
-    existing = Attachment.objects.filter(sha256=sha256, type='datasheet').first()
+
+    # Check if this component already has a datasheet attachment
+    existing = Attachment.objects.filter(component=component, type='datasheet').first()
     if existing:
-        # Update the component reference if needed
-        if existing.component_id != component.id:
-            # Create a new attachment pointing to the same file
-            attachment = Attachment(
-                component=component,
-                type='datasheet',
-                file=existing.file,
-                source_url=component.url_datasheet,
-                sha256=sha256
-            )
-            attachment.save()
+        # Update existing attachment
+        existing.sha256 = sha256
+        existing.source_url = component.url_datasheet
+
+        # Sanitize MPN for path
+        safe_mpn = "".join(c for c in component.mpn if c.isalnum() or c in ('-', '_', '.'))
+        if not safe_mpn:
+            safe_mpn = f"component_{component.id}"
+        filename = f"{safe_mpn}.pdf"
+
+        # Save the file
+        existing.file.save(filename, ContentFile(file_content), save=True)
         return existing.file.path
-    
-    # Create relative path based on deterministic structure
-    rel_path = datasheet_relpath(
-        component.manufacturer,
-        component.category_l1,
-        component.mpn
-    )
-    
-    # Make sure directory exists
-    abs_dir = Path(settings.MEDIA_ROOT) / rel_path.parent
-    os.makedirs(abs_dir, exist_ok=True)
-    
+
     # Create a new attachment
     attachment = Attachment(
         component=component,
@@ -77,14 +71,16 @@ def save_datasheet(component, file_content):
         source_url=component.url_datasheet,
         sha256=sha256
     )
-    
-    # Save the file
-    attachment.file.save(
-        rel_path.name,
-        ContentFile(file_content),
-        save=True
-    )
-    
+
+    # Sanitize MPN for path
+    safe_mpn = "".join(c for c in component.mpn if c.isalnum() or c in ('-', '_', '.'))
+    if not safe_mpn:
+        safe_mpn = f"component_{component.id}"
+    filename = f"{safe_mpn}.pdf"
+
+    # Save the file (upload_to will handle the folder structure)
+    attachment.file.save(filename, ContentFile(file_content), save=True)
+
     return attachment.file.path
 
 

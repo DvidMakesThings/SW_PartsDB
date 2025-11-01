@@ -7,6 +7,17 @@ from apps.core.models import TimeStampedModel
 from apps.inventory.models import Component
 
 
+def attachment_upload_path(instance, filename):
+    """
+    Generate upload path for attachments.
+    All files are stored in MPN-named folders: {MPN}/{filename}
+    """
+    mpn = instance.component.mpn
+    # Sanitize MPN for use in path (remove invalid characters)
+    safe_mpn = "".join(c for c in mpn if c.isalnum() or c in ('-', '_', '.'))
+    return f"{safe_mpn}/{filename}"
+
+
 class Attachment(TimeStampedModel):
     """
     Model representing a file attachment for a component.
@@ -29,7 +40,7 @@ class Attachment(TimeStampedModel):
     )
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     custom_type = models.CharField(max_length=100, null=True, blank=True, help_text='Custom file type when "Other" is selected')
-    file = models.FileField(upload_to='uploads/')  # Will be overridden by service
+    file = models.FileField(upload_to=attachment_upload_path)
     source_url = models.URLField(null=True, blank=True)
     sha256 = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     

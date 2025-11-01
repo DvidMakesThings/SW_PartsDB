@@ -1,90 +1,82 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Package, Plus } from 'lucide-react';
-import { api } from '../api/client';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, RefreshCw, Package, ChevronDown, ChevronRight } from 'lucide-react';
+
+interface LocationInventory {
+  location: string;
+  total_items: number;
+  total_components: number;
+  components: {
+    id: string;
+    mpn: string;
+    manufacturer: string;
+    description: string;
+    quantity: number;
+    uom: string;
+  }[];
+}
 
 export default function Inventory() {
-  const [sp, setSp] = useSearchParams();
-  const page = Number(sp.get('page') || 1);
-  const search = sp.get('search') || '';
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<{count:number; results:any[]}>({count:0, results:[]});
+  const [locations, setLocations] = useState<LocationInventory[]>([]);
   const [error, setError] = useState<string|undefined>();
-
-  const params = useMemo(() => ({
-    page: page > 0 ? String(page) : '1',
-    search
-  }), [page, search]);
+  const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError(undefined);
-      try {
-        setData(await api.listInventory(params));
-      }
-      catch (e:any) {
-        setError(e?.message || 'Failed to load inventory');
-      }
-      finally {
-        setLoading(false);
-      }
-    })();
-  }, [params]);
+    loadLocations();
+  }, []);
 
-  const setQuery = (q: Partial<{page:number;search:string}>) => {
-    const next = new URLSearchParams(sp);
-    if (q.page !== undefined) next.set('page', String(q.page));
-    if (q.search !== undefined) {
-      next.set('search', q.search);
-      next.set('page','1');
+  const loadLocations = async () => {
+    setLoading(true);
+    setError(undefined);
+    try {
+      const response = await fetch('/api/inventory/by_location/');
+      if (!response.ok) throw new Error('Failed to load inventory');
+      const data = await response.json();
+      setLocations(data);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load inventory');
+    } finally {
+      setLoading(false);
     }
-    setSp(next, { replace: true });
   };
 
-  const totalPages = Math.ceil(data.count / 50);
+  const filteredLocations = locations.filter(loc =>
+    loc.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Inventory</h1>
+          <h1 className="text-3xl font-bold mb-1">Inventory by Location</h1>
           <p className="text-secondary">
-            Track and manage component stock
-            {data.count > 0 && <span className="ml-2">· {data.count.toLocaleString()} items</span>}
+            View components organized by storage location
+            {locations.length > 0 && <span className="ml-2">· {locations.length} location{locations.length !== 1 ? 's' : ''}</span>}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[--surface] hover:bg-[--surface-hover] border border-[--border] text-sm font-medium transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[--accent] hover:bg-[--accent-hover] text-white text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Item
-          </button>
-        </div>
+        <button
+          onClick={loadLocations}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[--surface] hover:bg-[--surface-hover] border border-[--border] text-sm font-medium transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
 
       {/* Search */}
       <div className="card p-4">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
-            <input
-              type="text"
-              placeholder="Search inventory..."
-              value={search}
-              onChange={(e) => setQuery({search: e.target.value})}
-              className="w-full pl-10 pr-4 py-2.5 bg-[--bg] border border-[--border] rounded-lg text-sm focus:border-[--accent] focus:ring-2 focus:ring-[--accent] focus:ring-opacity-20 transition-all"
-            />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[--text-tertiary]" />
+          <input
+            type="text"
+            placeholder="Search locations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-[--bg] border border-[--border] rounded-lg text-sm focus:border-[--accent] focus:ring-2 focus:ring-[--accent] focus:ring-opacity-20 transition-all"
+          />
         </div>
       </div>
 
@@ -95,112 +87,94 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="card overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="flex flex-col items-center gap-3">
-              <RefreshCw className="w-8 h-8 text-[--accent] animate-spin" />
-              <p className="text-secondary">Loading inventory...</p>
-            </div>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="w-8 h-8 text-[--accent] animate-spin" />
+            <p className="text-secondary">Loading inventory...</p>
           </div>
-        ) : data.results.length === 0 ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-[--surface-hover] flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-[--text-tertiary]" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">No inventory items</h3>
-              <p className="text-secondary text-sm mb-4">
-                {search ? 'Try adjusting your search criteria' : 'Get started by adding inventory items'}
-              </p>
-              <button className="px-4 py-2 rounded-lg bg-[--accent] hover:bg-[--accent-hover] text-white text-sm font-medium transition-colors">
-                Add First Item
+        </div>
+      ) : filteredLocations.length === 0 ? (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-[--surface-hover] flex items-center justify-center mx-auto mb-4">
+              <Package className="w-8 h-8 text-[--text-tertiary]" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No inventory items</h3>
+            <p className="text-secondary text-sm">
+              {searchQuery ? 'No locations match your search' : 'Get started by importing inventory items'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredLocations.map((location) => (
+            <div
+              key={location.location}
+              className="card overflow-hidden"
+            >
+              <button
+                onClick={() => setExpandedLocation(expandedLocation === location.location ? null : location.location)}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-[--surface-hover] transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-2xl">📦</div>
+                  <div className="text-left">
+                    <h2 className="text-lg font-semibold">{location.location}</h2>
+                    <p className="text-sm text-secondary">
+                      {location.total_components} component{location.total_components !== 1 ? 's' : ''} · {location.total_items} total items
+                    </p>
+                  </div>
+                </div>
+                {expandedLocation === location.location ? (
+                  <ChevronDown className="w-5 h-5 text-[--text-secondary]" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-[--text-secondary]" />
+                )}
               </button>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[--border] bg-[--surface-hover]">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">MPN</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Quantity</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">UoM</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Location</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Supplier</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Price Each</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Condition</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[--border]">
-                {data.results.map((it: any) => (
-                  <tr key={it.id} className="hover:bg-[--surface-hover] transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium">{it.component?.mpn || '—'}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        {it.quantity}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-secondary">{it.uom || 'pcs'}</td>
-                    <td className="px-6 py-4 text-sm">{it.storage_location || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-secondary">{it.supplier || '—'}</td>
-                    <td className="px-6 py-4 text-right text-sm font-medium">
-                      {it.price_each ? `$${Number(it.price_each).toFixed(2)}` : '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      {it.condition && (
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                          it.condition === 'new' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                          it.condition === 'used' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
-                          'bg-red-500/10 text-red-400 border border-red-500/20'
-                        }`}>
-                          {it.condition}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
-        {/* Pagination */}
-        {!loading && data.results.length > 0 && (
-          <div className="border-t border-[--border] px-6 py-4 flex items-center justify-between">
-            <div className="text-sm text-secondary">
-              Showing <span className="font-medium text-[--text]">{(page - 1) * 50 + 1}</span> to{' '}
-              <span className="font-medium text-[--text]">{Math.min(page * 50, data.count)}</span> of{' '}
-              <span className="font-medium text-[--text]">{data.count.toLocaleString()}</span> items
+              {expandedLocation === location.location && (
+                <div className="border-t border-[--border]">
+                  <table className="w-full">
+                    <thead className="bg-[--surface-hover]">
+                      <tr>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">MPN</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Manufacturer</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Description</th>
+                        <th className="text-right px-6 py-3 text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[--border]">
+                      {location.components.map((component, idx) => (
+                        <tr key={idx} className="hover:bg-[--surface-hover] transition-colors">
+                          <td className="px-6 py-4">
+                            <Link
+                              to={`/components/${component.id}`}
+                              className="font-mono text-sm font-medium text-[--accent] hover:text-[--accent-hover]"
+                            >
+                              {component.mpn}
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4 text-sm">{component.manufacturer}</td>
+                          <td className="px-6 py-4 text-sm text-secondary max-w-md truncate">
+                            {component.description || '—'}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              {component.quantity} {component.uom}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setQuery({page: Math.max(1, page - 1)})}
-                disabled={page <= 1}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[--border] bg-[--surface] hover:bg-[--surface-hover] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </button>
-              <div className="flex items-center gap-1 px-3 py-1.5 text-sm">
-                <span className="font-medium">Page {page}</span>
-                {totalPages > 0 && <span className="text-secondary">of {totalPages}</span>}
-              </div>
-              <button
-                onClick={() => setQuery({page: page + 1})}
-                disabled={page >= totalPages}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[--border] bg-[--surface] hover:bg-[--surface-hover] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

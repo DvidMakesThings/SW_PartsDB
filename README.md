@@ -2,7 +2,27 @@
 
 PartsDB is a comprehensive inventory management system for electronic components, supporting component cataloging, inventory tracking, datasheet management, and CSV imports.
 
-## Quick Start (No Docker)
+## 🚀 Quick Start with Docker (Recommended)
+
+The easiest way to run PartsDB is using Docker:
+
+### Windows
+```powershell
+.\deploy.ps1
+```
+
+### Linux/macOS
+```bash
+./deploy.sh
+```
+
+Then open http://localhost:5173 in your browser!
+
+📖 See [QUICK_START.md](QUICK_START.md) for details or [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for comprehensive documentation.
+
+---
+
+## Manual Setup (No Docker)
 
 ### Windows / PowerShell
 

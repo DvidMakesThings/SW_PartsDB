@@ -36,19 +36,19 @@ class ComponentViewSet(viewsets.ModelViewSet):
         """
         queryset = super().get_queryset()
         queryset = queryset.annotate(inventory_count=Count('inventory_items'))
-        
+
         # Filter by in_stock_only if param is provided
         in_stock_only = self.request.query_params.get('in_stock_only', False)
         if in_stock_only and in_stock_only.lower() in ('true', '1', 'yes'):
             queryset = queryset.filter(inventory_items__quantity__gt=0).distinct()
-            
+
         # Filter by has_stock (same as in_stock_only)
         has_stock = self.request.query_params.get('has_stock', False)
         if has_stock and has_stock.lower() in ('true', '1', 'yes'):
             queryset = queryset.filter(inventory_items__quantity__gt=0).distinct()
-            
+
         return queryset
-    
+
     @action(detail=True, methods=['post'])
     def fetch_datasheet(self, request, pk=None):
         """
@@ -237,3 +237,41 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     search_fields = ['component__mpn', 'component__manufacturer', 'storage_location']
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
+
+    @action(detail=False, methods=['get'])
+    def by_location(self, request):
+        """
+        Group inventory items by storage location
+        """
+        from django.db.models import Sum
+
+        locations = {}
+
+        # Get all inventory items grouped by location
+        items = InventoryItem.objects.select_related('component').all()
+
+        for item in items:
+            location = item.storage_location
+            if location not in locations:
+                locations[location] = {
+                    'location': location,
+                    'total_items': 0,
+                    'total_components': 0,
+                    'components': []
+                }
+
+            locations[location]['total_items'] += item.quantity
+            locations[location]['total_components'] += 1
+            locations[location]['components'].append({
+                'id': str(item.component.id),
+                'mpn': item.component.mpn,
+                'manufacturer': item.component.manufacturer,
+                'description': item.component.description or '',
+                'quantity': item.quantity,
+                'uom': item.uom,
+            })
+
+        # Sort locations by name
+        result = sorted(locations.values(), key=lambda x: x['location'])
+
+        return Response(result)

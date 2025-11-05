@@ -157,12 +157,24 @@ class CSVImporter:
                 
                 # Map fields using the header map
                 for header, value in row.items():
-                    if header in header_map:
-                        model_field = header_map[header]
-                        mapped_row[model_field] = self.clean_text(value)
+                    # skip columns with missing header (DictReader uses None for “extra” fields)
+                    if header is None or str(header).strip() == '':
+                        # if extra fields came as a list, you can optionally keep them:
+                        # extras.setdefault('_extra', []).extend(value if isinstance(value, list) else [value])
+                        continue
+
+                    key = str(header).strip().lower()
+
+                    # make value always a clean string
+                    if isinstance(value, list):
+                        value = '; '.join('' if v is None else str(v) for v in value)
+                    elif value is None:
+                        value = ''
                     else:
-                        # Store unknown fields in extras
-                        extras[header.lower()] = self.clean_text(value)
+                        value = str(value)
+
+                    extras[key] = self.clean_text(value)
+
                 
                 if extras:
                     mapped_row['extras'] = extras

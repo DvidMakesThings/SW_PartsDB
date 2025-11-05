@@ -138,34 +138,33 @@ class CSVImporter:
     
     def read_csv(self):
         """
-        Read the CSV file and yield rows as dictionaries
+        Read the CSV and yield per-row dicts with mapped fields + extras.
+        - Handles extra columns safely (no None.lower crash).
+        - Normalizes values (lists -> string, strip, encoding quirks).
         """
-        with open(self.file_path, 'r', encoding=self.encoding) as csvfile:
-            reader = csv.DictReader(csvfile, delimiter=self.delimiter)
-            
-            # Map CSV headers to model fields
+        with open(self.file_path, 'r', encoding=self.encoding, newline='') as f:
+            # Put any surplus columns under '_extra' instead of header=None
+            reader = csv.DictReader(f, delimiter=self.delimiter, restkey='_extra', restval='')
+
+            # Build case-insensitive header→model_field map once
             header_map = {}
-            for model_field, csv_headers in self.field_map.items():
-                for header in reader.fieldnames:
-                    if header.lower() in [h.lower() for h in csv_headers]:
-                        header_map[header] = model_field
-            
-            # Process each row
+            lower_targets = {h.lower(): mf for mf, headers in self.field_map.items() for h in headers}
+            for h in (reader.fieldnames or []):
+                if h is None:
+                    continue
+                k = h.strip().lower()
+                if k in lower_targets:
+                    header_map[h] = lower_targets[k]
+
             for row in reader:
-                mapped_row = {}
-                extras = {}
-                
-                # Map fields using the header map
+                mapped_row, extras = {}, {}
+
                 for header, value in row.items():
-                    # skip columns with missing header (DictReader uses None for “extra” fields)
-                    if header is None or str(header).strip() == '':
-                        # if extra fields came as a list, you can optionally keep them:
-                        # extras.setdefault('_extra', []).extend(value if isinstance(value, list) else [value])
+                    # skip surplus list captured by restkey
+                    if header in (None, '', '_extra'):
                         continue
 
-                    key = str(header).strip().lower()
-
-                    # make value always a clean string
+                    # normalize value to string
                     if isinstance(value, list):
                         value = '; '.join('' if v is None else str(v) for v in value)
                     elif value is None:
@@ -173,13 +172,20 @@ class CSVImporter:
                     else:
                         value = str(value)
 
-                    extras[key] = self.clean_text(value)
+                    value = self.clean_text(value)
+                    norm_key = header.strip().lower()
 
-                
+                    # map to model field if configured, else shove to extras
+                    model_field = header_map.get(header)
+                    if model_field:
+                        mapped_row[model_field] = value
+                    else:
+                        extras[norm_key] = value
+
                 if extras:
                     mapped_row['extras'] = extras
-                
                 yield mapped_row
+
     
     def process_row(self, row):
         """

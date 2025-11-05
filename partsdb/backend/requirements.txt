@@ -13,4 +13,4 @@ pytest==8.3.2
 pytest-django==4.8.0
 factory-boy==3.3.0
 PyYAML==6.0.1
-gunicorn==23.0.0django-cors-headers
+gunicorn==23.0.0

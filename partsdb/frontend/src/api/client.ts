@@ -46,13 +46,13 @@ export const api = {
     return http<any>('/attachments/', { method: 'POST', body: fd });
   },
 
-  // CSV import (force UTF-8 + semicolon delimiter)
-  importCsv: async (file: File, dryRun: boolean, encoding: string = 'utf-8') => {
+  // CSV import
+  importCsv: async (file: File, dryRun: boolean, encoding: string = 'latin1') => {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('dry_run', String(dryRun));
     fd.append('encoding', encoding);
-    fd.append('delimiter', ';'); // ← add this
+    fd.append('delimiter', ';');
     return http<any>('/import/csv/', { method: 'POST', body: fd });
   },
 };

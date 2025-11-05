@@ -53,7 +53,7 @@ class CSVImporter:
     """
     Importer class for CSV files
     """
-    def __init__(self, file_path, dry_run=False, encoding='utf-8', delimiter=';'):
+    def __init__(self, file_path, dry_run=False, encoding='utf-8', delimiter=','):
         self.file_path = file_path
         self.dry_run = dry_run
         self.encoding = encoding

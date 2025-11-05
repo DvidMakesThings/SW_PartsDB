@@ -5,14 +5,15 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://backend:8000',   // <— Docker service name!
         changeOrigin: true,
-      }
-    }
+        secure: false,
+      },
+    },
   },
   resolve: {
     alias: {

@@ -66,7 +66,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_BASE=http://backend:8000
+      - VITE_BACKEND_ORIGIN=http://192.168.0.25:8000
     depends_on:
       - backend
 

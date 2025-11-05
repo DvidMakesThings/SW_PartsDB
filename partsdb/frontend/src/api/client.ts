@@ -52,7 +52,7 @@ export const api = {
     fd.append('file', file);
     fd.append('dry_run', String(dryRun));
     fd.append('encoding', encoding);
-    fd.append('delimiter', ';');
+    // fd.append('delimiter', ',');
     return http<any>('/import/csv/', { method: 'POST', body: fd });
   },
 };

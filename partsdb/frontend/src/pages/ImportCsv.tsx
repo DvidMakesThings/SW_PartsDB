@@ -5,7 +5,7 @@ import { api } from '../api/client';
 export default function ImportCsv() {
   const [file, setFile] = useState<File|null>(null);
   const [dry, setDry] = useState(false);
-  const [encoding, setEncoding] = useState('latin1');
+  const [encoding, setEncoding] = useState('utf-8');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any|null>(null);
   const [error, setError] = useState<string|undefined>();

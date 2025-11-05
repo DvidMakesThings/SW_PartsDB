@@ -70,26 +70,13 @@ class CSVImporter:
         self.categorizer = ComponentCategorizer()
         
     def clean_text(self, value):
-        """
-        Clean text by fixing encoding issues and normalizing characters.
-        Always returns a string (possibly empty).
-        """
         if value is None:
-            return ""
-        if isinstance(value, list):
-            value = "; ".join("" if v is None else str(v) for v in value)
-        else:
-            value = str(value)
-
-        # Fix common encoding issues
-        value = value.replace('\u00c2\u00b0', '\u00b0')  # Â° -> °
-        value = value.replace('Â°', '°')                # variant
-        value = value.replace('\u00c2', '')             # stray Â
-        # Normalize various dashes to ASCII hyphen
+            return ''
+        value = str(value)
+        value = value.replace('\u00c2\u00b0', '\u00b0').replace('Â°', '°').replace('\u00c2', '')
         value = re.sub(r'[\u2010-\u2015]', '-', value)
-        # Strip accidental BOM-as-text at start of a field
-        value = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', value)
         return value.strip()
+
 
     def _open_text_with_fallback(self):
         """
@@ -179,88 +166,108 @@ class CSVImporter:
 
     def read_csv(self):
         """
-        Read the CSV file, auto-detect delimiter (',' ';' '|' '\t'), strip BOM,
-        normalize headers, and yield rows with mpn/manufacturer/quantity populated.
+        Read the CSV file and yield rows as dictionaries
+        - Strips UTF-8 BOM from the first header
+        - Case-insensitive header matching
+        - Maps known synonyms via self.field_map (e.g. Location -> storage_location)
+        - Puts everything else into 'extras' (lowercased keys)
         """
-        # open with utf-8-sig to auto-strip BOM in the file stream (fallback stays safe)
-        enc = self.encoding or 'utf-8-sig'
-        with open(self.file_path, 'r', encoding=enc, errors='replace', newline='') as csvfile:
-            sample = csvfile.read(8192)
-            # decide delimiter
-            delim = self.delimiter
-            if not delim:
-                if (',' in sample) ^ (';' in sample):
-                    delim = ',' if ',' in sample else ';'
-                else:
-                    try:
-                        dialect = csv.Sniffer().sniff(sample, delimiters=',;|\t')
-                        delim = dialect.delimiter
-                    except Exception:
-                        delim = ','  # sane default
-            csvfile.seek(0)
+        def norm_header(h):
+            if h is None:
+                return None
+            # strip BOM and whitespace, make lowercase for matching
+            return str(h).lstrip('\ufeff').strip()
 
-            reader = csv.DictReader(csvfile, delimiter=delim)
-            # Build a normalized header map (normalized -> original)
-            norm_to_orig = {}
-            for h in (reader.fieldnames or []):
-                n = self.normalize_header(h)
-                if n:
-                    norm_to_orig[n] = h
+        with open(self.file_path, 'r', encoding=self.encoding, newline='') as f:
+            # Let csv handle both ',' and ';' when delimiter not specified
+            reader = csv.DictReader(f, delimiter=self.delimiter)
 
-            # header aliases
-            mpn_aliases = ['mpn', 'part number', 'manufacturer part number', 'mfr part', 'mfr p/n']
-            mfr_aliases = ['manufacturer', 'mfr', 'brand', 'maker']
-            qty_aliases = ['quantity', 'qty', 'stock', 'count', 'pcs']
+            # Normalize fieldnames: strip BOM from the first header and lowercase for matching
+            raw_headers = reader.fieldnames or []
+            norm_headers = [norm_header(h) for h in raw_headers]
+            # Rebind DictReader's fieldnames so subsequent rows use normalized headers
+            reader.fieldnames = norm_headers
 
-            def pick(row_norm, aliases):
-                for a in aliases:
-                    if a in row_norm:
-                        v = row_norm[a]
-                        if isinstance(v, list):
-                            v = '; '.join('' if x is None else str(x) for x in v)
-                        if v is not None and str(v).strip() != '':
-                            return str(v)
-                return ''
+            # Build header_map: csv_header -> model_field (using DEFAULT_FIELD_MAP)
+            header_map = {}
+            for model_field, csv_headers in self.field_map.items():
+                targets = [h.lower() for h in csv_headers]
+                for h in norm_headers:
+                    if h and h.lower() in targets:
+                        header_map[h] = model_field
 
             for raw_row in reader:
-                # normalize keys for this row
-                row_norm = {}
-                for k, v in (raw_row or {}).items():
-                    nk = self.normalize_header(k)
-                    if nk is None or nk == '':
-                        continue
-                    # coerce value to string
-                    if isinstance(v, list):
-                        vv = '; '.join('' if x is None else str(x) for x in v)
-                    elif v is None:
-                        vv = ''
-                    else:
-                        vv = str(v)
-                    row_norm[nk] = self.clean_text(vv)
-
-                mapped_row = {}
-                # requireds
-                mapped_row['mpn'] = self.clean_text(pick(row_norm, mpn_aliases))
-                mapped_row['manufacturer'] = self.clean_text(pick(row_norm, mfr_aliases))
-
-                # quantity (optional)
-                q_raw = pick(row_norm, qty_aliases)
-                try:
-                    mapped_row['quantity'] = int(float(q_raw)) if q_raw else 0
-                except Exception:
-                    mapped_row['quantity'] = 0
-
-                # extras: everything else except columns we consumed
-                consumed = set(mpn_aliases + mfr_aliases + qty_aliases)
+                # keys in raw_row now use normalized headers (lowercased by norm_header)
+                mapped = {}
                 extras = {}
-                for nk, vv in row_norm.items():
-                    if nk in consumed:
-                        continue
-                    extras[nk] = vv
-                if extras:
-                    mapped_row['extras'] = extras
 
-                yield mapped_row
+                # First, copy mapped fields
+                for h, v in raw_row.items():
+                    key = norm_header(h)
+                    # csv can yield None headers for overflow columns; skip them
+                    if not key:
+                        continue
+
+                    # Coerce value to clean string
+                    if isinstance(v, list):
+                        v = '; '.join('' if x is None else str(x) for x in v)
+                    elif v is None:
+                        v = ''
+                    else:
+                        v = str(v)
+
+                    v = self.clean_text(v)
+
+                    if key in header_map:
+                        mf = header_map[key]
+                        mapped[mf] = v
+                    else:
+                        # anything unmapped goes to extras under lowercase key
+                        extras[key.lower()] = v
+
+                # Quantity should be numeric if present
+                q = mapped.get('quantity') or extras.get('quantity')
+                if q is not None and q != '':
+                    try:
+                        mapped['quantity'] = int(str(q).replace(',', '').strip())
+                    except ValueError:
+                        # leave it as-is; process_row guards it anyway
+                        pass
+
+                # Ensure we have canonical keys for downstream:
+                # mpn / manufacturer from either mapped or extras
+                mpn_key = 'mpn'
+                mfr_key = 'manufacturer'
+                if 'mpn' not in mapped:
+                    mapped['mpn'] = extras.get('mpn', '')
+                if 'manufacturer' not in mapped:
+                    mapped['manufacturer'] = extras.get('manufacturer', '')
+
+                # Location -> storage_location (so inventory views work)
+                if 'storage_location' not in mapped:
+                    loc = extras.get('location')
+                    if loc:
+                        mapped['storage_location'] = loc
+
+                # Common optional fields often used in UI / models
+                for src, dst in [
+                    ('datasheet', 'url_datasheet'),
+                    ('description', 'description'),
+                    ('package', 'package'),  # free-text name; process_row reads as package_name
+                    ('value', 'value'),
+                    ('dmtuid', 'dmtuid'),
+                    ('tt', 'dmt_tt'), ('ff', 'dmt_ff'),
+                    ('cc', 'dmt_cc'), ('ss', 'dmt_ss'),
+                    ('xxx', 'dmt_xxx'),
+                ]:
+                    if dst not in mapped and src in extras:
+                        mapped[dst] = extras[src]
+
+                if extras:
+                    mapped['extras'] = extras
+
+                yield mapped
+
 
     def _norm_key(self, s):
         if s is None:

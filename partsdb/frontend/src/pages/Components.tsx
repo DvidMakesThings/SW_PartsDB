@@ -25,6 +25,27 @@ export default function Components() {
     setExpandedRows(newExpanded);
   };
 
+const DISPLAY_KEYS: Record<string, string> = {
+  tt: 'Domain',
+  ff: 'Family',
+  cc: 'Class',
+  ss: 'Subclass',
+  xxx: 'Sequence',
+  rohs: 'RoHS',
+  dmtuid: 'DMTUID',
+};
+
+const formatKey = (k: string) =>
+  DISPLAY_KEYS[k.toLowerCase()] ??
+  k.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+
+const DMT_KEYS = new Set(['tt', 'ff', 'cc', 'ss', 'xxx', 'dmtuid']);
+
+// optional zero-pad for TT/FF/CC/SS/XXX if they are numeric strings
+const zp = (v?: string | number | null, len = 2) =>
+  (v ?? '') === '' ? '' : String(v).padStart(len, '0');
+
+
   const handleDatasheetClick = async (e: React.MouseEvent, componentId: string, datasheetUrl: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -130,7 +151,7 @@ export default function Components() {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search by MPN, manufacturer, description, DMT ID... (Barcode scanner ready)"
+              placeholder="Search by MPN, manufacturer, description, DMT UID..."
               value={search}
               onChange={(e) => setQuery({search: e.target.value})}
               onKeyPress={(e) => {
@@ -327,23 +348,34 @@ export default function Components() {
                                 </div>
                               )}
 
-                              {/* All Other Properties */}
-                              {extras && Object.keys(extras).length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-[--text-secondary] uppercase tracking-wider mb-3">Additional Properties</h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto pr-2">
-                                    {Object.entries(extras)
-                                      .filter(([key]) => !['location', 'quantity', 'operating temperature', 'rohs', 'package / case', 'package'].includes(key.toLowerCase()))
-                                      .filter(([_, value]) => value && value !== '' && value !== '[]' && value !== "['']")
-                                      .map(([key, value]: [string, any]) => (
-                                        <div key={key} className="text-sm">
-                                          <span className="text-xs text-[--text-tertiary] capitalize block mb-1">{key}</span>
-                                          <p className="text-[--text] break-words">{String(value)}</p>
+                              {/* ---------- ADDITIONAL PROPERTIES ---------- */}
+                              {(() => {
+                                const extras = c.extras || {};
+                                // drop DMT keys so they don't show twice
+                                const filtered = Object.entries(extras).filter(
+                                  ([k, v]) => !DMT_KEYS.has(k.toLowerCase()) && v != null && String(v).trim() !== ''
+                                );
+                                if (!filtered.length) return null;
+
+                                return (
+                                  <div className="grid grid-cols-12 gap-x-8 gap-y-4 mt-6">
+                                    <div className="col-span-12 text-sm font-semibold text-[--text-secondary]">
+                                      ADDITIONAL PROPERTIES
+                                    </div>
+
+                                    <div className="col-span-12 grid grid-cols-12 gap-x-8 gap-y-6">
+                                      {filtered.map(([key, value]) => (
+                                        <div key={key} className="col-span-12 sm:col-span-4">
+                                          <span className="text-xs text-[--text-tertiary] block mb-1">
+                                            {formatKey(key)}
+                                          </span>
+                                          <span className="text-sm break-words">{String(value)}</span>
                                         </div>
                                       ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           </td>
                         </tr>

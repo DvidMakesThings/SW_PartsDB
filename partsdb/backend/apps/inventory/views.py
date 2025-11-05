@@ -240,18 +240,14 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def by_location(self, request):
-        """
-        Group inventory items by storage location
-        """
         from django.db.models import Sum
 
         locations = {}
-
-        # Get all inventory items grouped by location
         items = InventoryItem.objects.select_related('component').all()
 
         for item in items:
-            location = item.storage_location
+            # normalize empty / null to a stable label
+            location = (item.storage_location or '').strip() or 'Unspecified'
             if location not in locations:
                 locations[location] = {
                     'location': location,
@@ -260,18 +256,17 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
                     'components': []
                 }
 
-            locations[location]['total_items'] += item.quantity
+            locations[location]['total_items'] += int(item.quantity or 0)
             locations[location]['total_components'] += 1
             locations[location]['components'].append({
-                'id': str(item.component.id),
+                'id': str(item.component_id),
                 'mpn': item.component.mpn,
                 'manufacturer': item.component.manufacturer,
                 'description': item.component.description or '',
-                'quantity': item.quantity,
-                'uom': item.uom,
+                'quantity': int(item.quantity or 0),
+                'uom': item.uom or 'pcs',
             })
 
-        # Sort locations by name
-        result = sorted(locations.values(), key=lambda x: x['location'])
-
+        # safe sort (no TypeError when some were empty)
+        result = sorted(locations.values(), key=lambda x: x['location'].lower())
         return Response(result)

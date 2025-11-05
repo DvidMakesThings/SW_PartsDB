@@ -87,36 +87,45 @@ class CSVImporter:
         value = value.replace('\u00c2', '')             # stray Â
         # Normalize various dashes to ASCII hyphen
         value = re.sub(r'[\u2010-\u2015]', '-', value)
+        # Strip accidental BOM-as-text at start of a field
+        value = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', value)
         return value.strip()
 
     def _open_text_with_fallback(self):
         """
-        Open self.file_path as text and return a file-like object positioned at start.
-        Try self.encoding first, then common fallbacks.
+        Read file as bytes, handle BOM first (decode as utf-8-sig if present),
+        else try declared encoding then fallbacks.
+        Returns a StringIO ready to read().
         """
-        encodings = []
-        if getattr(self, "encoding", None):
-            encodings.append(self.encoding)
-        encodings += ["utf-8-sig", "utf-8", "latin1"]
+        with open(self.file_path, "rb") as fh:
+            data = fh.read()
+
+        # If UTF-8 BOM is present, always decode with utf-8-sig (ignores any 'latin1' hint)
+        if data.startswith(b'\xef\xbb\xbf'):
+            text = data.decode('utf-8-sig', errors='strict')
+            return io.StringIO(text)
+
+        # Build ordered list of encodings to try
+        encs = []
+        enc_hint = getattr(self, "encoding", None)
+        if enc_hint:
+            encs.append(enc_hint)
+        # try robust defaults
+        encs += ["utf-8", "latin1"]
 
         last_err = None
-        for enc in encodings:
+        for enc in encs:
             try:
-                with open(self.file_path, "rb") as fh:
-                    data = fh.read()
-                # Decode; utf-8-sig will strip BOM if present
-                text = data.decode(enc, errors="strict")
+                text = data.decode(enc, errors='strict')
                 return io.StringIO(text)
             except Exception as e:
                 last_err = e
                 continue
-        # As a last resort, decode permissively with latin1 so we never crash
-        with open(self.file_path, "rb") as fh:
-            data = fh.read()
+
+        # last resort: permissive latin1 so we don't crash
         try:
             text = data.decode("latin1", errors="ignore")
         except Exception:
-            # if even that fails, re-raise the last strict error
             raise last_err
         return io.StringIO(text)
 
@@ -162,21 +171,20 @@ class CSVImporter:
     def read_csv(self):
         """
         Read the CSV file and yield rows as dictionaries:
-        - robust to BOM
-        - auto-detects delimiter (',' vs ';')
+        - BOM-safe (both true BOM and 'ï»¿' text)
+        - auto-detect delimiter (',' vs ';'), override only if needed
         - ignores unnamed/None headers
-        - fills 'extras' with all normalized columns
+        - fills 'extras' with normalized columns
         """
         f = self._open_text_with_fallback()
 
-        # Peek for dialect
+        # Sniff delimiter
         sample = f.read(4096)
         f.seek(0)
         try:
             sniffed = csv.Sniffer().sniff(sample, delimiters=";,")
             dialect = sniffed
         except Exception:
-            # Default to comma
             class _D(csv.Dialect):
                 delimiter = ','
                 quotechar = '"'
@@ -186,14 +194,11 @@ class CSVImporter:
                 quoting = csv.QUOTE_MINIMAL
             dialect = _D
 
-        # If the client sent a delimiter, try it first; we will fall back if it looks wrong.
         forced_delim = getattr(self, "delimiter", None)
+
         def _make_reader(delim=None):
             d = dialect
             if delim:
-                class _D2(type(dialect)):
-                    pass
-                # clone dialect with custom delimiter
                 d = type("ForcedDialect", (csv.Dialect,), {
                     "delimiter": delim,
                     "quotechar": getattr(dialect, "quotechar", '"'),
@@ -207,30 +212,32 @@ class CSVImporter:
 
         reader = _make_reader(forced_delim if forced_delim else None)
 
-        # If headers collapsed into one giant field, switch delimiter (',' <-> ';')
+        # If headers are collapsed, flip delimiter and retry
         def _headers_look_bad(fieldnames):
             if not fieldnames:
                 return True
             if len(fieldnames) == 1:
                 return True
-            # If the first header still contains many commas/semicolons, likely not split
             h0 = (fieldnames[0] or "")
-            return ("," in h0 and ";" in h0)  # both present => not split
+            return ("," in h0 and ";" in h0)
 
         if _headers_look_bad(reader.fieldnames):
             alt = ';' if (forced_delim or getattr(dialect, "delimiter", ",")) == ',' else ','
             reader = _make_reader(alt)
 
-        # Normalize header names (strip, lower, drop BOM)
+        # Normalize header names (strip BOM variants, trim, lower)
+        raw_headers = reader.fieldnames or []
         norm_headers = []
-        for h in reader.fieldnames or []:
+        for h in raw_headers:
             if h is None:
                 norm_headers.append(None)
                 continue
-            h = str(h).lstrip("\ufeff").strip()
-            norm_headers.append(h.lower())
+            s = str(h)
+            s = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', s)  # drop BOM or ï»¿
+            s = s.strip().lower()
+            norm_headers.append(s)
 
-        # Build a small alias map for critical fields we care about
+        # Alias map for required fields
         aliases = {
             "mpn": {"mpn", "manufacturer part number", "part number", "pn"},
             "manufacturer": {"manufacturer", "mfr", "maker", "vendor"},
@@ -238,12 +245,9 @@ class CSVImporter:
         }
 
         def _find_key(target):
-            # return normalized header that matches an alias, or None
             for i, nh in enumerate(norm_headers):
-                if nh is None or not nh:
-                    continue
-                if nh in aliases[target]:
-                    return reader.fieldnames[i]  # original header token
+                if nh and nh in aliases[target]:
+                    return raw_headers[i]  # original key token used by DictReader rows
             return None
 
         mpn_key = _find_key("mpn")
@@ -257,30 +261,28 @@ class CSVImporter:
             mapped_row = {}
             extras = {}
 
-            # Pull critical fields if present
+            # Required fields
             if mpn_key in raw_row:
                 mapped_row["mpn"] = self.clean_text(raw_row.get(mpn_key))
             if mfr_key in raw_row:
-                mapped_row["manufacturer"] = self.clean_text(raw_row.get(mfr_key))
+                mapped_row["manufacturer"] = self.clean_text(self, raw_row.get(mfr_key))
             if qty_key in raw_row:
-                q = self.clean_text(raw_row.get(qty_key))
+                q = self.clean_text(self, raw_row.get(qty_key))
                 try:
                     mapped_row["quantity"] = int(q) if q else 0
                 except Exception:
                     mapped_row["quantity"] = 0
 
-            # All remaining columns into extras (normalized)
+            # Everything else -> extras (normalized)
             for hdr, val in raw_row.items():
                 if hdr is None:
                     continue
-                nh = str(hdr).lstrip("\ufeff").strip().lower()
+                nh = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', str(hdr)).strip().lower()
                 if not nh:
                     continue
-                # skip ones we already mapped explicitly
                 if (mpn_key and hdr == mpn_key) or (mfr_key and hdr == mfr_key) or (qty_key and hdr == qty_key):
                     continue
 
-                # value -> clean string
                 if isinstance(val, list):
                     val = "; ".join("" if v is None else str(v) for v in val)
                 elif val is None:
@@ -288,18 +290,17 @@ class CSVImporter:
                 else:
                     val = str(val)
 
-                # Some Excel/UTF-8 exports leak entire header lines into a single cell (already handled by delimiter fix),
-                # but keep a guard: if this particular "header" looks like a whole CSV header row, skip it.
-                if nh.startswith("mpn,") or nh.startswith("\ufeffmpn,"):
+                # If this "header" looks like an entire CSV header line, skip
+                if nh.startswith("mpn,") or nh.startswith("ï»¿mpn,") or nh.startswith("\ufeffmpn,"):
                     continue
 
-                extras[nh] = self.clean_text(val)
+                extras[nh] = self.clean_text(self, val)
 
             if extras:
                 mapped_row["extras"] = extras
 
             yield mapped_row
-    
+
     def process_row(self, row):
         """
         Process a single row from the CSV

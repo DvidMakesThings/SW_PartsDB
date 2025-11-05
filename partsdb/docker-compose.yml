@@ -31,6 +31,10 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/partsdb
       - REDIS_URL=redis://redis:6379/0
       - DATASHEET_FETCH_ENABLED=true
+      - ALLOWED_HOSTS=127.0.0.1,localhost,192.168.0.25
+      - CORS_ALLOWED_ORIGINS=http://192.168.0.25:5173
+      - CORS_ALLOW_CREDENTIALS=true
+      - CSRF_TRUSTED_ORIGINS=http://192.168.0.25:5173
     depends_on:
       - db
       - redis
@@ -55,7 +59,7 @@ services:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
-    command: npm run dev
+    command: sh -lc "npm ci && npx vite --host 0.0.0.0 --port 5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules

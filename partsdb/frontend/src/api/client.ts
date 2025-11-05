@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://192.168.0.25:8000/api';
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;

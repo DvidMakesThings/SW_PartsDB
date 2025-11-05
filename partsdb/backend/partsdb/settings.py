@@ -3,41 +3,40 @@ Django settings for partsdb project.
 """
 
 import os
+import re
 from pathlib import Path
 
 import dotenv
 from django.core.management.utils import get_random_secret_key
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
+# Load .env from repo root (one level above backend/)
 dotenv.load_dotenv(Path(BASE_DIR).parent / '.env')
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# Core security
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'true').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = ['*']  # For development only. Configure properly in production.
+# Hosts
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-# Application definition
-
+# Apps
 INSTALLED_APPS = [
+    'corsheaders',  # keep only once, and near top
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third party apps
+
+    # Third party
     'rest_framework',
     'django_filters',
     'drf_spectacular',
-    'corsheaders',
-    
+
     # Local apps
     'apps.core',
     'apps.inventory',
@@ -45,7 +44,9 @@ INSTALLED_APPS = [
     'apps.eagle',
 ]
 
+# Middleware
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',          # must be before CommonMiddleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -53,7 +54,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'partsdb.urls'
@@ -77,11 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'partsdb.wsgi.application'
 
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-# Default database is SQLite
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///partsdb.sqlite3')
-
 if DATABASE_URL.startswith('sqlite'):
     DATABASES = {
         'default': {
@@ -90,24 +86,20 @@ if DATABASE_URL.startswith('sqlite'):
         }
     }
 elif DATABASE_URL.startswith('postgres'):
-    import re
-    pattern = r'postgres://(?P<user>.*):(?P<password>.*)@(?P<host>.*):(?P<port>\d+)/(?P<name>.*)'
-    match = re.match(pattern, DATABASE_URL)
-    if match:
+    m = re.match(r'postgres://(?P<user>.*):(?P<password>.*)@(?P<host>.*):(?P<port>\d+)/(?P<name>.*)', DATABASE_URL)
+    if m:
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': match.group('name'),
-                'USER': match.group('user'),
-                'PASSWORD': match.group('password'),
-                'HOST': match.group('host'),
-                'PORT': match.group('port'),
+                'NAME': m.group('name'),
+                'USER': m.group('user'),
+                'PASSWORD': m.group('password'),
+                'HOST': m.group('host'),
+                'PORT': m.group('port'),
             }
         }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -115,29 +107,25 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
+# I18N
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+# Static
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (uploads)
+# Media
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', BASE_DIR / 'media')
 MEDIA_URL = '/media/'
-
-# Create media directory if it doesn't exist
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 
-# Default primary key field type
+# Default PK
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# REST Framework settings
+# DRF
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
@@ -145,7 +133,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
-# DRF Spectacular settings
+# DRF Spectacular
 SPECTACULAR_SETTINGS = {
     'TITLE': 'PartsDB API',
     'DESCRIPTION': 'API for managing electronic components and inventory',
@@ -155,7 +143,7 @@ SPECTACULAR_SETTINGS = {
 # Feature flags
 DATASHEET_FETCH_ENABLED = os.getenv('DATASHEET_FETCH_ENABLED', 'true').lower() in ('true', '1', 't')
 
-# Celery settings (optional)
+# Celery
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 if REDIS_URL:
     CELERY_BROKER_URL = REDIS_URL
@@ -165,8 +153,15 @@ if REDIS_URL:
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TIMEZONE = TIME_ZONE
 
-# CORS settings
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+# CORS / CSRF
+# Read from env; fall back to dev-friendly defaults
+_env_cors = os.getenv('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = _env_cors.split(',') if _env_cors else []
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'false').lower() == 'true'
+
+_env_csrf = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = _env_csrf.split(',') if _env_csrf else []
+
+# In dev, if no explicit CORS list provided, allow all to avoid 403s while iterating
+if DEBUG and not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOW_ALL_ORIGINS = True

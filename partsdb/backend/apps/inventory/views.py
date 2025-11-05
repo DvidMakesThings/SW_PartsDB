@@ -222,51 +222,46 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return response
 
 
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 class InventoryItemViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for inventory items
-    """
-    queryset = InventoryItem.objects.all()
+    queryset = InventoryItem.objects.select_related("component").all()
     serializer_class = InventoryItemSerializer
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter
-    ]
-    filterset_fields = ['component', 'uom', 'condition', 'storage_location']
-    search_fields = ['component__mpn', 'component__manufacturer', 'storage_location']
-    ordering_fields = ['created_at', 'updated_at']
-    ordering = ['-created_at']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["component__manufacturer", "component__mpn"]
+    search_fields = ["component__mpn", "component__manufacturer", "component__description"]
+    ordering_fields = ["component__mpn", "component__manufacturer"]
 
     @action(detail=False, methods=['get'])
     def by_location(self, request):
-        from django.db.models import Sum
-
-        locations = {}
+        """
+        Group inventory by storage location. Null/blank locations are normalized.
+        """
         items = InventoryItem.objects.select_related('component').all()
 
+        groups = {}
         for item in items:
-            # normalize empty / null to a stable label
-            location = (item.storage_location or '').strip() or 'Unspecified'
-            if location not in locations:
-                locations[location] = {
-                    'location': location,
+            loc = (item.storage_location or '').strip() or 'Unspecified'
+            if loc not in groups:
+                groups[loc] = {
+                    'location': loc,
                     'total_items': 0,
                     'total_components': 0,
-                    'components': []
+                    'components': [],
                 }
 
-            locations[location]['total_items'] += int(item.quantity or 0)
-            locations[location]['total_components'] += 1
-            locations[location]['components'].append({
-                'id': str(item.component_id),
-                'mpn': item.component.mpn,
-                'manufacturer': item.component.manufacturer,
-                'description': item.component.description or '',
-                'quantity': int(item.quantity or 0),
+            qty = int(item.quantity or 0)
+            groups[loc]['total_items'] += qty
+            groups[loc]['total_components'] += 1
+            groups[loc]['components'].append({
+                'id': str(item.component.id) if item.component else '',
+                'mpn': (item.component.mpn if item.component else '') or '',
+                'manufacturer': (item.component.manufacturer if item.component else '') or '',
+                'description': (item.component.description if item.component else '') or '',
+                'quantity': qty,
                 'uom': item.uom or 'pcs',
             })
 
-        # safe sort (no TypeError when some were empty)
-        result = sorted(locations.values(), key=lambda x: x['location'].lower())
+        result = sorted(groups.values(), key=lambda g: g['location'].lower())
         return Response(result)

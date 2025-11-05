@@ -16,6 +16,11 @@ cd partsdb/backend
 # If you have a venv
 .\.venv\Scripts\Activate.ps1
 
+or
+
+source .venv/Scripts/activate
+
+
 # Or if using the venv folder
 .\venv\Scripts\Activate.ps1
 ```

@@ -83,7 +83,7 @@ export default function Navbar() {
 
             {/* Admin Link */}
             <a
-              href="http://127.0.0.1:8000/admin/"
+              href="http://backend:8000/admin/"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-[--text-secondary] hover:text-[--text] hover:bg-[--surface-hover] transition-all duration-150"

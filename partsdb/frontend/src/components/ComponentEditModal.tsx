@@ -8,6 +8,16 @@ interface ComponentEditModalProps {
   onSave: () => void;
 }
 
+const DISPLAY_KEYS: Record<string,string> = {
+  tt: 'Domain', ff: 'Family', cc: 'Class', ss: 'Subclass', xxx: 'XXX',
+  rohs: 'RoHS', url_datasheet: 'Datasheet URL', dmtuid: 'DMTUID'
+};
+
+const formatKey = (k: string) =>
+  DISPLAY_KEYS[k.toLowerCase()] ??
+  k.replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+
+
 const FILE_TYPES = [
   { value: 'three_d', label: '3D Model (STEP)' },
   { value: 'eagle_lib', label: 'Eagle Library' },
@@ -216,7 +226,7 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
       ...formData,
       extras: {
         ...formData.extras,
-        [newPropertyName.toLowerCase()]: newPropertyValue,
+        [newPropertyName]: newPropertyValue,
       },
     });
 
@@ -404,7 +414,7 @@ export default function ComponentEditModal({ componentId, onClose, onSave }: Com
               <div className="space-y-3">
                 {filledExtras.map(([key, value]) => (
                   <div key={key} className="grid grid-cols-3 gap-4 items-center">
-                    <label className="text-sm font-medium capitalize">{key}</label>
+                    <label className="text-sm font-medium">{formatKey(key)}</label>
                     <div className="col-span-2 flex items-center gap-2">
                       <input
                         type="text"

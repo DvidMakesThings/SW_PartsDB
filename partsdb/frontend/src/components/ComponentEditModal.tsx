@@ -9,8 +9,8 @@ interface ComponentEditModalProps {
 }
 
 const DISPLAY_KEYS: Record<string,string> = {
-  tt: 'Domain', ff: 'Family', cc: 'Class', ss: 'Subclass', xxx: 'XXX',
-  rohs: 'RoHS', url_datasheet: 'Datasheet URL', dmtuid: 'DMTUID'
+  tt: 'Domain', ff: 'Family', cc: 'Class', ss: 'Subclass', xxx: 'Sequence',
+  rohs: 'RoHS', dmtuid: 'DMTUID'
 };
 
 const formatKey = (k: string) =>

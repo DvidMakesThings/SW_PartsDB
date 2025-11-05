@@ -167,107 +167,96 @@ class CSVImporter:
             return Decimal(match.group(1))
         
         return None
-    
+
+    def normalize_header(self, header: str) -> str:
+        """Lowercase, strip BOM/quotes/space; keep ASCII-only where possible."""
+        if header is None:
+            return None
+        s = str(header)
+        s = s.lstrip('\ufeff')            # strip UTF-8 BOM on first header
+        s = s.strip().strip('"').strip("'")
+        return s.lower()
+
     def read_csv(self):
         """
-        Robust CSV reader:
-        - Auto-detects delimiter (',' ';' '\t' '|'), ignores self.delimiter
-        - Strips UTF-8 BOM from first header
-        - Tolerates None/list values
-        - Maps MPN / Manufacturer / Quantity
-        - Everything else goes into extras (lowercased keys)
+        Read the CSV file, auto-detect delimiter (',' ';' '|' '\t'), strip BOM,
+        normalize headers, and yield rows with mpn/manufacturer/quantity populated.
         """
-        import csv
+        # open with utf-8-sig to auto-strip BOM in the file stream (fallback stays safe)
+        enc = self.encoding or 'utf-8-sig'
+        with open(self.file_path, 'r', encoding=enc, errors='replace', newline='') as csvfile:
+            sample = csvfile.read(8192)
+            # decide delimiter
+            delim = self.delimiter
+            if not delim:
+                if (',' in sample) ^ (';' in sample):
+                    delim = ',' if ',' in sample else ';'
+                else:
+                    try:
+                        dialect = csv.Sniffer().sniff(sample, delimiters=',;|\t')
+                        delim = dialect.delimiter
+                    except Exception:
+                        delim = ','  # sane default
+            csvfile.seek(0)
 
-        with open(self.file_path, 'r', encoding=self.encoding, newline='') as f:
-            sample = f.read(8192)
-            f.seek(0)
-
-            # --- detect delimiter ---
-            detected = ','
-            try:
-                dialect = csv.Sniffer().sniff(sample, delimiters=[',', ';', '\t', '|'])
-                detected = dialect.delimiter
-            except Exception:
-                # fallback heuristic
-                counts = {
-                    ',': sample.count(','),
-                    ';': sample.count(';'),
-                    '\t': sample.count('\t'),
-                    '|': sample.count('|'),
-                }
-                detected = max(counts, key=counts.get) or ','
-
-            reader = csv.DictReader(f, delimiter=detected)
-
-            # normalize fieldnames + strip BOM
-            fields = []
+            reader = csv.DictReader(csvfile, delimiter=delim)
+            # Build a normalized header map (normalized -> original)
+            norm_to_orig = {}
             for h in (reader.fieldnames or []):
-                if h is None:
-                    continue
-                h = str(h)
-                if h.startswith('\ufeff'):
-                    h = h.replace('\ufeff', '')
-                fields.append(h.strip())
-            reader.fieldnames = fields
+                n = self.normalize_header(h)
+                if n:
+                    norm_to_orig[n] = h
 
-            # helper to pick a value by candidate headers (case-insensitive)
-            def pick(row, candidates):
-                # map lower->original header
-                lowmap = { (k or '').strip().lower(): k for k in row.keys() }
-                for c in candidates:
-                    c = c.strip().lower()
-                    if c in lowmap:
-                        return row.get(lowmap[c])
-                return None
+            # header aliases
+            mpn_aliases = ['mpn', 'part number', 'manufacturer part number', 'mfr part', 'mfr p/n']
+            mfr_aliases = ['manufacturer', 'mfr', 'brand', 'maker']
+            qty_aliases = ['quantity', 'qty', 'stock', 'count', 'pcs']
 
-            mpn_keys = ['mpn', 'part number', 'manufacturer part number']
-            mfr_keys = ['manufacturer', 'mfr', 'maker']
-            qty_keys = ['qty', 'quantity', 'count']
+            def pick(row_norm, aliases):
+                for a in aliases:
+                    if a in row_norm:
+                        v = row_norm[a]
+                        if isinstance(v, list):
+                            v = '; '.join('' if x is None else str(x) for x in v)
+                        if v is not None and str(v).strip() != '':
+                            return str(v)
+                return ''
 
             for raw_row in reader:
-                mapped_row = {}
-                extras = {}
-
-                # core fields
-                mpn_val = pick(raw_row, mpn_keys)
-                mfr_val = pick(raw_row, mfr_keys)
-                qty_val = pick(raw_row, qty_keys)
-
-                mapped_row['mpn'] = self.clean_text(mpn_val) if mpn_val is not None else ''
-                mapped_row['manufacturer'] = self.clean_text(mfr_val) if mfr_val is not None else ''
-
-                # quantity
-                if qty_val is None:
-                    mapped_row['quantity'] = 0
-                else:
-                    qtxt = self.clean_text(qty_val)
-                    try:
-                        mapped_row['quantity'] = int(str(qtxt).replace('_', '').replace(' ', ''))
-                    except Exception:
-                        mapped_row['quantity'] = 0
-
-                # everything else → extras
-                # skip the canonical keys we already mapped
-                skip_keys = set([*mpn_keys, *mfr_keys, *qty_keys])
-                for header, value in raw_row.items():
-                    if header is None:
+                # normalize keys for this row
+                row_norm = {}
+                for k, v in (raw_row or {}).items():
+                    nk = self.normalize_header(k)
+                    if nk is None or nk == '':
                         continue
-                    key_norm = str(header).strip()
-                    key_low = key_norm.lower()
-                    if key_low in skip_keys:
-                        continue
-
-                    # normalize value to a clean string
-                    if isinstance(value, list):
-                        val = '; '.join('' if v is None else str(v) for v in value)
-                    elif value is None:
-                        val = ''
+                    # coerce value to string
+                    if isinstance(v, list):
+                        vv = '; '.join('' if x is None else str(x) for x in v)
+                    elif v is None:
+                        vv = ''
                     else:
-                        val = str(value)
+                        vv = str(v)
+                    row_norm[nk] = self.clean_text(vv)
 
-                    extras[key_low] = self.clean_text(val)
+                mapped_row = {}
+                # requireds
+                mapped_row['mpn'] = self.clean_text(pick(row_norm, mpn_aliases))
+                mapped_row['manufacturer'] = self.clean_text(pick(row_norm, mfr_aliases))
 
+                # quantity (optional)
+                q_raw = pick(row_norm, qty_aliases)
+                try:
+                    mapped_row['quantity'] = int(float(q_raw)) if q_raw else 0
+                except Exception:
+                    mapped_row['quantity'] = 0
+
+                # extras: everything else except columns we consumed
+                consumed = set(mpn_aliases + mfr_aliases + qty_aliases)
+                extras = {}
+                for nk, vv in row_norm.items():
+                    if nk in consumed:
+                        continue
+                    extras[nk] = vv
                 if extras:
                     mapped_row['extras'] = extras
 

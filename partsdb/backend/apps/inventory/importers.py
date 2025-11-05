@@ -170,136 +170,86 @@ class CSVImporter:
     
     def read_csv(self):
         """
-        Read the CSV file and yield rows as dictionaries:
-        - BOM-safe (both true BOM and 'ï»¿' text)
-        - auto-detect delimiter (',' vs ';'), override only if needed
-        - ignores unnamed/None headers
-        - fills 'extras' with normalized columns
+        Read the CSV file and yield rows as dictionaries.
+        - Handles UTF-8 BOM in header
+        - Tolerates None/list values
+        - Maps MPN/Manufacturer/Quantity explicitly
+        - Puts everything else under extras (lowercased keys)
         """
-        f = self._open_text_with_fallback()
+        with open(self.file_path, 'r', encoding=self.encoding, newline='') as csvfile:
+            reader = csv.DictReader(csvfile, delimiter=self.delimiter)
 
-        # Sniff delimiter
-        sample = f.read(4096)
-        f.seek(0)
-        try:
-            sniffed = csv.Sniffer().sniff(sample, delimiters=";,")
-            dialect = sniffed
-        except Exception:
-            class _D(csv.Dialect):
-                delimiter = ','
-                quotechar = '"'
-                doublequote = True
-                skipinitialspace = True
-                lineterminator = '\n'
-                quoting = csv.QUOTE_MINIMAL
-            dialect = _D
+            # Normalize fieldnames and strip BOM
+            norm_fields = []
+            for h in (reader.fieldnames or []):
+                if h is None:
+                    continue
+                h = str(h).strip()
+                if h.startswith('\ufeff'):
+                    h = h.replace('\ufeff', '')
+                norm_fields.append(h)
+            reader.fieldnames = norm_fields
 
-        forced_delim = getattr(self, "delimiter", None)
+            # Helper to fetch first present key from candidates (case-insensitive)
+            def pick(row, candidates):
+                low = { (k or '').strip().lower(): k for k in row.keys() }
+                for c in candidates:
+                    c = c.strip().lower()
+                    if c in low:
+                        return row[low[c]]
+                return None
 
-        def _make_reader(delim=None):
-            d = dialect
-            if delim:
-                d = type("ForcedDialect", (csv.Dialect,), {
-                    "delimiter": delim,
-                    "quotechar": getattr(dialect, "quotechar", '"'),
-                    "doublequote": getattr(dialect, "doublequote", True),
-                    "skipinitialspace": getattr(dialect, "skipinitialspace", True),
-                    "lineterminator": getattr(dialect, "lineterminator", "\n"),
-                    "quoting": getattr(dialect, "quoting", csv.QUOTE_MINIMAL),
-                })
-            f.seek(0)
-            return csv.DictReader(f, dialect=d)
+            # Canonical header candidates
+            mpn_keys = ['mpn', 'part number', 'manufacturer part number']
+            mfr_keys = ['manufacturer', 'mfr', 'maker']
+            qty_keys = ['qty', 'quantity', 'count']
 
-        reader = _make_reader(forced_delim if forced_delim else None)
+            for raw_row in reader:
+                mapped_row = {}
+                extras = {}
 
-        # If headers are collapsed, flip delimiter and retry
-        def _headers_look_bad(fieldnames):
-            if not fieldnames:
-                return True
-            if len(fieldnames) == 1:
-                return True
-            h0 = (fieldnames[0] or "")
-            return ("," in h0 and ";" in h0)
+                # Core fields (use self.clean_text — DO NOT pass self twice)
+                mpn_val = pick(raw_row, mpn_keys)
+                mfr_val = pick(raw_row, mfr_keys)
+                qty_val = pick(raw_row, qty_keys)
 
-        if _headers_look_bad(reader.fieldnames):
-            alt = ';' if (forced_delim or getattr(dialect, "delimiter", ",")) == ',' else ','
-            reader = _make_reader(alt)
+                mapped_row["mpn"] = self.clean_text(mpn_val) if mpn_val is not None else ''
+                mapped_row["manufacturer"] = self.clean_text(mfr_val) if mfr_val is not None else ''
 
-        # Normalize header names (strip BOM variants, trim, lower)
-        raw_headers = reader.fieldnames or []
-        norm_headers = []
-        for h in raw_headers:
-            if h is None:
-                norm_headers.append(None)
-                continue
-            s = str(h)
-            s = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', s)  # drop BOM or ï»¿
-            s = s.strip().lower()
-            norm_headers.append(s)
-
-        # Alias map for required fields
-        aliases = {
-            "mpn": {"mpn", "manufacturer part number", "part number", "pn"},
-            "manufacturer": {"manufacturer", "mfr", "maker", "vendor"},
-            "quantity": {"qty", "quantity", "count", "stock"},
-        }
-
-        def _find_key(target):
-            for i, nh in enumerate(norm_headers):
-                if nh and nh in aliases[target]:
-                    return raw_headers[i]  # original key token used by DictReader rows
-            return None
-
-        mpn_key = _find_key("mpn")
-        mfr_key = _find_key("manufacturer")
-        qty_key = _find_key("quantity")
-
-        for raw_row in reader:
-            if raw_row is None:
-                continue
-
-            mapped_row = {}
-            extras = {}
-
-            # Required fields
-            if mpn_key in raw_row:
-                mapped_row["mpn"] = self.clean_text(raw_row.get(mpn_key))
-            if mfr_key in raw_row:
-                mapped_row["manufacturer"] = self.clean_text(self, raw_row.get(mfr_key))
-            if qty_key in raw_row:
-                q = self.clean_text(self, raw_row.get(qty_key))
-                try:
-                    mapped_row["quantity"] = int(q) if q else 0
-                except Exception:
+                # quantity as int if possible
+                if qty_val is None:
                     mapped_row["quantity"] = 0
-
-            # Everything else -> extras (normalized)
-            for hdr, val in raw_row.items():
-                if hdr is None:
-                    continue
-                nh = re.sub(r'^(?:\ufeff|\u00ef\u00bb\u00bf)', '', str(hdr)).strip().lower()
-                if not nh:
-                    continue
-                if (mpn_key and hdr == mpn_key) or (mfr_key and hdr == mfr_key) or (qty_key and hdr == qty_key):
-                    continue
-
-                if isinstance(val, list):
-                    val = "; ".join("" if v is None else str(v) for v in val)
-                elif val is None:
-                    val = ""
                 else:
-                    val = str(val)
+                    qtxt = self.clean_text(qty_val)
+                    try:
+                        mapped_row["quantity"] = int(str(qtxt).strip().replace('_', '').replace(' ', ''))
+                    except Exception:
+                        mapped_row["quantity"] = 0
 
-                # If this "header" looks like an entire CSV header line, skip
-                if nh.startswith("mpn,") or nh.startswith("ï»¿mpn,") or nh.startswith("\ufeffmpn,"):
-                    continue
+                # Everything else → extras (lowercased keys, clean strings)
+                for header, value in raw_row.items():
+                    if header is None:
+                        continue
+                    key_norm = str(header).strip()
+                    key_low = key_norm.lower()
+                    if key_low in [*mpn_keys, *mfr_keys, *qty_keys]:
+                        continue
 
-                extras[nh] = self.clean_text(self, val)
+                    # normalize value to string
+                    if isinstance(value, list):
+                        val = '; '.join('' if v is None else str(v) for v in value)
+                    elif value is None:
+                        val = ''
+                    else:
+                        val = str(value)
 
-            if extras:
-                mapped_row["extras"] = extras
+                    extras[key_low] = self.clean_text(val)
 
-            yield mapped_row
+                if extras:
+                    mapped_row["extras"] = extras
+
+                yield mapped_row
+
 
     def process_row(self, row):
         """

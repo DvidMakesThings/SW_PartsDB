@@ -70,16 +70,31 @@ class CSVImporter:
         
     def clean_text(self, value):
         """
-        Clean text by fixing encoding issues and normalizing characters
+        Clean text by fixing encoding issues and normalizing characters.
+        Accepts str | list | bytes | None and always returns str.
         """
-        if not value:
-            return value
+        if value is None:
+            return ''
+        if isinstance(value, list):
+            # DictReader puts extra columns into a list under header=None
+            value = '; '.join('' if v is None else str(v) for v in value)
+        elif isinstance(value, bytes):
+            # best-effort decode; fallback to utf-8 with replacement
+            try:
+                value = value.decode('utf-8')
+            except Exception:
+                value = value.decode('latin1', errors='replace')
+        elif not isinstance(value, str):
+            value = str(value)
+
         # Fix common encoding issues
-        value = value.replace('\u00c2\u00b0', '\u00b0')  # Fix Â° to °
-        value = value.replace('Â°', '°')  # Another variant
-        value = value.replace('\u00c2', '')  # Remove stray Â
+        value = value.replace('\u00C2\u00B0', '\u00B0')  # Â° -> °
+        value = value.replace('Â°', '°')                 # variant
+        value = value.replace('\u00C2', '')              # stray Â
+
         # Replace Unicode dashes with ASCII hyphen
         value = re.sub(r'[\u2010-\u2015]', '-', value)
+
         return value.strip()
 
     def normalize_string(self, value):

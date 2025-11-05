@@ -170,36 +170,57 @@ class CSVImporter:
     
     def read_csv(self):
         """
-        Read the CSV file and yield rows as dictionaries.
-        - Handles UTF-8 BOM in header
+        Robust CSV reader:
+        - Auto-detects delimiter (',' ';' '\t' '|'), ignores self.delimiter
+        - Strips UTF-8 BOM from first header
         - Tolerates None/list values
-        - Maps MPN/Manufacturer/Quantity explicitly
-        - Puts everything else under extras (lowercased keys)
+        - Maps MPN / Manufacturer / Quantity
+        - Everything else goes into extras (lowercased keys)
         """
-        with open(self.file_path, 'r', encoding=self.encoding, newline='') as csvfile:
-            reader = csv.DictReader(csvfile, delimiter=self.delimiter)
+        import csv
 
-            # Normalize fieldnames and strip BOM
-            norm_fields = []
+        with open(self.file_path, 'r', encoding=self.encoding, newline='') as f:
+            sample = f.read(8192)
+            f.seek(0)
+
+            # --- detect delimiter ---
+            detected = ','
+            try:
+                dialect = csv.Sniffer().sniff(sample, delimiters=[',', ';', '\t', '|'])
+                detected = dialect.delimiter
+            except Exception:
+                # fallback heuristic
+                counts = {
+                    ',': sample.count(','),
+                    ';': sample.count(';'),
+                    '\t': sample.count('\t'),
+                    '|': sample.count('|'),
+                }
+                detected = max(counts, key=counts.get) or ','
+
+            reader = csv.DictReader(f, delimiter=detected)
+
+            # normalize fieldnames + strip BOM
+            fields = []
             for h in (reader.fieldnames or []):
                 if h is None:
                     continue
-                h = str(h).strip()
+                h = str(h)
                 if h.startswith('\ufeff'):
                     h = h.replace('\ufeff', '')
-                norm_fields.append(h)
-            reader.fieldnames = norm_fields
+                fields.append(h.strip())
+            reader.fieldnames = fields
 
-            # Helper to fetch first present key from candidates (case-insensitive)
+            # helper to pick a value by candidate headers (case-insensitive)
             def pick(row, candidates):
-                low = { (k or '').strip().lower(): k for k in row.keys() }
+                # map lower->original header
+                lowmap = { (k or '').strip().lower(): k for k in row.keys() }
                 for c in candidates:
                     c = c.strip().lower()
-                    if c in low:
-                        return row[low[c]]
+                    if c in lowmap:
+                        return row.get(lowmap[c])
                 return None
 
-            # Canonical header candidates
             mpn_keys = ['mpn', 'part number', 'manufacturer part number']
             mfr_keys = ['manufacturer', 'mfr', 'maker']
             qty_keys = ['qty', 'quantity', 'count']
@@ -208,34 +229,36 @@ class CSVImporter:
                 mapped_row = {}
                 extras = {}
 
-                # Core fields (use self.clean_text — DO NOT pass self twice)
+                # core fields
                 mpn_val = pick(raw_row, mpn_keys)
                 mfr_val = pick(raw_row, mfr_keys)
                 qty_val = pick(raw_row, qty_keys)
 
-                mapped_row["mpn"] = self.clean_text(mpn_val) if mpn_val is not None else ''
-                mapped_row["manufacturer"] = self.clean_text(mfr_val) if mfr_val is not None else ''
+                mapped_row['mpn'] = self.clean_text(mpn_val) if mpn_val is not None else ''
+                mapped_row['manufacturer'] = self.clean_text(mfr_val) if mfr_val is not None else ''
 
-                # quantity as int if possible
+                # quantity
                 if qty_val is None:
-                    mapped_row["quantity"] = 0
+                    mapped_row['quantity'] = 0
                 else:
                     qtxt = self.clean_text(qty_val)
                     try:
-                        mapped_row["quantity"] = int(str(qtxt).strip().replace('_', '').replace(' ', ''))
+                        mapped_row['quantity'] = int(str(qtxt).replace('_', '').replace(' ', ''))
                     except Exception:
-                        mapped_row["quantity"] = 0
+                        mapped_row['quantity'] = 0
 
-                # Everything else → extras (lowercased keys, clean strings)
+                # everything else → extras
+                # skip the canonical keys we already mapped
+                skip_keys = set([*mpn_keys, *mfr_keys, *qty_keys])
                 for header, value in raw_row.items():
                     if header is None:
                         continue
                     key_norm = str(header).strip()
                     key_low = key_norm.lower()
-                    if key_low in [*mpn_keys, *mfr_keys, *qty_keys]:
+                    if key_low in skip_keys:
                         continue
 
-                    # normalize value to string
+                    # normalize value to a clean string
                     if isinstance(value, list):
                         val = '; '.join('' if v is None else str(v) for v in value)
                     elif value is None:
@@ -246,7 +269,7 @@ class CSVImporter:
                     extras[key_low] = self.clean_text(val)
 
                 if extras:
-                    mapped_row["extras"] = extras
+                    mapped_row['extras'] = extras
 
                 yield mapped_row
 

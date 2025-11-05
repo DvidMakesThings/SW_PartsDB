@@ -262,16 +262,59 @@ class CSVImporter:
 
                 yield mapped_row
 
+    def _norm_key(self, s):
+        if s is None:
+            return ""
+        return str(s).lstrip("\ufeff").strip().lower()
+
+    def _get_field(self, row: dict, candidates):
+        """
+        Look up a logical field across row and row['extras']:
+        - handles BOM on keys
+        - case-insensitive
+        - supports multiple header aliases (candidates: list/tuple)
+        Returns cleaned string or "".
+        """
+        if not candidates:
+            return ""
+        cand = [self._norm_key(c) for c in candidates]
+
+        # 1) direct keys
+        for k, v in row.items():
+            if k == "extras":
+                continue
+            if self._norm_key(k) in cand:
+                return self.clean_text(v)
+
+        # 2) extras (already normalized by your read_csv, but be defensive)
+        extras = row.get("extras") or {}
+        for k, v in extras.items():
+            if self._norm_key(k) in cand:
+                return self.clean_text(v)
+
+        return ""
+
+    def _get_int(self, row: dict, candidates, default=0):
+        s = self._get_field(row, candidates)
+        if not s:
+            return default
+        s = s.replace(",", "").strip()
+        try:
+            return int(float(s))
+        except Exception:
+            return default
 
     def process_row(self, row):
         """
-        Process a single row from the CSV
+        Process a single row from the CSV, resolving fields from both
+        top-level keys and 'extras' with BOM/case/alias tolerance.
         """
         try:
-            # Extract and normalize the key fields
-            mpn = row.get('mpn')
-            manufacturer = row.get('manufacturer')
-            
+            # Resolve required keys with aliases
+            mpn = self._get_field(row, ["mpn", "part number", "mpn/sku"])
+            manufacturer = self._get_field(row, ["manufacturer", "mfr", "brand"])
+            quantity = self._get_int(row, ["quantity", "qty", "stock"], default=0)
+
             if not mpn or not manufacturer:
                 self.results['skipped'] += 1
                 self.results['error_rows'].append({
@@ -279,142 +322,143 @@ class CSVImporter:
                     'error': "Missing required fields: MPN and Manufacturer"
                 })
                 return
-                
-            # Normalize the key fields for consistent lookup
+
             mpn_norm = self.normalize_string(mpn)
             manufacturer_norm = self.normalize_string(manufacturer)
-            
-            # Process package dimensions
-            package_name = row.get('package')
+
+            # Optional/common fields (pull from both places)
+            value        = self._get_field(row, ["value"])
+            tolerance    = self._get_field(row, ["tolerance"])
+            wattage      = self._get_field(row, ["wattage"])
+            voltage      = self._get_field(row, ["voltage", "voltage - rated"])
+            current      = self._get_field(row, ["current", "current - rating", "current - output"])
+            description  = self._get_field(row, ["description"])
+            url_datasheet= self._get_field(row, ["datasheet", "url_datasheet"])
+            dmtuid       = self._get_field(row, ["dmtuid"])
+            dmt_tt       = self._get_field(row, ["tt", "dmt_tt"])
+            dmt_ff       = self._get_field(row, ["ff", "dmt_ff"])
+            dmt_cc       = self._get_field(row, ["cc", "dmt_cc"])
+            dmt_ss       = self._get_field(row, ["ss", "dmt_ss"])
+            dmt_xxx      = self._get_field(row, ["xxx", "dmt_xxx"])
+
+            # Package/size
+            package_name = self._get_field(row, ["package", "package / case", "package/case"])
             package_l_mm = None
             package_w_mm = None
-            
             if package_name:
-                length, width = self.parse_package_dimensions(package_name)
-                if length and width:
-                    package_l_mm = length
-                    package_w_mm = width
-            
-            # Process height
+                L, W = self.parse_package_dimensions(package_name)
+                if L and W:
+                    package_l_mm, package_w_mm = L, W
+
             package_h_mm = None
-            if 'height' in row:
-                package_h_mm = self.parse_height(row.get('height'))
-            
-            # Assign category
+            height_val = self._get_field(row, ["height", "height above board"])
+            if height_val:
+                package_h_mm = self.parse_height(height_val)
+
+            # Category
             category = self.categorizer.categorize(row)
             category_l1 = category.get('l1', 'Unsorted')
             category_l2 = category.get('l2')
-            
-            # Check if component already exists by normalized fields
+
+            # Find existing
             component = Component.objects.filter(
                 manufacturer_norm=manufacturer_norm,
                 mpn_norm=mpn_norm
             ).first()
-            
+
             if component:
-                # Update existing component
                 updated = False
-                for field in ['value', 'tolerance', 'wattage', 'voltage', 'current',
-                             'description', 'url_datasheet', 'category_l1', 'category_l2']:
-                    if field in row and row[field] and getattr(component, field) != row[field]:
-                        setattr(component, field, row[field])
+                def _set(field, value):
+                    nonlocal updated
+                    if value and getattr(component, field) != value:
+                        setattr(component, field, value)
                         updated = True
-                
-                # Update package info if provided
+
+                _set('value', value)
+                _set('tolerance', tolerance)
+                _set('wattage', wattage)
+                _set('voltage', voltage)
+                _set('current', current)
+                _set('description', description)
+                _set('url_datasheet', url_datasheet)
+                _set('category_l1', category_l1)
+                _set('category_l2', category_l2)
                 if package_name and not component.package_name:
-                    component.package_name = package_name
-                    updated = True
-                
+                    _set('package_name', package_name)
                 if package_l_mm and not component.package_l_mm:
-                    component.package_l_mm = package_l_mm
-                    updated = True
-                
+                    _set('package_l_mm', package_l_mm)
                 if package_w_mm and not component.package_w_mm:
-                    component.package_w_mm = package_w_mm
-                    updated = True
-                
+                    _set('package_w_mm', package_w_mm)
                 if package_h_mm and not component.package_h_mm:
-                    component.package_h_mm = package_h_mm
-                    updated = True
-                
-                # Update extras
-                if 'extras' in row:
+                    _set('package_h_mm', package_h_mm)
+
+                # Merge extras
+                if row.get('extras'):
                     if not component.extras:
-                        component.extras = row['extras']
+                        component.extras = dict(row['extras'])
                         updated = True
                     else:
-                        # Merge extras
-                        for key, value in row['extras'].items():
-                            if key not in component.extras or not component.extras[key]:
-                                component.extras[key] = value
+                        for k, v in row['extras'].items():
+                            if k not in component.extras or not component.extras[k]:
+                                component.extras[k] = v
                                 updated = True
-                
+
                 if updated and not self.dry_run:
                     component.save()
                     self.results['updated'] += 1
                 else:
                     self.results['skipped'] += 1
-            
+
             else:
-                # Create new component
                 component_data = {
                     'mpn': mpn,
                     'mpn_norm': mpn_norm,
                     'manufacturer': manufacturer,
                     'manufacturer_norm': manufacturer_norm,
-                    'value': row.get('value'),
-                    'tolerance': row.get('tolerance'),
-                    'wattage': row.get('wattage'),
-                    'voltage': row.get('voltage'),
-                    'current': row.get('current'),
+                    'value': value,
+                    'tolerance': tolerance,
+                    'wattage': wattage,
+                    'voltage': voltage,
+                    'current': current,
                     'package_name': package_name,
                     'package_l_mm': package_l_mm,
                     'package_w_mm': package_w_mm,
                     'package_h_mm': package_h_mm,
-                    'description': row.get('description'),
-                    'url_datasheet': row.get('url_datasheet'),
+                    'description': description,
+                    'url_datasheet': url_datasheet,
                     'category_l1': category_l1,
                     'category_l2': category_l2,
-                    # DMT Classification
-                    'dmtuid': row.get('dmtuid'),
-                    'dmt_tt': row.get('dmt_tt'),
-                    'dmt_ff': row.get('dmt_ff'),
-                    'dmt_cc': row.get('dmt_cc'),
-                    'dmt_ss': row.get('dmt_ss'),
-                    'dmt_xxx': row.get('dmt_xxx'),
+                    'dmtuid': dmtuid,
+                    'dmt_tt': dmt_tt,
+                    'dmt_ff': dmt_ff,
+                    'dmt_cc': dmt_cc,
+                    'dmt_ss': dmt_ss,
+                    'dmt_xxx': dmt_xxx,
                 }
-
-                if 'extras' in row:
+                if row.get('extras'):
                     component_data['extras'] = row['extras']
 
                 if not self.dry_run:
                     component = Component.objects.create(**component_data)
-                    self.results['created'] += 1
-                else:
-                    self.results['created'] += 1
-            
-            # Create inventory item if quantity is provided
-            if not self.dry_run and component and 'quantity' in row and row['quantity']:
+                self.results['created'] += 1
+
+            # Inventory
+            if not self.dry_run and quantity and quantity > 0 and component:
                 try:
-                    quantity = int(row['quantity'])
-                    if quantity > 0:
-                        InventoryItem.objects.create(
-                            component=component,
-                            quantity=quantity,
-                            uom=row.get('uom', 'pcs'),
-                            storage_location=row.get('storage_location', 'Unspecified'),
-                            condition=row.get('condition', 'new')
-                        )
-                except (ValueError, TypeError):
+                    InventoryItem.objects.create(
+                        component=component,
+                        quantity=quantity,
+                        uom=row.get('uom', 'pcs'),
+                        storage_location=row.get('storage_location', 'Unspecified'),
+                        condition=row.get('condition', 'new'),
+                    )
+                except Exception:
                     pass
-        
+
         except Exception as e:
             self.results['errors'] += 1
-            self.results['error_rows'].append({
-                'row': row,
-                'error': str(e)
-            })
-    
+            self.results['error_rows'].append({'row': row, 'error': str(e)})
+
     def save_errors(self):
         """
         Save error rows to a CSV file

@@ -2,6 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Database, Package, Upload, Settings, ExternalLink, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+
 export default function Navbar() {
   const location = useLocation();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -83,7 +85,7 @@ export default function Navbar() {
 
             {/* Admin Link */}
             <a
-              href="http://backend:8000/admin/"
+              href={`${API_BASE}/admin/`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-[--text-secondary] hover:text-[--text] hover:bg-[--surface-hover] transition-all duration-150"

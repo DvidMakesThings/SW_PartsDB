@@ -17,15 +17,78 @@
         placeholder="Search DMTUID, MPN, value, manufacturer, description…" autocomplete="off">
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
-    <select name="tt" id="ttSelect" onchange="this.form.submit()">
+    <select name="tt" id="ttSelect">
       <option value="">All Domains</option>
       {% for dom in domains %}
       <option value="{{ dom.tt }}" {% if tt==dom.tt %}selected{% endif %}>{{ dom.tt }} - {{ dom.name }}</option>
       {% endfor %}
     </select>
     <button type="submit" class="btn btn-secondary">Search</button>
+    <button type="button" class="btn btn-secondary" id="advSearchToggle">▼ Advanced</button>
   </div>
+
+  <!-- Advanced Search Panel (collapsed by default) -->
+  <div class="adv-search-panel" id="advSearchPanel">
+    <div class="adv-search-grid">
+      <div class="adv-filter-group">
+        <label>Domain (TT)</label>
+        <select name="tt_adv" id="ttAdvSelect">
+          <option value="">All Domains</option>
+          {% for dom in domains %}
+          <option value="{{ dom.tt }}" {% if tt==dom.tt %}selected{% endif %}>{{ dom.tt }} - {{ dom.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="adv-filter-group">
+        <label>Family (FF)</label>
+        <select name="ff" id="ffSelect">
+          <option value="">All Families</option>
+        </select>
+      </div>
+      <div class="adv-filter-group">
+        <label>Class (CC)</label>
+        <select name="cc" id="ccSelect">
+          <option value="">All Classes</option>
+        </select>
+      </div>
+      <div class="adv-filter-group">
+        <label>Style (SS)</label>
+        <select name="ss" id="ssSelect">
+          <option value="">All Styles</option>
+        </select>
+      </div>
+    </div>
+    <div class="adv-props-section" id="advPropsSection">
+      <div class="adv-props-header">
+        <span>Property Filters</span>
+        <span class="facet-count" id="facetCount"></span>
+      </div>
+      <div class="facet-grid" id="facetGrid">
+        <!-- DigiKey-style faceted filters loaded dynamically -->
+        <div class="facet-loading" id="facetLoading">Select a Domain and Family to see available filters</div>
+      </div>
+    </div>
+    <div class="adv-search-actions">
+      <button type="submit" class="btn btn-primary">Apply Filters</button>
+      <button type="button" class="btn btn-secondary" id="clearFilters">Clear All</button>
+    </div>
+  </div>
+
+  <!-- Hidden inputs for property filters -->
+  <input type="hidden" name="props" id="propsInput" value="{{ props|default('') }}">
 </form>
+
+<script>
+  window.domainsData = {{ domains | tojson | safe }};
+  window.currentFilters = {
+    tt: "{{ tt }}",
+    ff: "{{ ff }}",
+    cc: "{{ cc|default('') }}",
+    ss: "{{ ss|default('') }}",
+    props: {{ props_parsed |default ({}) | tojson | safe }}
+  };
+  console.log("Domains loaded:", window.domainsData.length, window.domainsData);
+</script>
 
 <div class="table-wrap">
   <table>
@@ -80,18 +143,23 @@
 {% if total_pages > 1 %}
 <div class="pager">
   {% if page > 1 %}
-  <a href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ page - 1 }}">← Prev</a>
+  <a
+    href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&page={{ page - 1 }}">←
+    Prev</a>
   {% endif %}
   {% for p in range(1, total_pages + 1) %}
   {% if p == page %}
   <span class="current">{{ p }}</span>
   {% elif p <= 3 or p>= total_pages - 2 or (p >= page - 2 and p <= page + 2) %} <a
-      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ p }}">{{ p }}</a>
+      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&page={{ p }}">
+      {{ p }}</a>
       {% elif p == 4 or p == total_pages - 3 %}
       <span class="info">…</span>
       {% endif %}
       {% endfor %}
-      {% if page < total_pages %} <a href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ page + 1 }}">Next →</a>
+      {% if page < total_pages %} <a
+        href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&page={{ page + 1 }}">
+        Next →</a>
         {% endif %}
         <span class="info">({{ total }} total)</span>
 </div>
@@ -100,4 +168,5 @@
 
 {% block scripts %}
 <script src="/static/js/search.js"></script>
+<script src="/static/js/adv_search.js"></script>
 {% endblock %}

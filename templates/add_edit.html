@@ -34,13 +34,15 @@
       </div>
       <div class="form-group">
         <label>Class (CC)</label>
-        <input type="text" name="cc" id="ccInput" required pattern="\d{1,2}" maxlength="2" placeholder="00-99">
-        <small id="ccHint" style="color:var(--text-dim); font-size:.75rem;"></small>
+        <select name="cc" id="ccSel" required>
+          <option value="">Select class…</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Style (SS)</label>
-        <input type="text" name="ss" id="ssInput" required pattern="\d{1,2}" maxlength="2" placeholder="00-99">
-        <small id="ssHint" style="color:var(--text-dim); font-size:.75rem;"></small>
+        <select name="ss" id="ssSel" required>
+          <option value="">Select style…</option>
+        </select>
       </div>
     </div>
     <p style="color:var(--text-dim); font-size:.85rem; margin-top:.5rem;">XXX sequence number will be auto-assigned.</p>

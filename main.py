@@ -99,7 +99,7 @@ def main():
     _seed_if_empty()
 
     print(f"\n  http://{config.HOST}:{config.PORT}")
-    print(f"  API docs → http://{config.HOST}:{config.PORT}/api/docs")
+    print(f"  API docs: http://{config.HOST}:{config.PORT}/api/docs")
     print("=" * 56)
 
     app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)

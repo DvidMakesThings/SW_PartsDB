@@ -16,6 +16,22 @@
   --radius: 8px;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --card: var(--surface);
+  --hover: var(--surface2);
+}
+
+/* Light mode */
+:root.light {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface2: #eef1f6;
+  --border: #d1d5db;
+  --text: #1f2937;
+  --text-dim: #6b7280;
+  --accent: #4f6cd9;
+  --accent-hover: #3d56b2;
+  --card: #ffffff;
+  --hover: #f0f2f5;
 }
 
 *,
@@ -75,6 +91,45 @@ body {
 .nav-links a.active {
   color: var(--text);
   background: var(--surface2);
+}
+
+/* ── Theme Toggle ───────────────────────────────────────────── */
+
+.theme-toggle {
+  margin-left: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .4rem .6rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all .15s;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+}
+
+/* Dark mode: show sun, hide moon */
+.theme-icon-light {
+  display: none;
+}
+
+.theme-icon-dark {
+  display: block;
+}
+
+/* Light mode: show moon, hide sun */
+:root.light .theme-icon-light {
+  display: block;
+}
+
+:root.light .theme-icon-dark {
+  display: none;
 }
 
 /* ── Layout ─────────────────────────────────────────────────── */

@@ -1,33 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}DMTDB{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}DMTDB{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
 
-<nav class="nav">
-  <a href="/" class="nav-brand">DMTDB</a>
-  <div class="nav-links">
-    <a href="/"          {% if request.endpoint == 'ui.index' %}class="active"{% endif %}>Browse</a>
-    <a href="/part/add"  {% if request.endpoint == 'ui.part_add' %}class="active"{% endif %}>+ Add Part</a>
-    <a href="/import"    {% if request.endpoint == 'ui.import_page' %}class="active"{% endif %}>Import CSV</a>
-    <a href="/api/docs"  {% if request.endpoint == 'ui.api_docs' %}class="active"{% endif %}>API Docs</a>
-  </div>
-</nav>
+  <nav class="nav">
+    <a href="/" class="nav-brand">DMTDB</a>
+    <div class="nav-links">
+      <a href="/" {% if request.endpoint=='ui.index' %}class="active" {% endif %}>Browse</a>
+      <a href="/part/add" {% if request.endpoint=='ui.part_add' %}class="active" {% endif %}>+ Add Part</a>
+      <a href="/import" {% if request.endpoint=='ui.import_page' %}class="active" {% endif %}>Import CSV</a>
+      <a href="/api/docs" {% if request.endpoint=='ui.api_docs' %}class="active" {% endif %}>API Docs</a>
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+      <svg class="theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <circle cx="12" cy="12" r="5" />
+        <path
+          d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+      </svg>
+      <svg class="theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    </button>
+  </nav>
 
-<div class="container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var toggle = document.getElementById('themeToggle');
+      var saved = localStorage.getItem('dmtdb-theme');
+      if (saved === 'light') root.classList.add('light');
+      toggle.addEventListener('click', function () {
+        root.classList.toggle('light');
+        localStorage.setItem('dmtdb-theme', root.classList.contains('light') ? 'light' : 'dark');
+      });
+    })();
+  </script>
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in messages %}
-      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    <div class="flash flash-{{ cat }}">{{ msg }}</div>
     {% endfor %}
-  {% endwith %}
+    {% endwith %}
 
-  {% block content %}{% endblock %}
-</div>
+    {% block content %}{% endblock %}
+  </div>
 
-{% block scripts %}{% endblock %}
+  {% block scripts %}{% endblock %}
 </body>
+
 </html>

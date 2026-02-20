@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}DMTDB{% endblock %}</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-brand">DMTDB</a>
+  <div class="nav-links">
+    <a href="/"          {% if request.endpoint == 'ui.index' %}class="active"{% endif %}>Browse</a>
+    <a href="/part/add"  {% if request.endpoint == 'ui.part_add' %}class="active"{% endif %}>+ Add Part</a>
+    <a href="/import"    {% if request.endpoint == 'ui.import_page' %}class="active"{% endif %}>Import CSV</a>
+    <a href="/api/docs"  {% if request.endpoint == 'ui.api_docs' %}class="active"{% endif %}>API Docs</a>
+  </div>
+</nav>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

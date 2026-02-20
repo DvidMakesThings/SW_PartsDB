@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Import CSV - DMTDB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Import CSV</h1>
+</div>
+
+<div class="detail-card" style="margin-bottom:1.5rem;">
+  <h2>Upload CSV File</h2>
+  <form method="post" enctype="multipart/form-data" style="margin-top:.75rem;">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>CSV File</label>
+        <input type="file" name="csv_file" accept=".csv,.txt" required
+          style="padding:.5rem; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text);">
+      </div>
+      <div class="form-group" style="justify-content:flex-end;">
+        <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+          <input type="checkbox" name="replace" value="1" style="width:16px; height:16px;">
+          Replace existing DMTUIDs
+        </label>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Import</button>
+    </div>
+  </form>
+</div>
+
+<div class="detail-card" style="margin-bottom:1.5rem;">
+  <h2>CSV Format Requirements</h2>
+  <div style="font-size:.875rem; color:var(--text-dim); line-height:1.7;">
+    <p>The CSV must have a header row. The importer recognises these columns:</p>
+    <p style="margin-top:.5rem;">
+      <strong style="color:var(--text);">Required:</strong> Either a valid <code
+        style="color:var(--accent);">DMTUID</code> column,
+      or <code style="color:var(--accent);">TT</code>, <code style="color:var(--accent);">FF</code>,
+      <code style="color:var(--accent);">CC</code>, <code style="color:var(--accent);">SS</code> columns
+      (XXX will be auto-assigned).
+    </p>
+    <p style="margin-top:.5rem;">
+      <strong style="color:var(--text);">Core fields:</strong> MPN, Value, Manufacturer, Quantity, Location,
+      Description, Datasheet
+    </p>
+    <p style="margin-top:.5rem;">
+      <strong style="color:var(--text);">Template fields:</strong> Additional columns matching the template for TT+FF
+      will be stored.
+      Extra columns not in the template are ignored.
+    </p>
+  </div>
+</div>
+
+{% if report %}
+<div class="report-box">
+  <h2 style="font-size:1.1rem; margin-bottom:.75rem;">Import Report</h2>
+  <div>
+    <span class="report-stat">Total rows: <strong>{{ report.total_rows }}</strong></span>
+    <span class="report-stat stat-ok">Imported: <strong>{{ report.imported }}</strong></span>
+    <span class="report-stat stat-err">Skipped: <strong>{{ report.skipped }}</strong></span>
+  </div>
+  {% if report.errors %}
+  <div class="error-list">
+    <p style="color:var(--orange); font-size:.9rem; margin:.5rem 0;">Errors:</p>
+    {% for err in report.errors %}
+    <div class="error-item">Row {{ err.row }}: {{ err.reason }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

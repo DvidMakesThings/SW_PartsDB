@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}API Documentation - DMTDB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>REST API Documentation</h1>
+  <span class="subtitle">Base URL: <code style="color:var(--accent);">/api/v1</code></span>
+</div>
+
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>Schema Endpoints</h2>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/schema/domains</code> — List all domains and families</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/schema/template/{ttff}</code> — Get template fields for a TT+FF key</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/schema/guidelines/{ttff}</code> — Get CC/SS guidelines for a family</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/schema/cross_cutting</code> — List cross-cutting class codes</span></div>
+</div>
+
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>Parts CRUD</h2>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/parts?q=&amp;tt=&amp;ff=&amp;limit=100&amp;offset=0</code> — List/search
+      parts</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Get a single part by DMTUID</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/api/v1/parts</code> — Create new part (JSON: tt, ff, cc, ss + fields). XXX
+      auto-assigned.</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--accent);">PUT</span><span
+      class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Update fields (JSON body)</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--red);">DELETE</span><span
+      class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Delete a part</span></div>
+</div>
+
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>KiCad Integration</h2>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/kicad/search?q=&amp;mpn=&amp;value=&amp;manufacturer=</code> — KiCad-friendly
+      search</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/api/v1/kicad/instock</code> — Parts with Quantity &gt; 0</span></div>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-top:.75rem;">
+    Each part includes optional: <code>kicad_symbol</code>, <code>kicad_footprint</code>, <code>kicad_libref</code>.
+  </p>
+</div>
+
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>CSV Import</h2>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/api/v1/import?replace=0|1</code> — Import CSV (multipart: <code>csv_file</code>, or raw
+      CSV body)</span></div>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-top:.5rem;">
+    Returns: <code>{"total_rows", "imported", "skipped", "errors": [{"row", "reason"}]}</code>
+  </p>
+</div>
+
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>DMTUID Format</h2>
+  <p style="font-size:.9rem; margin-bottom:.5rem;">Pattern: <code
+      style="color:var(--accent); font-size:1.1rem;">DMT-TTFFCCSSXXX</code></p>
+  <div class="field-row"><span class="field-label">TT (00-99)</span><span class="field-value">Top domain</span></div>
+  <div class="field-row"><span class="field-label">FF (00-99)</span><span class="field-value">Family inside
+      domain</span></div>
+  <div class="field-row"><span class="field-label">CC (00-99)</span><span class="field-value">Class or subtype</span>
+  </div>
+  <div class="field-row"><span class="field-label">SS (00-99)</span><span class="field-value">Style or vendor
+      bucket</span></div>
+  <div class="field-row"><span class="field-label">XXX (001-999)</span><span class="field-value">Per-item sequence
+      (auto-assigned)</span></div>
+</div>
+
+<div class="detail-card">
+  <h2>cURL Examples</h2>
+  <pre
+    style="font-size:.8rem; color:var(--text-dim); overflow-x:auto; white-space:pre-wrap; background:var(--bg); padding:.75rem; border-radius:var(--radius);">
+# Search
+curl "http://localhost:5000/api/v1/parts?q=MOSFET&limit=10"
+
+# Get part
+curl "http://localhost:5000/api/v1/parts/DMT-02030110001"
+
+# Create
+curl -X POST "http://localhost:5000/api/v1/parts" \
+  -H "Content-Type: application/json" \
+  -d '{"tt":"01","ff":"02","cc":"01","ss":"03","MPN":"RC0603FR-0710KL","Value":"10K"}'
+
+# Update KiCad fields
+curl -X PUT "http://localhost:5000/api/v1/parts/DMT-01020103001" \
+  -H "Content-Type: application/json" \
+  -d '{"kicad_symbol":"Device:R","kicad_footprint":"Resistor_SMD:R_0603"}'
+
+# Import CSV
+curl -X POST "http://localhost:5000/api/v1/import" -F "csv_file=@parts.csv"
+
+# KiCad: in-stock
+curl "http://localhost:5000/api/v1/kicad/instock"
+
+# KiCad: search by MPN
+curl "http://localhost:5000/api/v1/kicad/search?mpn=BSS138LT1G"
+  </pre>
+</div>
+{% endblock %}

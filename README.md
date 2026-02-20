@@ -1,262 +1,291 @@
-# PartsDB - Electronic Components Inventory System
+# DMTDB – Electronic Parts Database
 
-PartsDB is a comprehensive inventory management system for electronic components, supporting component cataloging, inventory tracking, datasheet management, and CSV imports.
-
-## 🚀 Quick Start with Docker (Recommended)
-
-The easiest way to run PartsDB is using Docker:
-
-### Windows
-```powershell
-.\deploy.ps1
-```
-
-### Linux/macOS
-```bash
-./deploy.sh
-```
-
-Then open http://localhost:5173 in your browser!
-
-📖 See [QUICK_START.md](QUICK_START.md) for details or [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for comprehensive documentation.
+A self-hosted parts library built around the **DMT classification schema**.  
+Python-only stack: Flask + SQLAlchemy + SQLite.  Single command to run.
 
 ---
 
-## Manual Setup (No Docker)
-
-### Windows / PowerShell
-
-```powershell
-# Create and activate virtual environment
-python -m venv .venv
-.\.venv\Scripts\activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-
-# Initialize database and run server
-cd backend && python manage.py migrate && python manage.py runserver 0.0.0.0:8000
-```
-
-### Linux / macOS
+## Quick Start
 
 ```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-
-# Initialize database and run server
-cd backend && python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+cd dmtdb
+pip install -r requirements.txt
+python main.py
 ```
 
-### Frontend Setup (In Another Terminal)
+Open **http://localhost:5000**
 
-```bash
-cd frontend
-npm i
-npm run dev
+On first launch the database is created automatically and `DMT_Partslib.csv`
+is imported (143 parts, 0 errors).
+
+---
+
+## Project Structure
+
+```
+dmtdb/
+│
+├── main.py                        # Entry point – app factory, seed import, run server
+├── config.py                      # Centralised settings (env vars, paths, limits)
+├── requirements.txt               # flask >= 3.0, sqlalchemy >= 2.0
+│
+├── db/                            # ── Database layer ──────────────────────
+│   ├── __init__.py                #   Public surface: init_db, get_session, Part, PartField
+│   ├── engine.py                  #   Engine bootstrap, SQLite WAL pragmas, session factory
+│   └── models.py                  #   ORM: Part (core row) + PartField (EAV for template fields)
+│
+├── schema/                        # ── DMT classification ──────────────────
+│   ├── __init__.py                #   Public surface: load, build_dmtuid, get_fields, …
+│   ├── loader.py                  #   Parses dmt_schema.json, builds domain/family lookup maps
+│   ├── numbering.py               #   DMTUID build / parse / validate (DMT-TTFFCCSSXXX)
+│   └── templates.py               #   Template field resolution per TT+FF family
+│
+├── import_engine/                 # ── CSV import pipeline ─────────────────
+│   ├── __init__.py                #   Public surface: run_import, ImportReport
+│   ├── csv_parser.py              #   BOM stripping, encoding detection, header normalisation
+│   ├── field_map.py               #   CSV column ↔ Part model attribute mapping constants
+│   ├── row_processor.py           #   Single-row validation, UID resolution, Part construction
+│   ├── importer.py                #   Orchestrator: csv_parser → row_processor → DB commit
+│   └── report.py                  #   ImportReport dataclass with per-row error tracking
+│
+├── services/                      # ── Business logic ──────────────────────
+│   ├── __init__.py                #   Public surface
+│   ├── parts_service.py           #   Create / read / update / delete Part records
+│   ├── search_service.py          #   Text search + filtered listing with pagination
+│   ├── kicad_service.py           #   KiCad-specific lightweight queries
+│   └── sequence_service.py        #   XXX auto-allocation (next available per TTFFCCSS group)
+│
+├── api/                           # ── REST API (/api/v1) ──────────────────
+│   ├── __init__.py                #   Blueprint registration
+│   ├── errors.py                  #   JSON error handlers (400, 404, 500)
+│   ├── routes_parts.py            #   GET/POST/PUT/DELETE /api/v1/parts
+│   ├── routes_schema.py           #   GET /api/v1/schema/domains|template|guidelines|cross_cutting
+│   ├── routes_kicad.py            #   GET /api/v1/kicad/search|instock
+│   └── routes_import.py           #   POST /api/v1/import (JSON response for programmatic use)
+│
+├── ui/                            # ── Server-rendered HTML ────────────────
+│   ├── __init__.py                #   Blueprint registration
+│   ├── routes_browse.py           #   GET /              Browse/search table with pagination
+│   ├── routes_detail.py           #   GET /part/<uid>    Part detail view
+│   ├── routes_forms.py            #   GET|POST /part/add, /part/<uid>/edit, /part/<uid>/delete
+│   ├── routes_import.py           #   GET|POST /import   CSV upload page (HTML response)
+│   ├── routes_docs.py             #   GET /api/docs      API documentation page
+│   ├── datasheet_server.py        #   GET /datasheets/<file>  Secure local file serving
+│   └── live_search.py             #   GET /ui-api/search, /ui-api/template_fields  (AJAX JSON)
+│
+├── static/
+│   ├── css/
+│   │   └── style.css              #   Dark theme design system
+│   └── js/
+│       ├── search.js              #   Live search dropdown + barcode scanner support
+│       └── add_edit.js            #   Dynamic template fields + CC/SS guideline hints
+│
+├── templates/                     # ── Jinja2 HTML templates ───────────────
+│   ├── base.html                  #   Layout: nav, flash messages, container
+│   ├── index.html                 #   Browse page with search, filters, pagination
+│   ├── detail.html                #   Part detail: core info, classification, EAV fields
+│   ├── add_edit.html              #   Add/edit form with dynamic template field loading
+│   ├── import.html                #   CSV upload form + import report display
+│   ├── api_docs.html              #   REST API endpoint documentation
+│   └── error.html                 #   404 / 500 error page
+│
+├── datasheets/                    #   Local datasheet PDFs (served by datasheet_server.py)
+│
+├── dmt_schema.json                #   DMT numbering schema (29 domains, 192 families)
+├── dmt_templates.json             #   Field templates per TT+FF (90 templates)
+└── DMT_Partslib.csv               #   Seed parts library (143 parts)
 ```
 
-Default URLs:
-- Backend: http://127.0.0.1:8000
-- Frontend: http://127.0.0.1:5173
-- Admin interface: http://127.0.0.1:8000/admin
-- API documentation: http://127.0.0.1:8000/api/schema/swagger/
+---
 
-## Docker Setup (Optional)
+## DMTUID Format
 
-```bash
-# Start all services
-docker compose up -d
+Every part gets a unique identifier following this fixed-width pattern:
 
-# First-time setup: Run migrations
-docker compose exec web python manage.py migrate
-
-# Create admin user
-docker compose exec web python manage.py createsuperuser
 ```
+DMT-TTFFCCSSXXX
+     │ │ │ │ └── Per-item sequence 001–999 (auto-assigned)
+     │ │ │ └──── Style / vendor bucket 00–99
+     │ │ └────── Class / subtype 00–99
+     │ └──────── Family 00–99
+     └────────── Domain 00–99
+```
+
+**Example:** `DMT-02030110001`  
+→ Domain 02 (Discrete Semiconductors) → Family 03 (MOSFETs) → Class 01 (N-channel) → Style 10 (DPAK/D2PAK) → Sequence 001
+
+---
 
 ## Environment Variables
 
-Create a `.env` file at the project root with the following variables:
-
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `sqlite:///backend/partsdb.sqlite3` | Database connection string |
-| `MEDIA_ROOT` | `backend/media` | File storage root directory |
-| `DATASHEET_FETCH_ENABLED` | `true` | Enable/disable datasheet fetching |
-| `REDIS_URL` | _(optional)_ | Redis URL for Celery tasks (if empty, datasheet fetch runs synchronously) |
-| `DJANGO_DEBUG` | `true` | Enable debug mode |
-| `DJANGO_SECRET_KEY` | `change-me` | Secret key for Django |
-| `VITE_API_BASE` | `http://127.0.0.1:8000` | API base URL for frontend |
+|---|---|---|
+| `DMTDB_HOST` | `0.0.0.0` | Bind address |
+| `DMTDB_PORT` | `5000` | Bind port |
+| `DMTDB_DB` | `sqlite:///dmtdb.sqlite` | Database URL (supports `postgresql://…`) |
+| `DMTDB_SCHEMA` | `./dmt_schema.json` | Path to classification schema |
+| `DMTDB_TEMPLATES` | `./dmt_templates.json` | Path to field templates |
+| `DMTDB_CSV_SEED` | `./DMT_Partslib.csv` | Seed CSV (imported on first run if DB empty) |
+| `DMTDB_DEBUG` | `0` | Set to `1` for Flask debug mode |
+| `DMTDB_SECRET` | `dmtdb-dev-key-…` | Flask secret key (change in production) |
 
-## File Storage Conventions
+---
 
-Files are stored under `MEDIA_ROOT` with the following structure:
+## REST API
 
-- **Datasheets**: `Datasheets/<Manufacturer>/<Category_L1>/<MPN>.pdf`
-- **3D Models**: `3D/<Package>/<Variant>/<MPN>.step`
-- **Photos**: `Photos/<MPN>/front.jpg`
+Base URL: `/api/v1`
 
-## CSV Import
+### Schema
 
-### Using the Command Line
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/schema/domains` | List all domains with nested families |
+| GET | `/schema/template/{ttff}` | Get ordered field list for a TT+FF key |
+| GET | `/schema/guidelines/{ttff}` | Get CC/SS code guideline hints |
+| GET | `/schema/cross_cutting` | Cross-cutting class codes (90–99 meanings) |
+
+### Parts CRUD
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/parts?q=&tt=&ff=&limit=100&offset=0` | Search / list parts |
+| GET | `/parts/{dmtuid}` | Get single part with all fields |
+| POST | `/parts` | Create part (JSON: `tt, ff, cc, ss` + fields; XXX auto-assigned) |
+| PUT | `/parts/{dmtuid}` | Update fields (JSON body) |
+| DELETE | `/parts/{dmtuid}` | Delete a part |
+
+### KiCad Integration
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/kicad/search?q=&mpn=&value=&manufacturer=` | Multi-criteria search, KiCad-friendly response |
+| GET | `/kicad/instock` | All parts with Quantity > 0 |
+
+Each part can carry optional `kicad_symbol`, `kicad_footprint`, and `kicad_libref` fields.
+
+### CSV Import
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/import?replace=0\|1` | Upload CSV (multipart `csv_file` field, or raw body) |
+
+**Response:**
+```json
+{
+  "total_rows": 143,
+  "imported": 143,
+  "skipped": 0,
+  "errors": []
+}
+```
+
+### cURL Examples
 
 ```bash
-# Dry run (shows changes without applying them)
-python backend/manage.py import_csv backend/tests/sample_components.csv --dry-run
+# Search
+curl "http://localhost:5000/api/v1/parts?q=MOSFET&limit=10"
 
-# Actual import
-python backend/manage.py import_csv backend/tests/sample_components.csv
+# Get part
+curl "http://localhost:5000/api/v1/parts/DMT-02030110001"
+
+# Create
+curl -X POST "http://localhost:5000/api/v1/parts" \
+  -H "Content-Type: application/json" \
+  -d '{"tt":"01","ff":"02","cc":"01","ss":"03","MPN":"RC0603FR-0710KL","Value":"10K"}'
+
+# Update with KiCad fields
+curl -X PUT "http://localhost:5000/api/v1/parts/DMT-01020103001" \
+  -H "Content-Type: application/json" \
+  -d '{"kicad_symbol":"Device:R","kicad_footprint":"Resistor_SMD:R_0603"}'
+
+# Delete
+curl -X DELETE "http://localhost:5000/api/v1/parts/DMT-01020103001"
+
+# Import CSV
+curl -X POST "http://localhost:5000/api/v1/import" -F "csv_file=@parts.csv"
+
+# KiCad: in-stock parts
+curl "http://localhost:5000/api/v1/kicad/instock"
+
+# KiCad: search by MPN
+curl "http://localhost:5000/api/v1/kicad/search?mpn=BSS138LT1G"
 ```
 
-### Using the API
+---
 
-```
-POST /api/import/csv
-```
-- Multipart form data with:
-  - `file`: CSV file to import
-  - `dry_run`: `true` or `false`
+## CSV Import Format
 
-### Header Mapping
+The importer accepts CSV files with a header row. Two modes of UID resolution:
 
-The importer accepts various headers and maps them to model fields:
+1. **Explicit DMTUID column** — if present and valid (`DMT-TTFFCCSSXXX`), used as-is.
+2. **TT + FF + CC + SS columns** — if DMTUID is missing/invalid but these four columns exist and are valid, XXX is auto-assigned (next available in the TTFFCCSS group).
 
-- `MPN` → `mpn` (normalized to uppercase)
-- `Manufacturer` → `manufacturer`
-- `Value` → `value`
-- `Tolerance` → `tolerance`
-- `Wattage` → `wattage`
-- `Voltage` → `voltage`
-- `Current` → `current`
-- `Description` → `description`
-- `Datasheet` → `url_datasheet`
-- `Package (LxW)` → parses dimensions like "12.00mm x 12.00mm" into `package_l_mm` and `package_w_mm`
-- `Height - after installation (max.)` → `package_h_mm`
-- Other fields like `Resistance`, `Impedance` → stored in `extras` JSON field
+Rows that satisfy neither condition are skipped with an error reason.
 
-Components are de-duplicated based on normalized manufacturer and MPN. Existing data is preserved when fields already contain values.
+**Core columns** (stored on the Part row for fast indexing):  
+`MPN`, `Value`, `Manufacturer`, `Description`, `Quantity`, `Location`, `Datasheet`
 
-### Error Handling
+**Template columns** (stored as EAV fields):  
+Any additional column that matches the template for the part's TT+FF family.
+Columns not in the template are silently ignored (or stored as `extra_json` if no template exists for that family).
 
-Rows with errors are logged to: `backend/apps/inventory/import_errors/YYYYMMDD_HHMM.csv`
+**Duplicate handling:**  
+By default, duplicate DMTUIDs are rejected. Pass `?replace=1` (API) or check the "Replace existing" box (UI) to overwrite.
 
-## Datasheet Fetching
+---
 
-### Fetching Individual Datasheets
+## UI Features
 
-```
-POST /api/components/{id}/fetch_datasheet/
-```
+- **Browse page:** Sortable table with live search, domain filter, pagination (50 per page)
+- **Live search dropdown:** Debounced type-ahead (120 ms), keyboard navigation (↑↓ Enter Esc)
+- **Barcode scanner:** Enter key checks for exact DMTUID match first, then opens top result
+- **Part detail:** Core info, classification badges, template EAV fields, datasheet link
+- **Add/edit form:** Dynamic template fields load via AJAX when TT+FF are selected; CC/SS guideline hints displayed
+- **CSV import page:** Upload form with replace option, detailed per-row error report
+- **API docs page:** Full endpoint reference with cURL examples
+- **Dark theme:** Custom design system with CSS variables
 
-### Batch Fetching Missing Datasheets
+---
 
-```
-POST /api/components/fetch_missing_datasheets/
-```
+## Datasheet Handling
 
-- Datasheets are only accepted if content-type is `application/pdf`
-- Files are stored with SHA-256 deduplication
-- If `REDIS_URL` is not set, fetching runs synchronously instead of using Celery
+The `Datasheet` field accepts two formats:
 
-## API Documentation
+- **URL** (starts with `http`): Linked directly, opens in new tab.
+- **Local filename**: File must be placed in `datasheets/`. Served via `/datasheets/<filename>` with path-traversal protection.
 
-- **Swagger UI**: `/api/schema/swagger/`
-- **OpenAPI Schema**: `/api/schema/`
-- **Health Check**: `/api/health` (returns `{"ok": true}`)
+---
 
-## Admin Interface
+## Database
 
-Access the Django admin at `/admin`
+Default: SQLite with WAL mode, foreign keys enabled.  
+Migration-ready: set `DMTDB_DB=postgresql://user:pass@host/db` to use PostgreSQL — no code changes needed.
 
-To create a superuser:
-```bash
-python backend/manage.py createsuperuser
-```
+**Tables:**
+- `parts` — one row per DMTUID, with indexed columns for MPN, value, manufacturer, location
+- `part_fields` — EAV store for template-driven parameters (indexed on `dmtuid + field_name`)
 
-## Testing & Quality
+---
 
-### Running Tests
+## Architecture Notes
 
-```bash
-cd backend
-pytest -q
-```
+**Package responsibilities are strictly separated:**
 
-### Linting and Formatting
+| Package | Depends on | Purpose |
+|---|---|---|
+| `config` | nothing | All settings in one place |
+| `db` | `config` | Engine, session, ORM models |
+| `schema` | nothing (reads JSON files) | Classification, numbering, template resolution |
+| `import_engine` | `db`, `schema` | CSV parsing → validation → DB insertion |
+| `services` | `db`, `schema` | Business logic (CRUD, search, KiCad, sequencing) |
+| `api` | `services`, `db`, `config` | REST endpoints (JSON responses) |
+| `ui` | `services`, `db`, `schema`, `config` | HTML pages (Jinja2 rendering) |
+| `main` | all of the above | App factory, wiring, startup |
 
-```bash
-# Linting
-ruff check backend
+Both `api/routes_import.py` and `ui/routes_import.py` exist — they share a filename but live in different packages. The API version returns JSON for programmatic consumers (curl, scripts, KiCad plugins). The UI version renders the HTML upload page with a form and error report display. Both call `import_engine.run_import()` internally.
 
-# Formatting
-ruff format backend
-```
-
-### Acceptance Tests
-
-✅ `python -m venv .venv && pip install -r backend/requirements.txt && cd backend && python manage.py migrate && python manage.py runserver` starts without error.  
-✅ `curl http://localhost:8000/api/health` returns `{"ok":true}`.  
-✅ `python backend/manage.py import_csv backend/tests/sample_components.csv --dry-run` prints a summary.  
-✅ `python backend/manage.py import_csv backend/tests/sample_components.csv` creates rows.  
-✅ `POST /api/components/?search=SN65HVD11` returns the component.  
-✅ `POST /api/components/{id}/fetch_datasheet/` stores a PDF under `backend/media/Datasheets/...`.  
-✅ Frontend `npm i && npm run dev` starts and lists components without errors.  
-
-## Future Roadmap
-
-- PostgreSQL migration (using `DATABASE_URL=postgres://...`)
-- Barcode/QR support for inventory items
-- Bulk edits & CSV export functionality
-- EAGLE ULP integration using `/api/stock_check` endpoint
-- CI/CD with GitHub Actions
-- Enhanced Redis/Celery configuration for production
+---
 
 ## License
-### Software Components
-This project's software is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-See the [Software License](LICENSE-AGPL) file for details.
 
-#### What AGPL-3.0 means:
-
-- ✅ **You can** freely use, modify, and distribute this software
-- ✅ **You can** use this project for personal, educational, or internal purposes
-- ✅ **You can** contribute improvements back to this project
-
-- ⚠️ **You must** share any modifications you make if you distribute the software
-- ⚠️ **You must** release the source code if you run a modified version on a server that others interact with
-- ⚠️ **You must** keep all copyright notices intact
-
-- ❌ **You cannot** incorporate this code into proprietary software without sharing your source code
-- ❌ **You cannot** use this project in a commercial product without either complying with AGPL or obtaining a different license
-
-### Commercial & Enterprise Use
-
-Commercial use of this project is prohibited without obtaining a separate commercial license. If you are interested in:
-
-- Manufacturing and selling products based on these designs
-- Incorporating these designs into commercial products
-- Any other commercial applications
-
-Please contact me through any of the channels listed in the [Contact](#contact) section to discuss commercial licensing arrangements. Commercial licenses are available with reasonable terms to support ongoing development.
-
-## Contact
-
-For questions or feedback:
-- **Email:** [dvidmakesthings@gmail.com](mailto:dvidmakesthings@gmail.com)
-- **GitHub:** [DvidMakesThings](https://github.com/DvidMakesThings)
-
-## Contributing
-
-Contributions are welcome! As this is an early-stage project, please reach out before 
-making substantial changes:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/concept`)
-3. Commit your changes (`git commit -m 'Add concept'`)
-4. Push to the branch (`git push origin feature/concept`)
-5. Open a Pull Request with a detailed description
+Internal project — not published.

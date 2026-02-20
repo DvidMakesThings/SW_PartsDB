@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - DMTDB{% endblock %}
+{% block content %}
+<div style="text-align:center; padding:4rem 0;">
+  <h1 style="font-size:3rem; color:var(--accent); font-family:var(--mono);">{{ code }}</h1>
+  <p style="color:var(--text-dim); font-size:1.1rem; margin:1rem 0;">{{ message }}</p>
+  <a href="/" class="btn btn-primary">Back to Browse</a>
+</div>
+{% endblock %}

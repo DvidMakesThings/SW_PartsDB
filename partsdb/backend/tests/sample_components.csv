@@ -1,5 +1,0 @@
-MPN,Manufacturer,Value,Tolerance,Wattage,Voltage,Current,Package (LxW),Description,Datasheet
-7447709100,Wurth Elektronik,10uH,20%,,,7.1A,12.00mm x 12.00mm,WE-PD Inductor,https://www.we-online.com/components/products/datasheet/7447709100.pdf
-88E1512-A0-NNP2I000,Marvell,,,,,,QFN-56,Gigabit Ethernet PHY,https://www.marvell.com/88e151x-datasheet.pdf
-SN65HVD11DR,Texas Instruments,,,,,,SOIC-8,3.3-V RS-485 Transceiver,https://www.ti.com/lit/ds/symlink/sn65hvd11.pdf
-742792023,Wurth Elektronik,0.03R,25%,,3A,,0805,Ferrite Bead,https://www.farnell.com/datasheets/1919974.pdf

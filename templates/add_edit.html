@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% else %}Add Part{% endif %} - DMTDB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% else %}Add New Part{% endif %}</h1>
+</div>
+
+<form method="post" id="partForm">
+
+  <!-- Classification -->
+  <div class="detail-card" style="margin-bottom:1rem;">
+    <h2>Classification (DMTUID)</h2>
+    {% if mode == 'edit' %}
+    <p style="font-family:var(--mono); font-size:1.1rem; color:var(--accent); margin-bottom:.75rem;">{{ part.dmtuid }}
+    </p>
+    <p style="color:var(--text-dim); font-size:.85rem;">Classification cannot be changed after creation.</p>
+    {% else %}
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Domain (TT)</label>
+        <select name="tt" id="ttSel" required>
+          <option value="">Select domain…</option>
+          {% for dom in domains %}
+          <option value="{{ dom.tt }}">{{ dom.tt }} - {{ dom.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Family (FF)</label>
+        <select name="ff" id="ffSel" required>
+          <option value="">Select family…</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Class (CC)</label>
+        <input type="text" name="cc" id="ccInput" required pattern="\d{1,2}" maxlength="2" placeholder="00-99">
+        <small id="ccHint" style="color:var(--text-dim); font-size:.75rem;"></small>
+      </div>
+      <div class="form-group">
+        <label>Style (SS)</label>
+        <input type="text" name="ss" id="ssInput" required pattern="\d{1,2}" maxlength="2" placeholder="00-99">
+        <small id="ssHint" style="color:var(--text-dim); font-size:.75rem;"></small>
+      </div>
+    </div>
+    <p style="color:var(--text-dim); font-size:.85rem; margin-top:.5rem;">XXX sequence number will be auto-assigned.</p>
+    {% endif %}
+  </div>
+
+  <!-- Core Fields -->
+  <div class="detail-card" style="margin-bottom:1rem;">
+    <h2>Core Fields</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>MPN</label>
+        <input type="text" name="MPN" value="{{ part.mpn if part else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Value</label>
+        <input type="text" name="Value" value="{{ part.value if part else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Manufacturer</label>
+        <input type="text" name="Manufacturer" value="{{ part.manufacturer if part else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="text" name="Quantity" value="{{ part.quantity if part else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" name="Location" value="{{ part.location if part else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Datasheet (URL or local filename)</label>
+        <input type="text" name="Datasheet" value="{{ part.datasheet if part else '' }}">
+      </div>
+      <div class="form-group full">
+        <label>Description</label>
+        <textarea name="Description" rows="2">{{ part.description if part else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Fields -->
+  <div class="detail-card" style="margin-bottom:1rem;" id="templateFieldsCard">
+    <h2>Template Fields <span id="templateLabel"
+        style="font-weight:400; font-size:.75rem; color:var(--text-dim);"></span></h2>
+    <div class="form-grid" id="templateFields">
+      {% if mode == 'edit' and template_fields %}
+      {% set field_map = {} %}
+      {% for f in part.fields %}
+      {% if field_map.update({f.field_name: f.field_value}) %}{% endif %}
+      {% endfor %}
+      {% set skip =
+      ['MPN','Location','Quantity','Value','Manufacturer','Description','Datasheet','RoHS','TT','FF','CC','SS','XXX','DMTUID']
+      %}
+      {% for fname in template_fields %}
+      {% if fname not in skip %}
+      <div class="form-group">
+        <label>{{ fname }}</label>
+        <input type="text" name="{{ fname }}" value="{{ field_map.get(fname, '') }}">
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% else %}
+      <p style="color:var(--text-dim); font-size:.85rem;" id="templatePlaceholder">
+        Select a Domain and Family above to load template fields.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- KiCad -->
+  <div class="detail-card" style="margin-bottom:1rem;">
+    <h2>KiCad Integration</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>KiCad Symbol</label>
+        <input type="text" name="kicad_symbol" value="{{ part.kicad_symbol if part else '' }}"
+          placeholder="e.g. Device:R">
+      </div>
+      <div class="form-group">
+        <label>KiCad Footprint</label>
+        <input type="text" name="kicad_footprint" value="{{ part.kicad_footprint if part else '' }}"
+          placeholder="e.g. Resistor_SMD:R_0402">
+      </div>
+      <div class="form-group">
+        <label>KiCad Lib Ref</label>
+        <input type="text" name="kicad_libref" value="{{ part.kicad_libref if part else '' }}">
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="detail-card" style="margin-bottom:1rem;">
+    <h2>Notes</h2>
+    <div class="form-group full">
+      <textarea name="notes" rows="3">{{ part.notes if part else '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">{% if mode == 'edit' %}Save Changes{% else %}Create Part{% endif
+      %}</button>
+    {% if mode == 'edit' %}
+    <a href="/part/{{ part.dmtuid }}" class="btn btn-secondary">Cancel</a>
+    {% else %}
+    <a href="/" class="btn btn-secondary">Cancel</a>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>var domainsData = {{ domains | tojson | safe }};</script>
+<script src="/static/js/add_edit.js"></script>
+{% endblock %}

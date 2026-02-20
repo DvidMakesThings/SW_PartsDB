@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}DMTDB - Browse Parts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Parts Library</h1>
+    <span class="subtitle">{{ total }} part{{ 's' if total != 1 }} found</span>
+  </div>
+  <a href="/part/add" class="btn btn-primary">+ Add Part</a>
+</div>
+
+<form method="get" action="/" id="searchForm">
+  <div class="search-box">
+    <div class="search-wrapper" id="searchWrapper">
+      <input type="text" name="q" id="searchInput" value="{{ q }}"
+        placeholder="Search DMTUID, MPN, value, manufacturer, description…" autocomplete="off">
+      <div class="search-dropdown" id="searchDropdown"></div>
+    </div>
+    <select name="tt" id="ttSelect" onchange="this.form.submit()">
+      <option value="">All Domains</option>
+      {% for dom in domains %}
+      <option value="{{ dom.tt }}" {% if tt==dom.tt %}selected{% endif %}>{{ dom.tt }} - {{ dom.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary">Search</button>
+  </div>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>DMTUID</th>
+        <th>MPN</th>
+        <th>Value</th>
+        <th>Qty</th>
+        <th>Location</th>
+        <th>Domain / Family</th>
+        <th>Manufacturer</th>
+        <th class="truncate">Description</th>
+        <th title="Datasheet">DS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in parts %}
+      <tr>
+        <td class="uid-cell"><a href="/part/{{ p.dmtuid }}">{{ p.dmtuid }}</a></td>
+        <td>{{ p.mpn or '' }}</td>
+        <td>{{ p.value or '' }}</td>
+        <td>{{ p.quantity or '' }}</td>
+        <td>{{ p.location or '' }}</td>
+        <td>
+          <span class="badge badge-domain">{{ p.tt }}</span>
+          <span class="badge badge-family">{{ p.ff }}</span>
+          <span style="font-size:.8rem; color:var(--text-dim)">{{ family_name(p.tt, p.ff) }}</span>
+        </td>
+        <td>{{ p.manufacturer or '' }}</td>
+        <td class="truncate" title="{{ p.description or '' }}">{{ p.description or '' }}</td>
+        <td class="ds-icon">
+          {% if p.datasheet %}
+          {% if p.datasheet.startswith('http') %}
+          <a href="{{ p.datasheet }}" target="_blank" rel="noopener" title="Open datasheet">Datasheet</a>
+          {% else %}
+          <a href="/datasheets/{{ p.datasheet }}" target="_blank" rel="noopener" title="Open datasheet">Datasheet</a>
+          {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not parts %}
+      <tr>
+        <td colspan="9" style="text-align:center; padding:2rem; color:var(--text-dim);">No parts found.</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}
+  <a href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ page - 1 }}">← Prev</a>
+  {% endif %}
+  {% for p in range(1, total_pages + 1) %}
+  {% if p == page %}
+  <span class="current">{{ p }}</span>
+  {% elif p <= 3 or p>= total_pages - 2 or (p >= page - 2 and p <= page + 2) %} <a
+      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ p }}">{{ p }}</a>
+      {% elif p == 4 or p == total_pages - 3 %}
+      <span class="info">…</span>
+      {% endif %}
+      {% endfor %}
+      {% if page < total_pages %} <a href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&page={{ page + 1 }}">Next →</a>
+        {% endif %}
+        <span class="info">({{ total }} total)</span>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/search.js"></script>
+{% endblock %}

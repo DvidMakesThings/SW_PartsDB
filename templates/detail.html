@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ part.dmtuid }} - DMTDB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 style="font-family:var(--mono); letter-spacing:1px;">{{ part.dmtuid }}</h1>
+    <span class="subtitle">
+      <span class="badge badge-domain">{{ part.tt }} {{ domain_name(part.tt) }}</span>
+      <span class="badge badge-family">{{ part.ff }} {{ family_name(part.tt, part.ff) }}</span>
+      CC={{ part.cc }} SS={{ part.ss }}
+    </span>
+  </div>
+  <div style="display:flex; gap:.5rem;">
+    {% if part.datasheet %}
+    {% if part.datasheet.startswith('http') %}
+    <a href="{{ part.datasheet }}" target="_blank" rel="noopener" class="btn btn-secondary">📄 Datasheet</a>
+    {% else %}
+    <a href="/datasheets/{{ part.datasheet }}" target="_blank" rel="noopener" class="btn btn-secondary">📄 Datasheet</a>
+    {% endif %}
+    {% endif %}
+    <a href="/part/{{ part.dmtuid }}/edit" class="btn btn-secondary">✏ Edit</a>
+    <form method="post" action="/part/{{ part.dmtuid }}/delete" onsubmit="return confirm('Delete {{ part.dmtuid }}?');"
+      style="display:inline;">
+      <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+
+  <div class="detail-card">
+    <h2>Core Information</h2>
+    <div class="field-row"><span class="field-label">DMTUID</span><span class="field-value"
+        style="font-family:var(--mono)">{{ part.dmtuid }}</span></div>
+    <div class="field-row"><span class="field-label">MPN</span><span class="field-value">{{ part.mpn or '—' }}</span>
+    </div>
+    <div class="field-row"><span class="field-label">Value</span><span class="field-value">{{ part.value or '—'
+        }}</span></div>
+    <div class="field-row"><span class="field-label">Manufacturer</span><span class="field-value">{{ part.manufacturer
+        or '—' }}</span></div>
+    <div class="field-row"><span class="field-label">Description</span><span class="field-value">{{ part.description or
+        '—' }}</span></div>
+    <div class="field-row"><span class="field-label">Quantity</span><span class="field-value"
+        style="color:var(--green);">{{ part.quantity or '—' }}</span></div>
+    <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ part.location or '—'
+        }}</span></div>
+    {% if part.notes %}
+    <div class="field-row"><span class="field-label">Notes</span><span class="field-value">{{ part.notes }}</span></div>
+    {% endif %}
+  </div>
+
+  <div class="detail-card">
+    <h2>Classification & KiCad</h2>
+    <div class="field-row"><span class="field-label">Domain (TT)</span><span class="field-value">{{ part.tt }} - {{
+        domain_name(part.tt) }}</span></div>
+    <div class="field-row"><span class="field-label">Family (FF)</span><span class="field-value">{{ part.ff }} - {{
+        family_name(part.tt, part.ff) }}</span></div>
+    <div class="field-row"><span class="field-label">Class (CC)</span><span class="field-value">{{ part.cc }}</span>
+    </div>
+    <div class="field-row"><span class="field-label">Style (SS)</span><span class="field-value">{{ part.ss }}</span>
+    </div>
+    <div class="field-row"><span class="field-label">Sequence (XXX)</span><span class="field-value">{{ part.xxx
+        }}</span></div>
+    <div class="field-row"><span class="field-label">KiCad Symbol</span><span class="field-value">{{ part.kicad_symbol
+        or '—' }}</span></div>
+    <div class="field-row"><span class="field-label">KiCad Footprint</span><span class="field-value">{{
+        part.kicad_footprint or '—' }}</span></div>
+    <div class="field-row"><span class="field-label">KiCad Lib Ref</span><span class="field-value">{{ part.kicad_libref
+        or '—' }}</span></div>
+  </div>
+
+  {% if part.fields %}
+  <div class="detail-card" style="grid-column: 1 / -1;">
+    <h2>Technical Parameters
+      {% if template %}
+      <span style="font-weight:400; font-size:.75rem; color:var(--text-dim); text-transform:none;"> (template {{ part.tt
+        }}{{ part.ff }})</span>
+      {% endif %}
+    </h2>
+    {% for f in part.fields %}
+    <div class="field-row">
+      <span class="field-label">{{ f.field_name }}</span>
+      <span class="field-value">{{ f.field_value }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if part.extra_json and part.extra_json != '{}' %}
+  <div class="detail-card" style="grid-column: 1 / -1;">
+    <h2>Additional Data (no template)</h2>
+    <pre
+      style="font-size:.8rem; color:var(--text-dim); overflow-x:auto; white-space:pre-wrap;">{{ part.extra_json }}</pre>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

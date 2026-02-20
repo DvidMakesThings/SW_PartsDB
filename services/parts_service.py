@@ -44,7 +44,7 @@ class PartsService:
                 setattr(part, attr, val)
 
         # KiCad fields
-        for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref"):
+        for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref", "kicad_3dmodel"):
             val = str(data.get(kf, "")).strip()
             if val:
                 setattr(part, kf, val)
@@ -86,7 +86,7 @@ class PartsService:
                 setattr(part, attr, val)
 
         # KiCad
-        for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref"):
+        for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref", "kicad_3dmodel"):
             if kf in data:
                 setattr(part, kf, str(data[kf]).strip())
 
@@ -97,7 +97,7 @@ class PartsService:
         # EAV fields
         template = get_fields(part.tt, part.ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
-                                "kicad_libref", "dmtuid", "notes"}
+                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes"}
         if template:
             allowed = set(template) - skip
             existing_map = {f.field_name: f for f in part.fields}

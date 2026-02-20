@@ -9,7 +9,7 @@ See config.py for all environment-variable tunables.
 """
 
 import sys
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 
 import config
 import schema
@@ -47,6 +47,14 @@ def create_app() -> Flask:
     # ── Register blueprints ─────────────────────────────────────────
     app.register_blueprint(api_bp)
     app.register_blueprint(ui_bp)
+
+    # ── KiCad library file server ───────────────────────────────────
+    kicad_libs_dir = config.BASE_DIR / "kicad_libs"
+
+    @app.route("/kicad_libs/<path:filepath>")
+    def serve_kicad_lib(filepath):
+        """Serve KiCad library files (symbols, footprints, 3D models)."""
+        return send_from_directory(kicad_libs_dir, filepath)
 
     # ── Error handlers ──────────────────────────────────────────────
     @app.errorhandler(404)

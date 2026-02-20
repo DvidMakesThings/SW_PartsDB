@@ -50,3 +50,9 @@ def index():
         )
     finally:
         session.close()
+
+
+@ui_bp.route("/libs")
+def libs_page():
+    """KiCad library file browser."""
+    return render_template("libs.html")

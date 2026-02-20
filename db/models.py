@@ -51,6 +51,7 @@ class Part(Base):
     kicad_symbol    = Column(String(300), default="")
     kicad_footprint = Column(String(300), default="")
     kicad_libref    = Column(String(300), default="")
+    kicad_3dmodel   = Column(String(300), default="")
 
     # ── Fallback for parts with no matching template ───────────────────
     extra_json = Column(Text, default="{}")
@@ -87,6 +88,7 @@ class Part(Base):
             "kicad_symbol": self.kicad_symbol or "",
             "kicad_footprint": self.kicad_footprint or "",
             "kicad_libref": self.kicad_libref or "",
+            "kicad_3dmodel": self.kicad_3dmodel or "",
             "notes": self.notes or "",
         }
         for f in self.fields:

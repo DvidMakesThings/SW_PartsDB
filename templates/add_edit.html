@@ -116,20 +116,52 @@
   <!-- KiCad -->
   <div class="detail-card" style="margin-bottom:1rem;">
     <h2>KiCad Integration</h2>
+
+    <div class="kicad-dropzone" id="kicadDropzone">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      <p>Drop .kicad_sym, .kicad_mod, .step files here</p>
+      <div class="kicad-upload-status" id="kicadUploadStatus"></div>
+    </div>
+
     <div class="form-grid">
       <div class="form-group">
         <label>KiCad Symbol</label>
-        <input type="text" name="kicad_symbol" value="{{ part.kicad_symbol if part else '' }}"
-          placeholder="e.g. Device:R">
+        <div class="input-with-dropdown">
+          <input type="text" name="kicad_symbol" id="kicadSymbolInput" value="{{ part.kicad_symbol if part else '' }}"
+            placeholder="e.g. DMTDB:PartName">
+          <select id="symbolSelect" title="Copy from existing symbol">
+            <option value="">-- Select existing --</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label>KiCad Footprint</label>
-        <input type="text" name="kicad_footprint" value="{{ part.kicad_footprint if part else '' }}"
-          placeholder="e.g. Resistor_SMD:R_0402">
+        <div class="input-with-dropdown">
+          <input type="text" name="kicad_footprint" id="kicadFootprintInput"
+            value="{{ part.kicad_footprint if part else '' }}" placeholder="e.g. DMTDB:Footprint">
+          <select id="footprintSelect" title="Select existing footprint">
+            <option value="">-- Select existing --</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
-        <label>KiCad Lib Ref</label>
-        <input type="text" name="kicad_libref" value="{{ part.kicad_libref if part else '' }}">
+        <label>LCSC Part</label>
+        <input type="text" name="kicad_libref" id="lcscPartInput" value="{{ part.kicad_libref if part else '' }}"
+          placeholder="e.g. C12345">
+      </div>
+      <div class="form-group">
+        <label>KiCad 3D Model</label>
+        <div class="input-with-dropdown">
+          <input type="text" name="kicad_3dmodel" id="kicad3dmodelInput"
+            value="{{ part.kicad_3dmodel if part else '' }}" placeholder="e.g. C_1206_3216Metric.step">
+          <select id="model3dSelect" title="Select existing 3D model">
+            <option value="">-- Select existing --</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -152,6 +184,26 @@
     {% endif %}
   </div>
 </form>
+
+<!-- Symbol Property Editor Modal -->
+<div class="modal-overlay" id="symbolEditorModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Symbol Properties</h3>
+      <button type="button" class="modal-close" id="symbolEditorClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Edit properties before saving. Values auto-filled from part data where available.</p>
+      <div class="symbol-props-grid" id="symbolPropsGrid">
+        <!-- Dynamic property fields -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="symbolEditorCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="symbolEditorSave">Save Symbol</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

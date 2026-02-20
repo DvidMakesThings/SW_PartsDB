@@ -213,6 +213,98 @@ curl "http://localhost:5000/api/v1/kicad/search?mpn=BSS138LT1G"
 
 ---
 
+## KiCad Library Integration
+
+DMTDB can serve as a centralized parts library for KiCad, with symbol, footprint, and 3D model files managed alongside part data.
+
+### Folder Structure
+
+```
+kicad_libs/
+├── symbols/          # .kicad_sym files (one symbol per file)
+├── footprints/       # .kicad_mod files
+└── 3dmodels/         # .step, .stp, .wrl files
+```
+
+### Setting Up KiCad
+
+1. **Add Symbol Library**
+   - KiCad → Preferences → Manage Symbol Libraries → Global Libraries
+   - Click Add (+), set:
+     - Nickname: `DMTDB`
+     - Library Path: `http://your-server:5000/kicad_libs/symbols/DMTDB.kicad_sym`
+     - (Or local path if running locally: `G:/path/to/SW_PartsDB/kicad_libs/symbols/`)
+
+2. **Add Footprint Library**
+   - KiCad → Preferences → Manage Footprint Libraries → Global Libraries
+   - Click Add (+), set:
+     - Nickname: `DMTDB`
+     - Library Path: `http://your-server:5000/kicad_libs/footprints/`
+     - (Or local: `G:/path/to/SW_PartsDB/kicad_libs/footprints/`)
+
+3. **Configure 3D Model Path**
+   - KiCad → Preferences → Configure Paths
+   - Click Add (+), set:
+     - Name: `DMTDB_3D`
+     - Path: `http://your-server:5000/kicad_libs/3dmodels/`
+     - (Or local: `G:/path/to/SW_PartsDB/kicad_libs/3dmodels/`)
+
+   This environment variable is used in footprint files:
+   ```
+   (model "${DMTDB_3D}/C_1206_3216Metric.step"
+   ```
+
+### Upload Behavior
+
+When uploading KiCad files via the Edit Part page:
+
+| File Type | Behavior |
+|-----------|----------|
+| **Symbols** (`.kicad_sym`) | Opens property editor modal. Filename generated from `Value + Package` (e.g., `100nF 50V 1206.kicad_sym`). If duplicate, MPN is appended. Properties auto-filled from part data. |
+| **Footprints** (`.kicad_mod`) | Saved as-is. If file already exists, reuses existing (no duplication). 3D model paths are automatically converted to `${DMTDB_3D}/filename.step`. |
+| **3D Models** (`.step`, `.wrl`) | Saved as-is. If file already exists, reuses existing. |
+
+### Symbol Properties
+
+When uploading a symbol, these properties are auto-filled from the part record:
+
+| Symbol Property | Source |
+|-----------------|--------|
+| `Value` | Part's Value field (or MPN for non-passives) |
+| `Footprint` | Converted to `DMTDB:footprint_name` format |
+| `Datasheet` | Part's Datasheet URL |
+| `Description` | Part's Description |
+| `MFR` | Part's Manufacturer |
+| `MPN` | Part's MPN |
+| `ROHS` | Set to `YES` |
+
+### Network vs Local Setup
+
+**Single User (Local):**
+- Run DMTDB on localhost
+- Point KiCad to local file paths
+- Fast, works offline
+
+**Team (Network):**
+- Run DMTDB on a server accessible to all team members
+- Point KiCad to HTTP URLs (e.g., `http://192.168.1.100:5000/kicad_libs/...`)
+- Centralized library, everyone uses same parts
+- Requires network connection
+
+### HTTP Library Serving
+
+DMTDB serves library files at these endpoints:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /kicad_libs/symbols/{name}.kicad_sym` | Individual symbol file |
+| `GET /kicad_libs/footprints/{name}.kicad_mod` | Individual footprint file |
+| `GET /kicad_libs/3dmodels/{name}.step` | Individual 3D model file |
+| `GET /api/v1/libs` | JSON listing of all library files |
+| `POST /api/v1/libs/upload` | Upload new library file |
+
+---
+
 ## CSV Import Format
 
 The importer accepts CSV files with a header row. Two modes of UID resolution:

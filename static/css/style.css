@@ -726,10 +726,182 @@ th.ds-header {
   resize: vertical;
 }
 
+/* Input with dropdown selector */
+.input-with-dropdown {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-with-dropdown input {
+  flex: 1;
+}
+
+.input-with-dropdown select {
+  width: auto;
+  min-width: 140px;
+  max-width: 200px;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
 .form-actions {
   display: flex;
   gap: .75rem;
   margin-top: 1.25rem;
+}
+
+/* ── KiCad Dropzone ─────────────────────────────────────────── */
+
+.kicad-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  transition: all .2s;
+  color: var(--text-dim);
+}
+
+.kicad-dropzone.dragover {
+  border-color: var(--accent);
+  background: var(--surface2);
+  color: var(--accent);
+}
+
+.kicad-dropzone svg {
+  margin-bottom: .25rem;
+}
+
+.kicad-dropzone p {
+  font-size: .85rem;
+  margin: 0;
+}
+
+.kicad-upload-status {
+  margin-top: .5rem;
+  font-size: .8rem;
+}
+
+.kicad-upload-status .success {
+  color: var(--green);
+}
+
+.kicad-upload-status .error {
+  color: var(--red);
+}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-hint {
+  color: var(--text-dim);
+  font-size: .85rem;
+  margin-bottom: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: .75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.symbol-props-grid {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.symbol-prop-row {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+}
+
+.symbol-prop-row label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: .85rem;
+  color: var(--text-dim);
+}
+
+.symbol-prop-row input {
+  flex: 1;
+  padding: .5rem .6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: .85rem;
+}
+
+.symbol-prop-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.symbol-prop-row .auto-filled {
+  border-color: var(--green);
+  background: rgba(74, 222, 128, 0.1);
 }
 
 /* ── Import Report ──────────────────────────────────────────── */

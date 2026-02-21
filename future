@@ -1,0 +1,19 @@
+High Value:
+
+LCSC API Integration - Auto-fetch part specs, pricing, and stock from LCSC using the LCSC Part field
+BOM Export - Generate KiCad-compatible BOM from selected parts
+Stock/Inventory Tracking - Quantity on hand, location, low-stock alerts
+Parametric Search - Filter by value ranges (e.g., 1K-10K resistors, >16V caps)
+Organization:
+
+Part Lifecycle Status - Active / Obsolete / NRND badges
+Alternates/Equivalents - Link compatible substitute parts
+Project Tags - Associate parts with specific projects
+Automation:
+
+KiCad Project Scanner - Parse .kicad_sch files, identify missing parts, bulk-add to DB
+Bulk LCSC Import - Paste list of LCSC part numbers, auto-populate everything
+Nice to Have:
+
+Datasheet Upload/Viewer - Store PDFs, quick preview
+Dark Mode - UI polish

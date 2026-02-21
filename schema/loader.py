@@ -59,6 +59,17 @@ def get_domains() -> list[dict]:
     return _schema.get("domains", [])
 
 
+def list_domain_codes() -> list[str]:
+    """Return list of all domain TT codes."""
+    return list(_domain_map.keys())
+
+
+def list_family_codes(tt: str) -> list[str]:
+    """Return list of all FF codes for a given domain TT."""
+    prefix = tt
+    return [key[2:] for key in _family_map.keys() if key.startswith(prefix)]
+
+
 def domain_name(tt: str) -> str:
     return _domain_map.get(tt, "Unknown")
 

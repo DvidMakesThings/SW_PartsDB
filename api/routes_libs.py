@@ -31,28 +31,49 @@ EXT_MAP = {
 }
 
 
-def _generate_symbol_value(part_data: dict) -> str:
+def _generate_symbol_value(part_data: dict, tt: str = "", ff: str = "") -> str:
     """
     Generate a symbol Value property from part database fields.
     
-    For passives: {Resistance|Capacitance|Inductance} {Tolerance}
-    For non-passives: MPN
+    Naming conventions:
+    - Capacitors (TT=01, FF=01): {Capacitance} {Voltage - Rated} {Package / Case}
+    - Resistors  (TT=01, FF=02): {Resistance} {Tolerance} {Package / Case}
+    - Inductors  (TT=01, FF=03): {Inductance} {Current Rating (Amps)}
+    - All others: MPN
     """
-    # Check for passive component fields
-    resistance = part_data.get("Resistance", "").strip()
-    capacitance = part_data.get("Capacitance", "").strip()
-    inductance = part_data.get("Inductance", "").strip()
-    tolerance = part_data.get("Tolerance", "").strip()
+    # Get TT/FF from part_data if not provided
+    if not tt:
+        tt = part_data.get("tt", "")
+    if not ff:
+        ff = part_data.get("ff", "")
     
-    if resistance:
-        return f"{resistance} {tolerance}".strip()
-    elif capacitance:
-        return f"{capacitance} {tolerance}".strip()
-    elif inductance:
-        return f"{inductance} {tolerance}".strip()
-    else:
-        # Non-passive: use MPN
-        return part_data.get("mpn", "") or part_data.get("MPN", "") or ""
+    package = part_data.get("Package / Case", "").strip()
+    
+    # Passives domain
+    if tt == "01":
+        if ff == "01":  # Capacitors
+            capacitance = part_data.get("Capacitance", "").strip()
+            voltage = part_data.get("Voltage - Rated", "").strip()
+            if capacitance:
+                parts = [capacitance, voltage, package]
+                return " ".join(p for p in parts if p)
+        
+        elif ff == "02":  # Resistors
+            resistance = part_data.get("Resistance", "").strip()
+            tolerance = part_data.get("Tolerance", "").strip()
+            if resistance:
+                parts = [resistance, tolerance, package]
+                return " ".join(p for p in parts if p)
+        
+        elif ff == "03":  # Inductors
+            inductance = part_data.get("Inductance", "").strip()
+            current = part_data.get("Current Rating (Amps)", "").strip()
+            if inductance:
+                parts = [inductance, current]
+                return " ".join(p for p in parts if p)
+    
+    # All others: use MPN
+    return part_data.get("mpn", "") or part_data.get("MPN", "") or ""
 
 
 @api_bp.route("/libs")
@@ -153,6 +174,7 @@ def upload_lib_file():
     
     # Initialize custom_props for potential symbol uploads
     custom_props = {}
+    symbol_name = None  # Will be set for symbol uploads
     
     # Handle text vs binary files differently
     is_text_file = file_type in ("symbols", "footprints")
@@ -160,6 +182,8 @@ def upload_lib_file():
     if is_text_file:
         # Read as text for symbols and footprints
         content = file.read().decode("utf-8")
+        # Normalize line endings (CRLF -> LF) to prevent issues on Windows
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
         
         # For symbols, handle preview mode (parse and return properties without saving)
         if file_type == "symbols" and preview_mode:
@@ -250,12 +274,74 @@ def upload_lib_file():
                 if new_name:
                     filename = f"{new_name}.kicad_sym"
         
-        # Handle duplicates differently based on file type
+        # Handle file type specific logic
         dest_path = dest_dir / filename
-        if dest_path.exists():
-            if file_type == "footprints":
-                # For footprints: if file already exists, just reuse it (no duplication)
-                # But still link to the part if dmtuid provided
+        
+        if file_type == "symbols":
+            # Symbols are ALWAYS consolidated into DMTDB_{Domain}_{Family}.kicad_sym
+            from services.kicad_symbol_processor import KiCadSymbolProcessor
+            from schema.loader import domain_name, family_name
+            
+            # Determine library filename from DMTUID
+            dmtuid = request.form.get("dmtuid", "").strip()
+            tt = ""
+            ff = ""
+            
+            if dmtuid and len(dmtuid) >= 10:
+                # Parse DMTUID: DMT-TTFFCCIII... -> TT=positions 4-5, FF=6-7
+                tt = dmtuid[4:6]
+                ff = dmtuid[6:8]
+                dom_name = domain_name(tt)
+                fam_name = family_name(tt, ff)
+                # Sanitize names (remove spaces/special chars)
+                dom_name = re.sub(r'[^a-zA-Z0-9]', '', dom_name)
+                fam_name = re.sub(r'[^a-zA-Z0-9]', '', fam_name)
+                lib_filename = f"DMTDB_{dom_name}_{fam_name}.kicad_sym"
+            else:
+                lib_filename = "DMTDB.kicad_sym"
+            
+            # Symbol name based on component type:
+            # - Passives (Capacitors/Resistors/Inductors): use Value (generated from _generate_symbol_value)
+            # - All others: use MPN
+            value_name = custom_props.get("Value", "").strip() if custom_props else ""
+            mpn = custom_props.get("MPN", "").strip() if custom_props else ""
+            mpn = re.sub(r'[<>:"/\\|?*]', '_', mpn)  # Sanitize
+            
+            if tt == "01" and ff in ("01", "02", "03") and value_name:
+                # Passives: use Value (e.g., "100nF 50V 0402", "22K 1% 0402", "1uH 4A")
+                symbol_name = value_name
+            elif mpn:
+                # Non-passives: use MPN
+                symbol_name = mpn
+            else:
+                # Fallback: filename stem
+                symbol_name = Path(filename).stem
+            
+            # Update symbol name in content
+            content = KiCadSymbolProcessor.set_symbol_name(content, symbol_name)
+            
+            # Update Footprint property to use DMTDB: prefix
+            footprint = custom_props.get("Footprint", "") if custom_props else ""
+            if footprint and not footprint.startswith("DMTDB:"):
+                fp_name = footprint.split(":")[-1] if ":" in footprint else footprint
+                dmtdb_footprint = f"DMTDB:{fp_name}"
+                content = KiCadSymbolProcessor._set_property(content, "Footprint", dmtdb_footprint)
+            
+            # Extract symbol block and add to library
+            symbol_block = KiCadSymbolProcessor.extract_symbol_block(content)
+            if not symbol_block:
+                return jsonify({"error": "Could not extract symbol from uploaded file"}), 400
+            
+            library_path = SYMBOLS_DIR / lib_filename
+            KiCadSymbolProcessor.add_symbol_to_library(library_path, symbol_block, symbol_name)
+            
+            # Set filename for result (for db reference)
+            filename = lib_filename
+            dest_path = library_path
+        
+        elif file_type == "footprints":
+            # For footprints: if file already exists, just reuse it (no duplication)
+            if dest_path.exists():
                 result = {
                     "success": True,
                     "type": file_type,
@@ -282,49 +368,15 @@ def upload_lib_file():
                         session.close()
                 return jsonify(result), 200
             
-            elif file_type == "symbols":
-                # For symbols, try MPN suffix first
-                base_name = Path(filename).stem
-                mpn = custom_props.get("MPN", "").strip() if custom_props else ""
-                mpn = re.sub(r'[<>:"/\\|?*]', '_', mpn)  # Sanitize MPN
-                
-                if mpn:
-                    filename = f"{base_name} {mpn}.kicad_sym"
-                    dest_path = dest_dir / filename
-                
-                # If still exists (same Value+MPN), fall back to counter
-                if dest_path.exists():
-                    counter = 2
-                    base_with_mpn = Path(filename).stem
-                    while dest_path.exists():
-                        filename = f"{base_with_mpn}_{counter}{ext}"
-                        dest_path = dest_dir / filename
-                        counter += 1
-        
-        # Update symbol name inside the file to match filename
-        if file_type == "symbols":
-            from services.kicad_symbol_processor import KiCadSymbolProcessor
-            symbol_name = Path(filename).stem
-            content = KiCadSymbolProcessor.set_symbol_name(content, symbol_name)
-            
-            # Update Footprint property to use DMTDB: prefix
-            footprint = custom_props.get("Footprint", "") if custom_props else ""
-            if footprint and not footprint.startswith("DMTDB:"):
-                # Extract just the footprint name (e.g., "C_1206_3216Metric" from "Capacitor_SMD:C_1206_3216Metric")
-                fp_name = footprint.split(":")[-1] if ":" in footprint else footprint
-                dmtdb_footprint = f"DMTDB:{fp_name}"
-                content = KiCadSymbolProcessor._set_property(content, "Footprint", dmtdb_footprint)
-        
-        # Update 3D model path in footprints to use DMTDB environment variable
-        if file_type == "footprints":
+            # Update 3D model path in footprints to use DMTDB environment variable
             # Replace absolute model paths with ${DMTDB_3D}/filename.ext
             # Matches: (model "any/path/to/model.step"
             model_pattern = r'\(model\s+"[^"]*[/\\]([^"/\\]+\.[^"]+)"'
             model_replacement = r'(model "${DMTDB_3D}/\1"'
             content = re.sub(model_pattern, model_replacement, content, flags=re.IGNORECASE)
-        
-        # Save text file
-        dest_path.write_text(content, encoding="utf-8")
+            
+            # Save footprint file
+            dest_path.write_text(content, encoding="utf-8")
     else:
         # Save binary files (3D models) directly
         dest_path = dest_dir / filename
@@ -366,7 +418,7 @@ def upload_lib_file():
         "success": True,
         "type": file_type,
         "filename": filename,
-        "name": Path(filename).stem,
+        "name": symbol_name if file_type == "symbols" else Path(filename).stem,
         "url": f"/kicad_libs/{file_type}/{filename}",
         "size": dest_path.stat().st_size,
     }
@@ -382,9 +434,11 @@ def upload_lib_file():
         try:
             part = session.query(Part).filter(Part.dmtuid == dmtuid).first()
             if part:
-                name = Path(filename).stem
+                name = symbol_name if file_type == "symbols" else Path(filename).stem
                 if file_type == "symbols":
-                    part.kicad_symbol = f"DMTDB:{name}"
+                    # Library name is the consolidated library filename without .kicad_sym extension
+                    lib_name = Path(lib_filename).stem  # e.g., DMTDB_PassiveComponents_Resistors
+                    part.kicad_symbol = f"{lib_name}:{symbol_name}"
                     result["linked_field"] = "kicad_symbol"
                     result["linked_value"] = part.kicad_symbol
                     # Also save LCSC_PART if provided
@@ -488,6 +542,7 @@ def link_existing_lib():
       - dmtuid: The part to link to
       - filename: The existing library filename
       - type: 'symbols', 'footprints', or '3dmodels'
+      - symbol_name: (symbols only) The symbol name within the library
     """
     from db import get_session
     from db.models import Part
@@ -495,6 +550,7 @@ def link_existing_lib():
     dmtuid = request.form.get("dmtuid", "").strip()
     filename = request.form.get("filename", "").strip()
     file_type = request.form.get("type", "").strip()
+    symbol_name = request.form.get("symbol_name", "").strip()
     
     if not dmtuid or not filename or not file_type:
         return jsonify({"error": "dmtuid, filename, and type required"}), 400
@@ -521,7 +577,12 @@ def link_existing_lib():
         name = Path(filename).stem
         
         if file_type == "symbols":
-            part.kicad_symbol = f"DMTDB:{name}"
+            lib_name = Path(filename).stem  # e.g., DMTDB_PassiveComponents_Resistors
+            if symbol_name:
+                part.kicad_symbol = f"{lib_name}:{symbol_name}"
+            else:
+                # Fallback: use lib_name as symbol_name (legacy behavior)
+                part.kicad_symbol = f"{lib_name}:{lib_name}"
         elif file_type == "footprints":
             part.kicad_footprint = f"DMTDB:{name}"
         elif file_type == "3dmodels":

@@ -73,6 +73,11 @@ body {
   font-family: var(--mono);
 }
 
+.nav-logo {
+  height: 80px;
+  width: auto;
+}
+
 .nav-links {
   display: flex;
   gap: .5rem;

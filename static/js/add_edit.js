@@ -344,7 +344,7 @@
           statusItem.textContent = pendingFile.name + ' saved with properties';
 
           if (symbolInput) {
-            symbolInput.value = 'DMTDB:' + data.name;
+            symbolInput.value = data.linked_value || ('DMTDB:' + data.name);
           }
 
           // Also update footprint field if we set it
@@ -395,7 +395,7 @@
           }
 
           if (data.type === 'footprints' && footprintInput) {
-            footprintInput.value = 'DMTDB:' + data.name;
+            footprintInput.value = data.linked_value || ('DMTDB:' + data.name);
           }
           if (data.type === '3dmodels' && model3dInput) {
             model3dInput.value = data.name;
@@ -712,7 +712,7 @@
           statusItem.textContent = 'Created ' + data.filename;
 
           if (symbolInput) {
-            symbolInput.value = 'DMTDB:' + data.name;
+            symbolInput.value = data.linked_value || ('DMTDB:' + data.name);
           }
 
           // Also update footprint field if we set it

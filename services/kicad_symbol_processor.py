@@ -2,6 +2,7 @@
 services.kicad_symbol_processor - Process KiCad symbol files.
 
 Parses .kicad_sym files and fills in property values from Part data.
+Manages consolidated DMTDB.kicad_sym library.
 """
 
 from __future__ import annotations
@@ -11,6 +12,14 @@ from pathlib import Path
 from typing import Optional
 
 from db.models import Part
+
+
+# Library header template
+LIBRARY_HEADER = """(kicad_symbol_lib
+	(version 20241209)
+	(generator "dmtdb")
+	(generator_version "1.0")
+"""
 
 
 class KiCadSymbolProcessor:
@@ -134,23 +143,111 @@ class KiCadSymbolProcessor:
         """
         Set the symbol name in the file content.
         
-        Updates both the main symbol declaration and any nested symbol references.
+        Updates both the main symbol declaration and nested symbol units.
+        Nested symbols follow pattern: ParentName_0_1, ParentName_1_1, etc.
         """
-        # Escape special characters
+        # First, extract the old symbol name
+        old_name = cls.get_symbol_name(content)
+        
+        # Escape special characters for new name
         escaped_name = new_name.replace("\\", "\\\\").replace('"', '\\"')
         
-        # Replace the main symbol name (first occurrence after kicad_symbol_lib)
-        # Match: (symbol "old_name" with optional library prefix
+        # Replace the main symbol name (first occurrence)
         pattern = r'(\(symbol\s+)"[^"]*"'
         
         def replace_first(match):
             return f'{match.group(1)}"{escaped_name}"'
         
-        # Only replace the first occurrence (main symbol declaration)
         new_content = re.sub(pattern, replace_first, content, count=1)
         
+        # Now rename nested symbols (units like OldName_0_1, OldName_1_1, etc.)
+        if old_name:
+            # Pattern for nested symbol units: (symbol "OldName_N_N"
+            # where N is a digit - e.g., "0402_0_1", "0402_1_1"
+            nested_pattern = rf'(\(symbol\s+)"{re.escape(old_name)}_(\d+_\d+)"'
+            nested_replacement = rf'\1"{escaped_name}_\2"'
+            new_content = re.sub(nested_pattern, nested_replacement, new_content)
+        
         return new_content
+
+    @classmethod
+    def extract_symbol_block(cls, content: str) -> Optional[str]:
+        """
+        Extract the (symbol ...) block from a .kicad_sym file.
+        
+        Removes the library wrapper, returning just the symbol definition.
+        """
+        # Find the first (symbol "..." that's the main symbol (not nested)
+        # The main symbol is indented with one tab after the header
+        match = re.search(r'(\t\(symbol\s+"[^"]+"\s*\n[\s\S]*?)(?=\n\)$|\Z)', content)
+        if match:
+            return match.group(1).rstrip()
+        
+        # Fallback: find any (symbol block
+        match = re.search(r'(\(symbol\s+"[^"]+"\s*[\s\S]*?)(?=\n\)\s*$|\Z)', content)
+        if match:
+            block = match.group(1).rstrip()
+            # Add proper indentation if missing
+            if not block.startswith('\t'):
+                block = '\t' + block.replace('\n', '\n\t').rstrip('\t')
+            return block
+        
         return None
+
+    @staticmethod
+    def _normalize_line_endings(content: str) -> str:
+        """Normalize line endings to LF only (Unix-style)."""
+        return content.replace('\r\n', '\n').replace('\r', '\n')
+
+    @classmethod
+    def add_symbol_to_library(cls, library_path: Path, symbol_content: str, symbol_name: str) -> bool:
+        """
+        Add or update a symbol in the consolidated library file.
+        
+        Args:
+            library_path: Path to DMTDB.kicad_sym
+            symbol_content: The (symbol ...) block to add
+            symbol_name: Name of the symbol (for replacement detection)
+            
+        Returns:
+            True if successful
+        """
+        # Normalize line endings in the symbol content to avoid CRLF issues
+        symbol_content = cls._normalize_line_endings(symbol_content)
+        
+        if library_path.exists():
+            lib_content = library_path.read_text(encoding="utf-8")
+            lib_content = cls._normalize_line_endings(lib_content)
+        else:
+            lib_content = LIBRARY_HEADER + ")\n"
+        
+        # Check if symbol already exists
+        escaped_name = re.escape(symbol_name)
+        existing_pattern = rf'\t\(symbol\s+"{escaped_name}"[\s\S]*?(?=\n\t\(symbol\s+"|\n\)$)'
+        
+        if re.search(existing_pattern, lib_content):
+            # Replace existing symbol
+            lib_content = re.sub(existing_pattern, symbol_content, lib_content, count=1)
+        else:
+            # Append new symbol before the closing parenthesis
+            # Remove trailing ) and add symbol + closing
+            lib_content = lib_content.rstrip().rstrip(')')
+            lib_content += f"\n{symbol_content}\n)\n"
+        
+        # Write with newline='\n' to prevent Windows from adding extra \r
+        library_path.write_text(lib_content, encoding="utf-8", newline='\n')
+        return True
+
+    @classmethod
+    def list_symbols_in_library(cls, library_path: Path) -> list[str]:
+        """List all symbol names in a library file."""
+        if not library_path.exists():
+            return []
+        
+        content = library_path.read_text(encoding="utf-8")
+        # Find all top-level symbol names
+        names = re.findall(r'\t\(symbol\s+"([^"]+)"', content)
+        return names
 
 
 def process_uploaded_symbol(filepath: Path, part: Optional[Part] = None) -> dict:

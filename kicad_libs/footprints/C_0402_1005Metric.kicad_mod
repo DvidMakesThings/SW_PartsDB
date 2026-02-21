@@ -10,7 +10,10 @@
 		(layer "F.SilkS")
 		(uuid "e8689d2f-8bd0-494c-9ff7-fcacea2fa56c")
 		(effects
-			(font (size 1 1) (thickness 0.15))
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
 		)
 	)
 	(property "Value" "C_0402_1005Metric"
@@ -18,7 +21,10 @@
 		(layer "F.Fab")
 		(uuid "c69fbd1b-0897-48c0-9938-aee54aa3b725")
 		(effects
-			(font (size 1 1) (thickness 0.15))
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
 		)
 	)
 	(property "Datasheet" ""
@@ -27,7 +33,10 @@
 		(hide yes)
 		(uuid "633b1843-580c-477f-b082-3455a8680676")
 		(effects
-			(font (size 1.27 1.27) (thickness 0.15))
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
 		)
 	)
 	(property "Description" ""
@@ -36,28 +45,40 @@
 		(hide yes)
 		(uuid "e0a0aadd-6b42-4115-ab10-033fbce144f0")
 		(effects
-			(font (size 1.27 1.27) (thickness 0.15))
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
 		)
 	)
 	(attr smd)
 	(fp_line
 		(start -0.107836 -0.36)
 		(end 0.107836 -0.36)
-		(stroke (width 0.12) (type solid))
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
 		(layer "F.SilkS")
 		(uuid "8bd289e8-1b9a-4783-910e-f8a622b178d7")
 	)
 	(fp_line
 		(start -0.107836 0.36)
 		(end 0.107836 0.36)
-		(stroke (width 0.12) (type solid))
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
 		(layer "F.SilkS")
 		(uuid "ad2ad627-99e3-40fd-9844-987580ebfc45")
 	)
 	(fp_rect
 		(start -0.91 -0.46)
 		(end 0.91 0.46)
-		(stroke (width 0.05) (type solid))
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
 		(fill no)
 		(layer "F.CrtYd")
 		(uuid "a21dbcc5-913f-4bbb-8084-ff20919627e7")
@@ -65,7 +86,10 @@
 	(fp_rect
 		(start -0.5 -0.25)
 		(end 0.5 0.25)
-		(stroke (width 0.1) (type solid))
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
 		(fill no)
 		(layer "F.Fab")
 		(uuid "a2385c3d-fc38-4c9a-8164-07891431f53d")
@@ -75,7 +99,10 @@
 		(layer "F.Fab")
 		(uuid "def1855e-7670-40f6-a5ca-3da29a61fac2")
 		(effects
-			(font (size 0.25 0.25) (thickness 0.04))
+			(font
+				(size 0.25 0.25)
+				(thickness 0.04)
+			)
 		)
 	)
 	(pad "1" smd roundrect
@@ -94,8 +121,14 @@
 	)
 	(embedded_fonts no)
 	(model "${DMTDB_3D}/C_0402_1005Metric.step"
-		(offset (xyz 0 0 0))
-		(scale (xyz 1 1 1))
-		(rotate (xyz 0 0 0))
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
 	)
 )

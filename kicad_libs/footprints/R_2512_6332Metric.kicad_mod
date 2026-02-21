@@ -178,7 +178,7 @@
 		(uuid "6c406e3b-cd23-40e4-a803-24d694c95774")
 	)
 	(embedded_fonts no)
-	(model "G:/_GitHub/LIB_KiCad-Libraries/DS_Resistor/3D/R_2512_6332Metric.step"
+	(model "${DMTDB_3D}/R_2512_6332Metric.step"
 		(offset
 			(xyz 0 0 0)
 		)

@@ -93,7 +93,7 @@
 		(uuid "c110c244-9b09-4e55-ac4d-ec68ee63e6cd")
 	)
 	(embedded_fonts no)
-	(model "G:/_GitHub/LIB_KiCad-Libraries/DS_Resistor/3D/R_2010_5025Metric.step"
+	(model "${DMTDB_3D}/R_2010_5025Metric.step"
 		(offset (xyz 0 0 0))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))

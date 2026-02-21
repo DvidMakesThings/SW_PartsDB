@@ -24,6 +24,55 @@ PASSIVE_LIBRARY_MAP = {
     ("01", "03"): "DMTDB_PassiveComponents_Inductors",   # Inductors
 }
 
+# Mapping package sizes to KiCad footprint names
+PACKAGE_TO_FOOTPRINT = {
+    # Metric (imperial) - supported sizes
+    "0201": ("R_0201_0603Metric", "C_0201_0603Metric"),
+    "0402": ("R_0402_1005Metric", "C_0402_1005Metric"),
+    "0603": ("R_0603_1608Metric", "C_0603_1608Metric"),
+    "0805": ("R_0805_2012Metric", "C_0805_2012Metric"),
+    "1206": ("R_1206_3216Metric", "C_1206_3216Metric"),
+    "1210": ("R_1210_3225Metric", "C_1210_3225Metric"),
+    "2010": ("R_2010_5025Metric", "C_2010_5025Metric"),
+    "2512": ("R_2512_6332Metric", "C_2512_6332Metric"),
+}
+
+
+def derive_footprint_from_package(package_case: str, family: str) -> tuple[str | None, str | None]:
+    """
+    Derive KiCad footprint and 3D model from 'Package / Case' field value.
+    
+    Args:
+        package_case: Value like "0402 (1005 Metric)" or "0805"
+        family: "01" for capacitors, "02" for resistors, "03" for inductors
+    
+    Returns:
+        Tuple of (footprint reference, 3D model filename) or (None, None)
+    """
+    if not package_case:
+        return None, None
+    
+    # Extract package size (4-digit number like 0402, 0805, 2512)
+    match = re.search(r'\b(0201|0402|0603|0805|1206|1210|2010|2512)\b', package_case)
+    if not match:
+        return None, None
+    
+    size = match.group(1)
+    if size not in PACKAGE_TO_FOOTPRINT:
+        return None, None
+    
+    r_fp, c_fp = PACKAGE_TO_FOOTPRINT[size]
+    
+    # Choose footprint and 3D model based on family
+    if family == "01":  # Capacitors
+        return f"DMTDB:{c_fp}", f"{c_fp}.step"
+    elif family == "02":  # Resistors
+        return f"DMTDB:{r_fp}", f"{r_fp}.step"
+    elif family == "03":  # Inductors (use resistor footprints for now)
+        return f"DMTDB:{r_fp}", f"{r_fp}.step"
+    
+    return None, None
+
 
 # ── Add ────────────────────────────────────────────────────────────────
 
@@ -54,14 +103,24 @@ def part_add():
     try:
         part = PartsService.create(session, data)
         
+        # Auto-populate kicad_footprint and kicad_3dmodel from "Package / Case" if not set
+        if not part.kicad_footprint:
+            package_case = data.get("Package / Case", "")
+            derived_fp, derived_3d = derive_footprint_from_package(package_case, part.ff)
+            if derived_fp:
+                part.kicad_footprint = derived_fp
+            if derived_3d and not part.kicad_3dmodel:
+                part.kicad_3dmodel = derived_3d
+        
         # Auto-generate symbol for passive components
         lib_key = (part.tt, part.ff)
         if lib_key in PASSIVE_LIBRARY_MAP:
             lib_name = PASSIVE_LIBRARY_MAP[lib_key]
             lib_path = Path(__file__).parent.parent / "kicad_libs" / "symbols" / f"{lib_name}.kicad_sym"
             
-            # Generate the symbol
-            if KiCadSymbolProcessor.generate_passive_symbol(part, lib_path):
+            # Generate the symbol - returns "added", "exists", or "error"
+            result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path)
+            if result in ("added", "exists"):
                 # Build symbol reference: "LibName:Value MPN"
                 value = part.value or ""
                 mpn = part.mpn or ""
@@ -108,6 +167,39 @@ def part_edit(dmtuid: str):
         # POST
         data = dict(request.form)
         PartsService.update(session, part, data)
+        
+        # Auto-populate kicad_footprint and kicad_3dmodel from "Package / Case" if not set
+        if not part.kicad_footprint:
+            package_case = data.get("Package / Case", "")
+            derived_fp, derived_3d = derive_footprint_from_package(package_case, part.ff)
+            if derived_fp:
+                part.kicad_footprint = derived_fp
+            if derived_3d and not part.kicad_3dmodel:
+                part.kicad_3dmodel = derived_3d
+        
+        # Auto-generate/regenerate symbol for passive components
+        lib_key = (part.tt, part.ff)
+        if lib_key in PASSIVE_LIBRARY_MAP:
+            lib_name = PASSIVE_LIBRARY_MAP[lib_key]
+            lib_path = Path(__file__).parent.parent / "kicad_libs" / "symbols" / f"{lib_name}.kicad_sym"
+            
+            # Generate symbol - returns "added", "exists", or "error"
+            result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path)
+            if result in ("added", "exists"):
+                # Build symbol reference: "LibName:Value MPN"
+                value = part.value or ""
+                mpn = part.mpn or ""
+                mpn_sanitized = re.sub(r'[<>:"/\\|?*]', '_', mpn)
+                if value and mpn_sanitized:
+                    symbol_name = f"{value} {mpn_sanitized}"
+                elif mpn_sanitized:
+                    symbol_name = mpn_sanitized
+                else:
+                    symbol_name = value
+                
+                # Update kicad_symbol reference
+                part.kicad_symbol = f"{lib_name}:{symbol_name}"
+        
         session.commit()
         flash(f"Part {dmtuid} updated.", "success")
         return redirect(url_for("ui.part_detail", dmtuid=dmtuid))

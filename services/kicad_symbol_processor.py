@@ -194,7 +194,7 @@ class KiCadSymbolProcessor:
         return content.replace('\r\n', '\n').replace('\r', '\n')
 
     @classmethod
-    def add_symbol_to_library(cls, library_path: Path, symbol_content: str, symbol_name: str, skip_exists_check: bool = False) -> bool:
+    def add_symbol_to_library(cls, library_path: Path, symbol_content: str, symbol_name: str, skip_exists_check: bool = False) -> str:
         """
         Add or update a symbol in the consolidated library file using string manipulation.
         This preserves existing formatting (including 'hide yes' attributes).
@@ -206,14 +206,19 @@ class KiCadSymbolProcessor:
             skip_exists_check: If True, skip duplicate check (not recommended)
             
         Returns:
-            True if successful
+            "added" if symbol was added
+            "exists" if symbol already exists (skipped)
+            "error" if failed
         """
         import re
         
-        # Normalize line endings
-        symbol_content = cls._normalize_line_endings(symbol_content.strip())
+        # Normalize line endings (only strip trailing whitespace, preserve leading tab)
+        symbol_content = cls._normalize_line_endings(symbol_content.rstrip())
         
-        # Ensure symbol uses tabs for indentation (matching KiCad format)
+        # Ensure symbol starts with tab (KiCad format requires it)
+        if not symbol_content.startswith('\t'):
+            symbol_content = '\t' + symbol_content
+        
         # The symbol_content from generate_passive_symbol uses tabs already
         
         if not library_path.exists():
@@ -226,7 +231,7 @@ class KiCadSymbolProcessor:
 )
 """
             library_path.write_text(lib_content, encoding='utf-8')
-            return True
+            return "added"
         
         # Read existing library (try multiple encodings)
         lib_text = None
@@ -241,7 +246,7 @@ class KiCadSymbolProcessor:
         
         if lib_text is None:
             print("Warning: Could not read library file")
-            return False
+            return "error"
         
         # Check if symbol already exists (by name)
         # Pattern matches (symbol "SymbolName" ...) accounting for possible whitespace
@@ -249,21 +254,15 @@ class KiCadSymbolProcessor:
         pattern = rf'\(symbol\s+"{escaped_name}"\s+'
         
         if re.search(pattern, lib_text):
-            if skip_exists_check:
-                # Replace existing symbol - find and replace the entire block
-                # This is complex due to nested parens, so for now just skip
-                print(f"Note: Symbol '{symbol_name}' already exists, skipping")
-                return True
-            else:
-                print(f"Note: Symbol '{symbol_name}' already exists, skipping")
-                return True
+            print(f"Note: Symbol '{symbol_name}' already exists in library")
+            return "exists"
         
         # Insert new symbol before the final closing paren
         # Find the last ) in the file
         last_paren_idx = lib_text.rfind(')')
         if last_paren_idx == -1:
             print("Warning: Invalid library file format")
-            return False
+            return "error"
         
         # Convert tabs to 2 spaces to match library format (if library uses spaces)
         # Check what indentation the library uses
@@ -276,7 +275,7 @@ class KiCadSymbolProcessor:
         new_lib_text = before_text + "\n" + symbol_content + "\n" + lib_text[last_paren_idx:]
         
         library_path.write_text(new_lib_text, encoding=encoding)
-        return True
+        return "added"
 
     @classmethod
     def list_symbols_in_library(cls, library_path: Path) -> list[str]:
@@ -292,7 +291,7 @@ class KiCadSymbolProcessor:
             return []
 
     @classmethod
-    def generate_passive_symbol(cls, part: Part, library_path: Path) -> bool:
+    def generate_passive_symbol(cls, part: Part, library_path: Path) -> str:
         """
         Auto-generate a symbol for a passive component (R/C/L) from part data.
         
@@ -301,7 +300,9 @@ class KiCadSymbolProcessor:
             library_path: Path to the target library file
             
         Returns:
-            True if successful
+            "added" if symbol was added
+            "exists" if symbol already exists
+            "error" if failed
         """
         import re
         
@@ -317,7 +318,7 @@ class KiCadSymbolProcessor:
         elif value:
             symbol_name = value
         else:
-            return False  # Can't generate without name
+            return "error"  # Can't generate without name
         
         # Determine footprint short name (0402, 0603, etc.)
         fp = part.kicad_footprint or ""

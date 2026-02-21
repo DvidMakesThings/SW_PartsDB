@@ -1,9 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% else %}Add Part{% endif %} - DMTDB{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% elif template_part %}Add Part (from {{
+template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% else %}Add New Part{% endif %}</h1>
+  <h1>{% if mode == 'edit' %}Edit {{ part.dmtuid }}{% elif template_part %}Add New Part <span
+      style="font-size:.7em; color:var(--text-dim);">(from {{ template_part.dmtuid }})</span>{% else %}Add New Part{%
+    endif %}</h1>
 </div>
 
 <form method="post" id="partForm">
@@ -77,6 +80,10 @@
         <label>Datasheet (URL or local filename)</label>
         <input type="text" name="Datasheet" value="{{ part.datasheet if part else '' }}">
       </div>
+      <div class="form-group">
+        <label>Distributor URL (DigiKey, Mouser, etc.)</label>
+        <input type="text" name="Distributor" value="{{ part.distributor if part else '' }}">
+      </div>
       <div class="form-group full">
         <label>Description</label>
         <textarea name="Description" rows="2">{{ part.description if part else '' }}</textarea>
@@ -132,17 +139,16 @@
         <label>KiCad Symbol</label>
         <div class="input-with-dropdown">
           <input type="text" name="kicad_symbol" id="kicadSymbolInput" value="{{ part.kicad_symbol if part else '' }}"
-            placeholder="e.g. DMTDB:PartName">
-          <select id="symbolSelect" title="Copy from existing symbol">
-            <option value="">-- Select existing --</option>
-          </select>
+            placeholder="Auto-generated from Value (drag .kicad_sym to customize)">
+          <!-- Symbol dropdown hidden - consolidated libs are too large to browse -->
         </div>
       </div>
       <div class="form-group">
         <label>KiCad Footprint</label>
         <div class="input-with-dropdown">
           <input type="text" name="kicad_footprint" id="kicadFootprintInput"
-            value="{{ part.kicad_footprint if part else '' }}" placeholder="e.g. DMTDB:Footprint">
+            value="{{ part.kicad_footprint if part else (template_part.kicad_footprint if template_part else '') }}"
+            placeholder="e.g. DMTDB:Footprint">
           <select id="footprintSelect" title="Select existing footprint">
             <option value="">-- Select existing --</option>
           </select>
@@ -157,7 +163,8 @@
         <label>KiCad 3D Model</label>
         <div class="input-with-dropdown">
           <input type="text" name="kicad_3dmodel" id="kicad3dmodelInput"
-            value="{{ part.kicad_3dmodel if part else '' }}" placeholder="e.g. C_1206_3216Metric.step">
+            value="{{ part.kicad_3dmodel if part else (template_part.kicad_3dmodel if template_part else '') }}"
+            placeholder="e.g. C_1206_3216Metric.step">
           <select id="model3dSelect" title="Select existing 3D model">
             <option value="">-- Select existing --</option>
           </select>
@@ -208,5 +215,15 @@
 
 {% block scripts %}
 <script>var domainsData = {{ domains | tojson | safe }};</script>
+{% if template_part %}
+<script>var templatePartData = {
+    tt: "{{ template_part.tt }}",
+    ff: "{{ template_part.ff }}",
+    cc: "{{ template_part.cc }}",
+    ss: "{{ template_part.ss }}"
+  };</script>
+{% else %}
+<script>var templatePartData = null;</script>
+{% endif %}
 <script src="/static/js/add_edit.js"></script>
 {% endblock %}

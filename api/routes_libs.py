@@ -282,15 +282,17 @@ def upload_lib_file():
             from services.kicad_symbol_processor import KiCadSymbolProcessor
             from schema.loader import domain_name, family_name
             
-            # Determine library filename from DMTUID
+            # Determine library filename from DMTUID or direct TT/FF params
             dmtuid = request.form.get("dmtuid", "").strip()
-            tt = ""
-            ff = ""
+            tt = request.form.get("tt", "").strip()
+            ff = request.form.get("ff", "").strip()
             
             if dmtuid and len(dmtuid) >= 10:
                 # Parse DMTUID: DMT-TTFFCCIII... -> TT=positions 4-5, FF=6-7
                 tt = dmtuid[4:6]
                 ff = dmtuid[6:8]
+            
+            if tt and ff:
                 dom_name = domain_name(tt)
                 fam_name = family_name(tt, ff)
                 # Sanitize names (remove spaces/special chars)
@@ -301,18 +303,21 @@ def upload_lib_file():
                 lib_filename = "DMTDB.kicad_sym"
             
             # Symbol name based on component type:
-            # - Passives (Capacitors/Resistors/Inductors): use Value (generated from _generate_symbol_value)
+            # - Passives (Capacitors/Resistors/Inductors): use "Value MPN" for uniqueness
             # - All others: use MPN
             value_name = custom_props.get("Value", "").strip() if custom_props else ""
             mpn = custom_props.get("MPN", "").strip() if custom_props else ""
-            mpn = re.sub(r'[<>:"/\\|?*]', '_', mpn)  # Sanitize
+            mpn_sanitized = re.sub(r'[<>:"/\\|?*]', '_', mpn)  # Sanitize
             
-            if tt == "01" and ff in ("01", "02", "03") and value_name:
-                # Passives: use Value (e.g., "100nF 50V 0402", "22K 1% 0402", "1uH 4A")
+            if tt == "01" and ff in ("01", "02", "03") and value_name and mpn_sanitized:
+                # Passives: use "Value MPN" for unique symbols (e.g., "4.7K 1% GWCR0402-4K7FT10")
+                symbol_name = f"{value_name} {mpn_sanitized}"
+            elif mpn_sanitized:
+                # Non-passives or passives without value: use MPN
+                symbol_name = mpn_sanitized
+            elif value_name:
+                # Fallback for passives without MPN
                 symbol_name = value_name
-            elif mpn:
-                # Non-passives: use MPN
-                symbol_name = mpn
             else:
                 # Fallback: filename stem
                 symbol_name = Path(filename).stem
@@ -333,6 +338,8 @@ def upload_lib_file():
                 return jsonify({"error": "Could not extract symbol from uploaded file"}), 400
             
             library_path = SYMBOLS_DIR / lib_filename
+            
+            # Add/replace symbol in library (duplicate detection is handled inside)
             KiCadSymbolProcessor.add_symbol_to_library(library_path, symbol_block, symbol_name)
             
             # Set filename for result (for db reference)
@@ -422,6 +429,11 @@ def upload_lib_file():
         "url": f"/kicad_libs/{file_type}/{filename}",
         "size": dest_path.stat().st_size,
     }
+    
+    # For symbols, always include the correct linked_value format (even without dmtuid)
+    if file_type == "symbols":
+        lib_name = Path(lib_filename).stem  # e.g., DMTDB_PassiveComponents_Resistors
+        result["linked_value"] = f"{lib_name}:{symbol_name}"
     
     # If dmtuid provided, update the part's KiCad fields
     dmtuid = request.form.get("dmtuid", "").strip()

@@ -8,6 +8,7 @@ the caller to batch multiple operations in one transaction.
 
 from __future__ import annotations
 
+import json
 from sqlalchemy.orm import Session
 
 from db.models import Part, PartField
@@ -52,15 +53,34 @@ class PartsService:
         # Notes
         part.notes = str(data.get("notes", "")).strip()
 
-        # Template EAV fields
+        # Template EAV fields + extra_json for non-template fields
         template = get_fields(tt, ff)
+        skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
+                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
+                                "tt", "ff", "cc", "ss", "xxx"}
+        extra: dict[str, str] = {}
         if template:
-            allowed = set(template) - SKIP_FOR_EAV
+            allowed = set(template) - skip
             for k, v in data.items():
-                if k in allowed and str(v).strip():
+                val = str(v).strip()
+                if not val:
+                    continue
+                if k in allowed:
                     part.fields.append(
-                        PartField(field_name=k, field_value=str(v).strip())
+                        PartField(field_name=k, field_value=val)
                     )
+                elif k not in skip:
+                    # Non-template field → extra_json
+                    extra[k] = val
+        else:
+            # No template → all non-skip fields go to extra_json
+            for k, v in data.items():
+                val = str(v).strip()
+                if val and k not in skip:
+                    extra[k] = val
+
+        if extra:
+            part.extra_json = json.dumps(extra, ensure_ascii=False)
 
         session.add(part)
         session.flush()
@@ -94,26 +114,55 @@ class PartsService:
         if "notes" in data:
             part.notes = str(data["notes"]).strip()
 
-        # EAV fields
+        # EAV fields + extra_json for non-template fields
         template = get_fields(part.tt, part.ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
-                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes"}
+                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
+                                "tt", "ff", "cc", "ss", "xxx"}
+
+        # Load existing extra_json
+        existing_extra: dict[str, str] = {}
+        if part.extra_json:
+            try:
+                existing_extra = json.loads(part.extra_json)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         if template:
             allowed = set(template) - skip
             existing_map = {f.field_name: f for f in part.fields}
             for k, v in data.items():
-                if k not in allowed:
-                    continue
                 val = str(v).strip()
-                if k in existing_map:
+                if k in allowed:
+                    # Template field → EAV
+                    if k in existing_map:
+                        if val:
+                            existing_map[k].field_value = val
+                        else:
+                            session.delete(existing_map[k])
+                    elif val:
+                        part.fields.append(
+                            PartField(field_name=k, field_value=val)
+                        )
+                elif k not in skip:
+                    # Non-template field → extra_json
                     if val:
-                        existing_map[k].field_value = val
-                    else:
-                        session.delete(existing_map[k])
-                elif val:
-                    part.fields.append(
-                        PartField(field_name=k, field_value=val)
-                    )
+                        existing_extra[k] = val
+                    elif k in existing_extra:
+                        del existing_extra[k]
+        else:
+            # No template → all non-skip fields go to extra_json
+            for k, v in data.items():
+                val = str(v).strip()
+                if k in skip:
+                    continue
+                if val:
+                    existing_extra[k] = val
+                elif k in existing_extra:
+                    del existing_extra[k]
+
+        # Update extra_json
+        part.extra_json = json.dumps(existing_extra, ensure_ascii=False) if existing_extra else None
 
         session.flush()
         return part

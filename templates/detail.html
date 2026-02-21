@@ -20,6 +20,8 @@
     {% endif %}
     {% endif %}
     <a href="/part/{{ part.dmtuid }}/edit" class="btn btn-secondary">✏ Edit</a>
+    <a href="/part/add?template={{ part.dmtuid }}" class="btn btn-secondary"
+      title="Create new part using this as template">📋 Use as Template</a>
     <form method="post" action="/part/{{ part.dmtuid }}/delete" onsubmit="return confirm('Delete {{ part.dmtuid }}?');"
       style="display:inline;">
       <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>

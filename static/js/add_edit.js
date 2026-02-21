@@ -139,6 +139,29 @@
           || '<p style="color:var(--text-dim);">No additional template fields.</p>';
       });
   }
+
+  // Pre-select from template part if provided (Use as Template feature)
+  if (window.templatePartData) {
+    var tpl = window.templatePartData;
+    if (tpl.tt) {
+      ttSel.value = tpl.tt;
+      // Trigger change to populate FF dropdown
+      var evt = new Event("change");
+      ttSel.dispatchEvent(evt);
+      // Wait a tick for FF options to populate, then select FF
+      setTimeout(function () {
+        if (tpl.ff) {
+          ffSel.value = tpl.ff;
+          ffSel.dispatchEvent(new Event("change"));
+          // Wait for CC/SS to populate, then select them
+          setTimeout(function () {
+            if (tpl.cc && ccSel) ccSel.value = tpl.cc;
+            if (tpl.ss && ssSel) ssSel.value = tpl.ss;
+          }, 100);
+        }
+      }, 10);
+    }
+  }
 })();
 
 /**
@@ -170,6 +193,16 @@
     dmtuid = match[1];
   }
 
+  // Get TT/FF from form dropdowns (for add mode when dmtuid doesn't exist yet)
+  function getTTFF() {
+    var ttSel = document.getElementById("ttSel");
+    var ffSel = document.getElementById("ffSel");
+    return {
+      tt: ttSel ? ttSel.value : "",
+      ff: ffSel ? ffSel.value : ""
+    };
+  }
+
   // Part data for auto-fill (from form fields)
   function getPartData() {
     return {
@@ -186,6 +219,9 @@
 
   // Editable symbol properties
   var SYMBOL_PROPS = ['Value', 'Footprint', 'Datasheet', 'Description', 'MFR', 'MPN', 'ROHS', 'LCSC_PART', 'DIST1'];
+
+  // Properties that should NOT inherit from template symbol (part-specific values)
+  var NO_INHERIT_PROPS = ['LCSC_PART', 'DIST1'];
 
   var pendingFile = null;
   var pendingFilename = null;
@@ -278,6 +314,11 @@
       var existingValue = existingProps[propName] || '';
       var partValue = partData[propName] || '';
 
+      // For part-specific properties, clear template values (don't inherit)
+      if (NO_INHERIT_PROPS.indexOf(propName) >= 0 && !partValue) {
+        existingValue = '';
+      }
+
       // Use part data if available, otherwise existing symbol value
       var value = partValue || existingValue;
       var autoFilled = partValue && !existingValue;
@@ -327,6 +368,11 @@
     formData.append('symbol_props', JSON.stringify(props));
     if (dmtuid) {
       formData.append('dmtuid', dmtuid);
+    } else {
+      // In add mode, send TT/FF directly for library file routing
+      var ttff = getTTFF();
+      if (ttff.tt) formData.append('tt', ttff.tt);
+      if (ttff.ff) formData.append('ff', ttff.ff);
     }
 
     var statusItem = document.createElement('div');
@@ -450,6 +496,20 @@
 
   var symbolInput = document.getElementById("kicadSymbolInput");
   var footprintInput = document.getElementById("kicadFootprintInput");
+
+  // TT/FF selectors for footprint filtering
+  var ttSel = document.getElementById("ttSel");
+  var ffSel = document.getElementById("ffSel");
+
+  // Store all footprints for filtering
+  var allFootprints = [];
+
+  // Footprint prefixes by component type (TT-FF)
+  var FOOTPRINT_PREFIX_MAP = {
+    '01-01': 'C_',   // Capacitors
+    '01-02': 'R_',   // Resistors
+    '01-03': 'L_',   // Inductors
+  };
   var model3dInput = document.getElementById("kicad3dmodelInput");
 
   var statusEl = document.getElementById("kicadUploadStatus");
@@ -468,6 +528,9 @@
   // Editable symbol properties
   var SYMBOL_PROPS = ['Value', 'Footprint', 'Datasheet', 'Description', 'MFR', 'MPN', 'ROHS', 'LCSC_PART', 'DIST1'];
 
+  // Properties that should NOT inherit from template symbol (part-specific values)
+  var NO_INHERIT_PROPS = ['LCSC_PART', 'DIST1'];
+
   // Part data for auto-fill (from form fields)
   function getPartData() {
     return {
@@ -480,6 +543,42 @@
       MPN: document.querySelector('input[name="MPN"]')?.value || '',
       ROHS: 'YES'
     };
+  }
+
+  // Function to filter and populate footprint dropdown based on TT/FF
+  function updateFootprintOptions() {
+    if (!footprintSelect) return;
+
+    var tt = ttSel ? ttSel.value : '';
+    var ff = ffSel ? ffSel.value : '';
+    var key = tt + '-' + ff;
+    var prefix = FOOTPRINT_PREFIX_MAP[key] || '';
+
+    // Clear existing options (except default)
+    footprintSelect.innerHTML = '<option value="">-- Select existing --</option>';
+
+    // Filter footprints by prefix if we have one, otherwise show all
+    var filtered = allFootprints;
+    if (prefix) {
+      filtered = allFootprints.filter(function (fp) {
+        return fp.name.startsWith(prefix.replace('_', ''));
+      });
+    }
+
+    filtered.forEach(function (fp) {
+      var opt = document.createElement('option');
+      opt.value = fp.filename;
+      opt.textContent = fp.name;
+      footprintSelect.appendChild(opt);
+    });
+  }
+
+  // Listen for TT/FF changes to update footprint options
+  if (ttSel) {
+    ttSel.addEventListener('change', updateFootprintOptions);
+  }
+  if (ffSel) {
+    ffSel.addEventListener('change', updateFootprintOptions);
   }
 
   // Fetch and populate library dropdowns
@@ -496,13 +595,11 @@
         });
       }
 
-      if (footprintSelect && libs.footprints) {
-        libs.footprints.forEach(function (fp) {
-          var opt = document.createElement('option');
-          opt.value = fp.filename;
-          opt.textContent = fp.name;
-          footprintSelect.appendChild(opt);
-        });
+      if (libs.footprints) {
+        // Store all footprints for filtering
+        allFootprints = libs.footprints;
+        // Initial population (will filter if TT/FF already selected)
+        updateFootprintOptions();
       }
 
       if (model3dSelect && libs['3dmodels']) {
@@ -628,6 +725,11 @@
       var existingValue = existingProps[propName] || '';
       var partValue = partData[propName] || '';
 
+      // For part-specific properties, clear template values (don't inherit)
+      if (NO_INHERIT_PROPS.indexOf(propName) >= 0 && !partValue) {
+        existingValue = '';
+      }
+
       // Use part data if available, otherwise existing symbol value
       var value = partValue || existingValue;
       var autoFilled = partValue && !existingValue;
@@ -695,6 +797,12 @@
     formData.append('symbol_props', JSON.stringify(props));
     if (dmtuid) {
       formData.append('dmtuid', dmtuid);
+    } else {
+      // In add mode, send TT/FF directly for library file routing
+      var ttSel = document.getElementById("ttSel");
+      var ffSel = document.getElementById("ffSel");
+      if (ttSel && ttSel.value) formData.append('tt', ttSel.value);
+      if (ffSel && ffSel.value) formData.append('ff', ffSel.value);
     }
 
     var statusItem = document.createElement('div');

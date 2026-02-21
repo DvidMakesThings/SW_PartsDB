@@ -14,6 +14,7 @@ DIRECT_FIELDS: dict[str, str] = {
     "Quantity":     "quantity",
     "Location":     "location",
     "Datasheet":    "datasheet",
+    "Distributor":  "distributor",
     "KiCadSymbol":  "kicad_symbol",
     "KiCadFootprint": "kicad_footprint",
     "KiCadLibRef":  "kicad_libref",

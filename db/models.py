@@ -46,6 +46,7 @@ class Part(Base):
     quantity     = Column(String(50), default="")
     location     = Column(String(200), default="")
     datasheet    = Column(Text, default="")
+    distributor  = Column(Text, default="")
 
     # ── KiCad integration (future use) ─────────────────────────────────
     kicad_symbol    = Column(String(300), default="")
@@ -85,6 +86,7 @@ class Part(Base):
             "quantity": self.quantity or "",
             "location": self.location or "",
             "datasheet": self.datasheet or "",
+            "distributor": self.distributor or "",
             "kicad_symbol": self.kicad_symbol or "",
             "kicad_footprint": self.kicad_footprint or "",
             "kicad_libref": self.kicad_libref or "",

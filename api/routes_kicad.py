@@ -253,6 +253,16 @@ def kicad_http_part_detail(part_id):
         if part.kicad_libref:
             fields["fields"]["LCSC"] = {"value": str(part.kicad_libref), "visible": "false"}
         
+        # Add extra_json fields (DIST1, etc.)
+        if part.extra_json:
+            import json
+            try:
+                extra = json.loads(part.extra_json)
+                for k, v in extra.items():
+                    fields["fields"][k] = {"value": str(v), "visible": "false"}
+            except (json.JSONDecodeError, TypeError):
+                pass
+        
         return jsonify(fields)
     finally:
         session.close()

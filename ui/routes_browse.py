@@ -21,6 +21,14 @@ def index():
     ss    = request.args.get("ss", "").strip()
     props = request.args.get("props", "").strip()
     page  = max(int(request.args.get("page", 1)), 1)
+    sort_by = request.args.get("sort", "dmtuid").strip()
+    sort_order = request.args.get("order", "asc").strip()
+    
+    # Validate sort params
+    if sort_by not in SearchService.SORTABLE_COLUMNS:
+        sort_by = "dmtuid"
+    if sort_order not in ("asc", "desc"):
+        sort_order = "asc"
 
     # Parse property filters from JSON
     props_parsed = {}
@@ -34,6 +42,7 @@ def index():
     try:
         parts, total = SearchService.search(
             session, q=q, tt=tt, ff=ff, cc=cc, ss=ss, props=props_parsed,
+            sort_by=sort_by, sort_order=sort_order,
             limit=config.DEFAULT_PAGE_SIZE,
             offset=(page - 1) * config.DEFAULT_PAGE_SIZE,
         )
@@ -44,6 +53,7 @@ def index():
             parts=parts, q=q, tt=tt, ff=ff, cc=cc, ss=ss,
             props=props, props_parsed=props_parsed,
             page=page, total_pages=total_pages, total=total,
+            sort_by=sort_by, sort_order=sort_order,
             domains=get_domains(),
             domain_name=domain_name,
             family_name=family_name,

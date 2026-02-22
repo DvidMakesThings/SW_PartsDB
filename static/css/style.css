@@ -534,6 +534,51 @@ th {
   background: var(--surface2);
 }
 
+/* Sortable column headers */
+th.sortable a {
+  color: var(--text-dim);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+th.sortable a:hover {
+  color: var(--text);
+}
+
+th.sortable .sort-indicator {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  opacity: 0.3;
+}
+
+th.sortable:not(.sorted) .sort-indicator {
+  border-bottom: 5px solid currentColor;
+  border-top: none;
+}
+
+th.sortable.sorted .sort-indicator {
+  opacity: 1;
+}
+
+th.sortable.sorted.asc .sort-indicator {
+  border-bottom: 5px solid var(--accent);
+  border-top: none;
+}
+
+th.sortable.sorted.desc .sort-indicator {
+  border-top: 5px solid var(--accent);
+  border-bottom: none;
+}
+
+th.sortable.sorted a {
+  color: var(--text);
+}
+
 td {
   padding: .55rem .75rem;
   border-bottom: 1px solid var(--border);

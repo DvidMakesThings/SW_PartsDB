@@ -170,9 +170,9 @@ Footprint files use standard naming following KiCad conventions:
 ### Symbol Browsing
 
 When you add a symbol in KiCad:
-1. KiCad queries `/api/v1/kicad/v1/categories.json` for the category tree
+1. KiCad queries `/kicad/v1/categories.json` for the category tree
 2. You see a hierarchical view: `01 Passive Components → 01 Capacitors → ...`
-3. When you expand a category, KiCad queries `/api/v1/kicad/v1/parts.json?category_id=0101`
+3. When you expand a category, KiCad queries `/kicad/v1/parts.json?category_id=0101`
 4. Parts appear with their MPN, Value, Description, and Quantity
 5. Selecting a part loads its symbol and pre-fills properties
 
@@ -261,7 +261,7 @@ When uploading footprints through DMTDB, 3D model paths are automatically conver
 
 1. Verify DMTDB server is running
 2. Check the URL in `DMTDB.kicad_httplib`
-3. Test API access: `curl http://YOUR_SERVER:5000/api/v1/kicad/v1/categories.json`
+3. Test API access: `curl http://YOUR_SERVER:5000/kicad/v1/categories.json`
 
 ### 3D Models Not Showing
 
@@ -294,5 +294,5 @@ DMTDB serves library files at these URLs:
 | `GET /kicad_libs/footprints/{filename}` | Download a footprint file |
 | `GET /kicad_libs/3dmodels/{filename}` | Download a 3D model file |
 | `GET /api/v1/libs` | JSON listing of all available library files |
-| `GET /api/v1/kicad/v1/categories.json` | Category tree for HTTP Library |
-| `GET /api/v1/kicad/v1/parts.json` | Parts list for HTTP Library |
+| `GET /kicad/v1/categories.json` | Category tree for HTTP Library |
+| `GET /kicad/v1/parts.json` | Parts list for HTTP Library |

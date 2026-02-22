@@ -20,9 +20,9 @@ DATASHEETS_DIR  = (BASE_DIR / "datasheets").resolve()
 # ── KiCad Library Paths ────────────────────────────────────────────────
 # Where DMTDB stores KiCad library files locally
 # In KiCad, configure paths: DMTDB_3D, DMTDB_FOOTPRINT, DMTDB_SYM pointing here
-KICAD_SYMBOLS_DIR   = BASE_DIR / "kicad_libs" / "symbols"
-KICAD_FOOTPRINT_DIR = BASE_DIR / "kicad_libs" / "footprints"
-KICAD_3DMODELS_DIR  = BASE_DIR / "kicad_libs" / "3dmodels"
+KICAD_SYMBOLS_DIR   = Path(os.environ.get("DMTDB_KICAD_SYMBOLS_DIR", BASE_DIR / "kicad_libs" / "symbols"))
+KICAD_FOOTPRINT_DIR = Path(os.environ.get("DMTDB_KICAD_FOOTPRINTS_DIR", BASE_DIR / "kicad_libs" / "footprints"))
+KICAD_3DMODELS_DIR  = Path(os.environ.get("DMTDB_KICAD_3DMODELS_DIR", BASE_DIR / "kicad_libs" / "3dmodels"))
 
 # ── Database ───────────────────────────────────────────────────────────
 DB_URL = os.environ.get("DMTDB_DB", f"sqlite:///{BASE_DIR / 'dmtdb.sqlite'}")

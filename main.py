@@ -47,6 +47,10 @@ def create_app() -> Flask:
     # ── Register blueprints ─────────────────────────────────────────
     app.register_blueprint(api_bp)
     app.register_blueprint(ui_bp)
+    
+    # KiCad HTTP Library blueprint (separate from /api/v1 for cleaner URLs)
+    from api import kicad_httplib_bp
+    app.register_blueprint(kicad_httplib_bp)
 
     # ── KiCad library file server ───────────────────────────────────
     kicad_libs_dir = config.BASE_DIR / "kicad_libs"

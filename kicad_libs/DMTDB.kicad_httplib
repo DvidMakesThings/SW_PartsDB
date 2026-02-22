@@ -7,6 +7,6 @@
   "source": {
     "type": "REST_API",
     "api_version": "v1",
-    "root_url": "http://127.0.0.1:5000/api/v1/kicad"
+    "root_url": "http://127.0.0.1:5000/kicad"
   }
 }

@@ -1453,8 +1453,8 @@
 		)
 		(symbol "10uF 16V C1206X106K4RACTU_1_1"
 			(pin passive line
-				(at 0 2.794 270)
-				(length 1.27)
+				(at 0 3.81 270)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -1471,8 +1471,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 -2.794 90)
-				(length 1.27)
+				(at 0 -3.81 90)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -1640,8 +1640,8 @@
 		)
 		(symbol "4.7uF 50V 12065C475KAT2A_1_1"
 			(pin passive line
-				(at 0 2.794 270)
-				(length 1.27)
+				(at 0 3.81 270)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -1658,8 +1658,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 -2.794 90)
-				(length 1.27)
+				(at 0 -3.81 90)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -1827,8 +1827,8 @@
 		)
 		(symbol "33nF 50V C0603C333K5RACTU_1_1"
 			(pin passive line
-				(at 0 2.794 270)
-				(length 1.27)
+				(at 0 3.81 270)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -1845,8 +1845,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 -2.794 90)
-				(length 1.27)
+				(at 0 -3.81 90)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -2014,8 +2014,8 @@
 		)
 		(symbol "470nF 16V C0603C474K4RACTU_1_1"
 			(pin passive line
-				(at 0 2.794 270)
-				(length 1.27)
+				(at 0 3.81 270)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -2032,8 +2032,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 -2.794 90)
-				(length 1.27)
+				(at 0 -3.81 90)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font

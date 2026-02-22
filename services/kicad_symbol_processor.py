@@ -441,7 +441,8 @@ class KiCadSymbolProcessor:
 				)
 			)
 		)'''
-            pin_positions = (2.794, -2.794)  # pins closer for capacitor
+            pin_positions = (3.81, -3.81)  # matching KiCad standard
+            pin_length = 2.794
         else:
             # Resistor: rectangle
             symbol_shape = f'''(symbol "{symbol_name}_0_1"
@@ -458,6 +459,7 @@ class KiCadSymbolProcessor:
 			)
 		)'''
             pin_positions = (3.81, -3.81)  # pins for resistor
+            pin_length = 2.794
         
         # Generate symbol content with proper template
         symbol_content = f'''	(symbol "{symbol_name}"
@@ -583,7 +585,7 @@ class KiCadSymbolProcessor:
 		(symbol "{symbol_name}_1_1"
 			(pin passive line
 				(at 0 {pin_positions[0]} 270)
-				(length 1.27)
+				(length {pin_length})
 				(name "~"
 					(effects
 						(font
@@ -601,7 +603,7 @@ class KiCadSymbolProcessor:
 			)
 			(pin passive line
 				(at 0 {pin_positions[1]} 90)
-				(length 1.27)
+				(length {pin_length})
 				(name "~"
 					(effects
 						(font

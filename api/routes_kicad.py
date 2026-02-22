@@ -1,16 +1,20 @@
-"""
-api.routes_kicad - /api/v1/kicad/* endpoints.
+"""api.routes_kicad - KiCad integration endpoints.
 
-Lightweight, KiCad-friendly responses that include symbol/footprint
-fields alongside part identifiers.
+Two blueprints:
+- api_bp: /api/v1/kicad/* - Programmatic search endpoints
+- kicad_httplib_bp: /kicad/v1/* - KiCad HTTP Library protocol (no prefix)
 """
 
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 
 from api import api_bp
 from db import get_session
 from services.kicad_service import KiCadService
 import config
+
+# Separate blueprint for KiCad HTTP Library - mounted at /kicad/v1 (no /api/v1 prefix)
+# This gives cleaner URLs for KiCad configuration
+kicad_httplib_bp = Blueprint("kicad_httplib", __name__, url_prefix="/kicad/v1")
 
 
 @api_bp.route("/kicad/search")
@@ -61,18 +65,20 @@ def kicad_instock():
 from schema.loader import domain_name, family_name, list_domain_codes, list_family_codes
 
 
-@api_bp.route("/kicad/v1")
-@api_bp.route("/kicad/v1/")
+@kicad_httplib_bp.route("/")
+@kicad_httplib_bp.route("")
 def kicad_http_root():
     """
-    GET /api/v1/kicad/v1/
+    GET /kicad/v1/
     
     Root endpoint for KiCad HTTP Library validation.
-    KiCad expects a dict with "categories" and "parts" keys.
+    Returns API info that KiCad uses to verify the connection.
     """
     return jsonify({
-        "categories": "",
-        "parts": ""
+        "api_version": "v1",
+        "name": "DMTDB KiCad Library",
+        "categories": "/categories.json",
+        "parts": "/parts.json"
     })
 
 
@@ -96,10 +102,10 @@ def _get_display_name(part):
     return part.mpn or part.dmtuid
 
 
-@api_bp.route("/kicad/v1/parts.json")
+@kicad_httplib_bp.route("/parts.json")
 def kicad_http_parts():
     """
-    GET /api/v1/kicad/v1/parts.json
+    GET /kicad/v1/parts.json
     
     Returns list of ALL parts with KiCad symbols defined.
     This is what KiCad queries to populate the library browser.
@@ -122,10 +128,10 @@ def kicad_http_parts():
         session.close()
 
 
-@api_bp.route("/kicad/v1/categories.json")
+@kicad_httplib_bp.route("/categories.json")
 def kicad_http_categories():
     """
-    GET /api/v1/kicad/v1/categories.json
+    GET /kicad/v1/categories.json
     
     Returns list of categories (Domain > Family hierarchy).
     Only includes categories that actually have parts with symbols.
@@ -168,10 +174,10 @@ def kicad_http_categories():
         session.close()
 
 
-@api_bp.route("/kicad/v1/parts/category/<category_id>.json")
+@kicad_httplib_bp.route("/parts/category/<category_id>.json")
 def kicad_http_parts_by_category(category_id):
     """
-    GET /api/v1/kicad/v1/parts/category/<category_id>.json
+    GET /kicad/v1/parts/category/<category_id>.json
     
     Returns parts in a category. category_id is TTFF (e.g., "0102" for Passives/Resistors).
     """
@@ -203,10 +209,10 @@ def kicad_http_parts_by_category(category_id):
         session.close()
 
 
-@api_bp.route("/kicad/v1/parts/<part_id>.json")
+@kicad_httplib_bp.route("/parts/<part_id>.json")
 def kicad_http_part_detail(part_id):
     """
-    GET /api/v1/kicad/v1/parts/<part_id>.json
+    GET /kicad/v1/parts/<part_id>.json
     
     Returns detailed part info including KiCad fields.
     This is what KiCad reads when you add a part from the HTTP library.

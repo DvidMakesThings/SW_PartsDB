@@ -13,6 +13,7 @@ api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 from api import routes_parts      # noqa: F401, E402
 from api import routes_schema     # noqa: F401, E402
 from api import routes_kicad      # noqa: F401, E402
+from api.routes_kicad import kicad_httplib_bp  # noqa: F401, E402
 from api import routes_import     # noqa: F401, E402
 from api import routes_libs       # noqa: F401, E402
 from api import errors            # noqa: F401, E402

@@ -257,6 +257,17 @@ class KiCadSymbolProcessor:
             print(f"Note: Symbol '{symbol_name}' already exists in library")
             return "exists"
         
+        # Also check if MPN already exists in library (to prevent duplicates with different names)
+        mpn_match = re.search(r'\(property\s+"MPN"\s+"([^"]+)"', symbol_content)
+        if mpn_match:
+            mpn_value = mpn_match.group(1)
+            if mpn_value:  # Don't check empty MPNs
+                escaped_mpn = re.escape(mpn_value)
+                mpn_pattern = rf'\(property\s+"MPN"\s+"{escaped_mpn}"'
+                if re.search(mpn_pattern, lib_text):
+                    print(f"Note: Symbol with MPN '{mpn_value}' already exists in library")
+                    return "exists"
+        
         # Insert new symbol before the final closing paren
         # Find the last ) in the file
         last_paren_idx = lib_text.rfind(')')
@@ -291,9 +302,54 @@ class KiCadSymbolProcessor:
             return []
 
     @classmethod
+    def _is_polarized_capacitor(cls, part) -> bool:
+        """
+        Detect if a capacitor is polarized based on part data.
+        
+        Returns True if polarized (requiring manual symbol upload).
+        Returns False if non-polarized (safe for auto-generation).
+        """
+        # Primary detection: CC code for capacitors (TT=01, FF=01)
+        # Polarized CC codes:
+        #   02 = Aluminum Electrolytic
+        #   03 = Tantalum
+        #   04 = Polymer (Al or Ta)
+        #   06 = Supercapacitor EDLC
+        cc = getattr(part, 'cc', '') or ''
+        if cc in ('02', '03', '04', '06'):
+            return True
+        
+        # Check footprint name: "CP_" prefix indicates polarized
+        fp = (getattr(part, 'kicad_footprint', '') or "").upper()
+        if "CP_" in fp or "CP_ELEC" in fp:
+            return True
+        
+        # Check Dielectric/Type field for polarized types
+        dielectric = ""
+        for field in getattr(part, 'fields', []):
+            if field.field_name.lower() in ("dielectric", "type", "technology"):
+                dielectric = (field.field_value or "").upper()
+                break
+        
+        # Polarized dielectric types
+        polarized_keywords = ["ALUMINUM", "TANTALUM", "POLYMER", "ELECTROLYTIC", "POLARIZED", "ELCO"]
+        for kw in polarized_keywords:
+            if kw in dielectric:
+                return True
+        
+        # Check description for clues
+        desc = (getattr(part, 'description', '') or "").upper()
+        for kw in polarized_keywords:
+            if kw in desc:
+                return True
+        
+        # Default: assume non-polarized (MLCC is most common)
+        return False
+
+    @classmethod
     def generate_passive_symbol(cls, part: Part, library_path: Path) -> str:
         """
-        Auto-generate a symbol for a passive component (R/C/L) from part data.
+        Auto-generate a symbol for a passive component (R/C) from part data.
         
         Args:
             part: Part object with value, mpn, manufacturer, etc.
@@ -302,9 +358,28 @@ class KiCadSymbolProcessor:
         Returns:
             "added" if symbol was added
             "exists" if symbol already exists
-            "error" if failed
+            "error" if failed (e.g., polarized cap, inductor)
         """
         import re
+        
+        # Determine component type from family code
+        # ff: "01" = Capacitor, "02" = Resistor, "03" = Inductor
+        component_type = "resistor"  # default
+        ref_des = "R"
+        default_fp = "DMTDB:R_0402_1005Metric"
+        
+        if part.ff == "01":
+            component_type = "capacitor"
+            ref_des = "C"
+            default_fp = "DMTDB:C_0402_1005Metric"
+            
+            # Check if capacitor is polarized - skip auto-generation if so
+            if cls._is_polarized_capacitor(part):
+                return "error"  # Requires manual symbol upload
+                
+        elif part.ff == "03":
+            # Inductors vary too much - skip auto-generation
+            return "error"
         
         # Generate symbol name: "Value MPN"
         value = part.value or ""
@@ -322,18 +397,74 @@ class KiCadSymbolProcessor:
         
         # Determine footprint short name (0402, 0603, etc.)
         fp = part.kicad_footprint or ""
-        fp_short = "0402"  # Default
+        fp_short = ""
+        # Check standard SMD sizes
         for size in ["0201", "0402", "0603", "0805", "1206", "1210", "2010", "2512"]:
             if size in fp:
                 fp_short = size
                 break
+        # Check electrolytic cap sizes
+        if not fp_short and "CP_Elec" in fp:
+            # Extract size like "4x5.7" from "CP_Elec_4x5.7"
+            match = re.search(r'CP_Elec_(\d+\.?\d*x\d+\.?\d*)', fp)
+            if match:
+                fp_short = match.group(1)
+        
+        # Generate symbol shape based on component type
+        if component_type == "capacitor":
+            # Capacitor: two parallel lines
+            symbol_shape = f'''(symbol "{symbol_name}_0_1"
+			(polyline
+				(pts
+					(xy -2.032 -0.762)
+					(xy 2.032 -0.762)
+				)
+				(stroke
+					(width 0.508)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -2.032 0.762)
+					(xy 2.032 0.762)
+				)
+				(stroke
+					(width 0.508)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)'''
+            pin_positions = (2.794, -2.794)  # pins closer for capacitor
+        else:
+            # Resistor: rectangle
+            symbol_shape = f'''(symbol "{symbol_name}_0_1"
+			(rectangle
+				(start -1.016 2.54)
+				(end 1.016 -2.54)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)'''
+            pin_positions = (3.81, -3.81)  # pins for resistor
         
         # Generate symbol content with proper template
         symbol_content = f'''	(symbol "{symbol_name}"
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(property "Reference" "R"
+		(property "Reference" "{ref_des}"
 			(at 2.032 2.032 0)
 			(effects
 				(font
@@ -351,7 +482,7 @@ class KiCadSymbolProcessor:
 				(justify left)
 			)
 		)
-		(property "Footprint" "{part.kicad_footprint or 'DMTDB:R_0402_1005Metric'}"
+		(property "Footprint" "{part.kicad_footprint or default_fp}"
 			(at 2.032 -4.064 0)
 			(show_name)
 			(effects
@@ -448,22 +579,10 @@ class KiCadSymbolProcessor:
 				(hide yes)
 			)
 		)
-		(symbol "{symbol_name}_0_1"
-			(rectangle
-				(start -1.016 2.54)
-				(end 1.016 -2.54)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-		)
+		{symbol_shape}
 		(symbol "{symbol_name}_1_1"
 			(pin passive line
-				(at 0 3.81 270)
+				(at 0 {pin_positions[0]} 270)
 				(length 1.27)
 				(name "~"
 					(effects
@@ -481,7 +600,7 @@ class KiCadSymbolProcessor:
 				)
 			)
 			(pin passive line
-				(at 0 -3.81 90)
+				(at 0 {pin_positions[1]} 90)
 				(length 1.27)
 				(name "~"
 					(effects

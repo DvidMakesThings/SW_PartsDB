@@ -6,11 +6,13 @@ import re
 from pathlib import Path
 from flask import request, render_template, redirect, url_for, flash, abort
 
+import config
 from ui import ui_bp
 from db import get_session
 from db.models import PartField
 from services.parts_service import PartsService
 from services.kicad_symbol_processor import KiCadSymbolProcessor
+from services import kicad_staging
 from schema.loader import get_domains, domain_name, family_name
 from schema.templates import get_fields
 from schema.numbering import build_dmtuid
@@ -99,9 +101,30 @@ def part_add():
 
     # POST: collect form data into a dict and delegate to PartsService
     data = dict(request.form)
+    staging_session_id = data.pop('staging_session_id', None)
+    
     session = get_session()
     try:
         part = PartsService.create(session, data)
+        
+        # Process staged KiCad files if any
+        if staging_session_id:
+            staged_result = kicad_staging.process_staged_files(
+                staging_session_id, 
+                dmtuid=part.dmtuid,
+                tt=part.tt,
+                ff=part.ff,
+                value=part.value,
+                mpn=part.mpn,
+                kicad_footprint=part.kicad_footprint
+            )
+            # Update part with KiCad field references from staged files
+            if staged_result.get('symbol_ref'):
+                part.kicad_symbol = staged_result['symbol_ref']
+            if staged_result.get('footprint_ref'):
+                part.kicad_footprint = staged_result['footprint_ref']
+            if staged_result.get('model3d_name'):
+                part.kicad_3dmodel = staged_result['model3d_name']
         
         # Auto-populate kicad_footprint and kicad_3dmodel from "Package / Case" if not set
         if not part.kicad_footprint:
@@ -116,7 +139,7 @@ def part_add():
         lib_key = (part.tt, part.ff)
         if lib_key in PASSIVE_LIBRARY_MAP:
             lib_name = PASSIVE_LIBRARY_MAP[lib_key]
-            lib_path = Path(__file__).parent.parent / "kicad_libs" / "symbols" / f"{lib_name}.kicad_sym"
+            lib_path = config.KICAD_SYMBOLS_DIR / f"{lib_name}.kicad_sym"
             
             # Generate the symbol - returns "added", "exists", or "error"
             result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path)
@@ -166,7 +189,28 @@ def part_edit(dmtuid: str):
 
         # POST
         data = dict(request.form)
+        staging_session_id = data.pop('staging_session_id', None)
+        
         PartsService.update(session, part, data)
+        
+        # Process staged KiCad files if any
+        if staging_session_id:
+            staged_result = kicad_staging.process_staged_files(
+                staging_session_id, 
+                dmtuid=part.dmtuid,
+                tt=part.tt,
+                ff=part.ff,
+                value=part.value,
+                mpn=part.mpn,
+                kicad_footprint=part.kicad_footprint
+            )
+            # Update part with KiCad field references from staged files
+            if staged_result.get('symbol_ref'):
+                part.kicad_symbol = staged_result['symbol_ref']
+            if staged_result.get('footprint_ref'):
+                part.kicad_footprint = staged_result['footprint_ref']
+            if staged_result.get('model3d_name'):
+                part.kicad_3dmodel = staged_result['model3d_name']
         
         # Auto-populate kicad_footprint and kicad_3dmodel from "Package / Case" if not set
         if not part.kicad_footprint:
@@ -181,7 +225,7 @@ def part_edit(dmtuid: str):
         lib_key = (part.tt, part.ff)
         if lib_key in PASSIVE_LIBRARY_MAP:
             lib_name = PASSIVE_LIBRARY_MAP[lib_key]
-            lib_path = Path(__file__).parent.parent / "kicad_libs" / "symbols" / f"{lib_name}.kicad_sym"
+            lib_path = config.KICAD_SYMBOLS_DIR / f"{lib_name}.kicad_sym"
             
             # Generate symbol - returns "added", "exists", or "error"
             result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path)
@@ -230,3 +274,4 @@ def part_delete(dmtuid: str):
         return redirect(url_for("ui.part_detail", dmtuid=dmtuid))
     finally:
         session.close()
+

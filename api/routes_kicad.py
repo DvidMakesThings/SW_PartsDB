@@ -79,7 +79,7 @@ def kicad_http_root():
 def _get_display_name(part):
     """
     Get display name for a part in KiCad library browser.
-    For passives (TT=01, FF=01/02/03 - Capacitors/Resistors/Inductors), use value.
+    For passives (TT=01, FF=01/02/03 - Capacitors/Resistors/Inductors), use "value (MPN)".
     For all other parts, use MPN.
     """
     # Extract TT and FF from DMTUID (DMT-TTFFCCSSXXX)
@@ -87,7 +87,10 @@ def _get_display_name(part):
     ff = part.dmtuid[6:8] if len(part.dmtuid) >= 8 else ""
     
     # Passive Components (TT=01, FF=01/02/03): Capacitors, Resistors, Inductors
+    # Include MPN to differentiate parts with same value
     if tt == "01" and ff in ("01", "02", "03") and part.value:
+        if part.mpn:
+            return f"{part.value} ({part.mpn})"
         return part.value
     
     return part.mpn or part.dmtuid

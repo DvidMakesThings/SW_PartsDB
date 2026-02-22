@@ -166,6 +166,9 @@
 
 /**
  * KiCad file drag & drop upload with symbol property editor
+ * 
+ * In ADD mode (no dmtuid): Files are staged in memory until form submission
+ * In EDIT mode (has dmtuid): Files are uploaded directly
  */
 (function () {
   "use strict";
@@ -176,6 +179,7 @@
   var model3dInput = document.getElementById("kicad3dmodelInput");
   var lcscInput = document.getElementById("lcscPartInput");
   var statusEl = document.getElementById("kicadUploadStatus");
+  var stagingSessionInput = document.getElementById("stagingSessionId");
 
   // Modal elements
   var modal = document.getElementById("symbolEditorModal");
@@ -186,14 +190,18 @@
 
   if (!dropzone) return;
 
-  // Get DMTUID and part data from page
+  // Get DMTUID from page (edit mode only)
   var dmtuid = "";
   var match = window.location.pathname.match(/\/part\/([^\/]+)\/edit/);
   if (match) {
     dmtuid = match[1];
   }
 
-  // Get TT/FF from form dropdowns (for add mode when dmtuid doesn't exist yet)
+  // Staging mode: true for ADD (no dmtuid), false for EDIT (has dmtuid)
+  var useStaging = !dmtuid;
+  var stagingSessionId = null;
+
+  // Get TT/FF from form dropdowns
   function getTTFF() {
     var ttSel = document.getElementById("ttSel");
     var ffSel = document.getElementById("ffSel");
@@ -219,12 +227,38 @@
 
   // Editable symbol properties
   var SYMBOL_PROPS = ['Value', 'Footprint', 'Datasheet', 'Description', 'MFR', 'MPN', 'ROHS', 'LCSC_PART', 'DIST1'];
-
-  // Properties that should NOT inherit from template symbol (part-specific values)
   var NO_INHERIT_PROPS = ['LCSC_PART', 'DIST1'];
 
   var pendingFile = null;
   var pendingFilename = null;
+
+  // Create staging session (called once on first file drop in add mode)
+  function ensureStagingSession(callback) {
+    if (!useStaging) {
+      callback();
+      return;
+    }
+    if (stagingSessionId) {
+      callback();
+      return;
+    }
+
+    fetch('/api/v1/libs/stage/session', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.session_id) {
+          stagingSessionId = data.session_id;
+          if (stagingSessionInput) {
+            stagingSessionInput.value = stagingSessionId;
+          }
+        }
+        callback();
+      })
+      .catch(function (err) {
+        console.error('Failed to create staging session:', err);
+        callback();
+      });
+  }
 
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
     dropzone.addEventListener(evt, function (e) {
@@ -240,23 +274,36 @@
   dropzone.addEventListener('drop', function (e) {
     dropzone.classList.remove('dragover');
     var files = e.dataTransfer.files;
-    handleFiles(files);
+    ensureStagingSession(function () {
+      handleFiles(files);
+    });
   });
 
   function handleFiles(files) {
     statusEl.innerHTML = "";
 
+    // Separate files by type
+    var symbols = [];
+    var footprints = [];
+    var models = [];
+
     Array.from(files).forEach(function (file) {
       var ext = file.name.split('.').pop().toLowerCase();
-
-      // For symbols, show the property editor
       if (ext === 'kicad_sym') {
-        previewSymbol(file);
-      } else {
-        // For footprints and 3D models, upload directly
-        uploadFile(file);
+        symbols.push(file);
+      } else if (ext === 'kicad_mod') {
+        footprints.push(file);
+      } else if (['step', 'stp', 'wrl'].indexOf(ext) >= 0) {
+        models.push(file);
       }
     });
+
+    // Upload/stage models first, then footprints, then symbols
+    var modelFilename = models.length === 1 ? models[0].name : null;
+
+    models.forEach(function (file) { processFile(file, '3dmodel', null); });
+    footprints.forEach(function (file) { processFile(file, 'footprint', modelFilename); });
+    symbols.forEach(function (file) { previewSymbol(file); });
   }
 
   function previewSymbol(file) {
@@ -264,14 +311,20 @@
     formData.append('file', file);
     formData.append('preview', 'true');
 
+    // Use staging endpoint in add mode
+    var endpoint = useStaging && stagingSessionId
+      ? '/api/v1/libs/stage'
+      : '/api/v1/libs/upload';
+
+    if (useStaging && stagingSessionId) {
+      formData.append('session_id', stagingSessionId);
+    }
+
     var statusItem = document.createElement('div');
     statusItem.textContent = 'Parsing ' + file.name + '...';
     statusEl.appendChild(statusItem);
 
-    fetch('/api/v1/libs/upload', {
-      method: 'POST',
-      body: formData
-    })
+    fetch(endpoint, { method: 'POST', body: formData })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.preview) {
@@ -291,7 +344,6 @@
   }
 
   function showSymbolEditor(existingProps) {
-    // Look up modal elements dynamically in case they weren't available at init
     var modalEl = modal || document.getElementById("symbolEditorModal");
     var gridEl = propsGrid || document.getElementById("symbolPropsGrid");
 
@@ -300,11 +352,8 @@
       return;
     }
 
-    // Update references
     modal = modalEl;
     propsGrid = gridEl;
-
-    // Ensure event handlers are attached
     attachModalHandlers();
 
     var partData = getPartData();
@@ -314,12 +363,10 @@
       var existingValue = existingProps[propName] || '';
       var partValue = partData[propName] || '';
 
-      // For part-specific properties, clear template values (don't inherit)
       if (NO_INHERIT_PROPS.indexOf(propName) >= 0 && !partValue) {
         existingValue = '';
       }
 
-      // Use part data if available, otherwise existing symbol value
       var value = partValue || existingValue;
       var autoFilled = partValue && !existingValue;
 
@@ -356,7 +403,6 @@
   function saveSymbol() {
     if (!pendingFile) return;
 
-    // Collect edited properties
     var props = {};
     var inputs = propsGrid.querySelectorAll('input[data-prop-name]');
     inputs.forEach(function (input) {
@@ -366,41 +412,59 @@
     var formData = new FormData();
     formData.append('file', pendingFile);
     formData.append('symbol_props', JSON.stringify(props));
-    if (dmtuid) {
-      formData.append('dmtuid', dmtuid);
+
+    var endpoint, statusMsg;
+
+    if (useStaging && stagingSessionId) {
+      // ADD mode: stage the file
+      endpoint = '/api/v1/libs/stage';
+      formData.append('session_id', stagingSessionId);
+      statusMsg = 'staged';
     } else {
-      // In add mode, send TT/FF directly for library file routing
+      // EDIT mode: upload directly
+      endpoint = '/api/v1/libs/upload';
+      if (dmtuid) formData.append('dmtuid', dmtuid);
       var ttff = getTTFF();
       if (ttff.tt) formData.append('tt', ttff.tt);
       if (ttff.ff) formData.append('ff', ttff.ff);
+      statusMsg = 'saved';
     }
 
     var statusItem = document.createElement('div');
-    statusItem.textContent = 'Saving ' + pendingFile.name + '...';
+    statusItem.textContent = 'Processing ' + pendingFile.name + '...';
     statusEl.appendChild(statusItem);
 
-    fetch('/api/v1/libs/upload', {
-      method: 'POST',
-      body: formData
-    })
+    fetch(endpoint, { method: 'POST', body: formData })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (data.success) {
+        if (data.success || data.staged) {
           statusItem.className = 'success';
-          statusItem.textContent = pendingFile.name + ' saved with properties';
+          statusItem.textContent = pendingFile.name + ' ' + statusMsg;
 
+          // Update symbol field with expected reference
           if (symbolInput) {
-            symbolInput.value = data.linked_value || ('DMTDB:' + data.name);
+            if (data.linked_value) {
+              symbolInput.value = data.linked_value;
+            } else if (useStaging) {
+              // In staging mode, set a placeholder that will be resolved on submit
+              symbolInput.value = '(staged: ' + pendingFile.name + ')';
+            }
           }
 
-          // Also update footprint field if we set it
           if (props.Footprint && footprintInput && !footprintInput.value) {
             footprintInput.value = props.Footprint;
           }
-
-          // Also update LCSC Part field if we set it
           if (props.LCSC_PART && lcscInput && !lcscInput.value) {
             lcscInput.value = props.LCSC_PART;
+          }
+
+          // Store symbol props for later use
+          if (useStaging && stagingSessionId) {
+            fetch('/api/v1/libs/stage/' + stagingSessionId + '/props', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ symbol_props: props })
+            });
           }
         } else {
           statusItem.className = 'error';
@@ -415,36 +479,50 @@
       });
   }
 
-  function uploadFile(file) {
+  function processFile(file, fileType, modelFilename) {
     var formData = new FormData();
     formData.append('file', file);
-    if (dmtuid) {
-      formData.append('dmtuid', dmtuid);
+
+    var endpoint, statusMsg;
+
+    if (useStaging && stagingSessionId) {
+      // ADD mode: stage
+      endpoint = '/api/v1/libs/stage';
+      formData.append('session_id', stagingSessionId);
+      statusMsg = 'staged';
+    } else {
+      // EDIT mode: upload directly
+      endpoint = '/api/v1/libs/upload';
+      if (dmtuid) formData.append('dmtuid', dmtuid);
+      if (modelFilename) formData.append('model_filename', modelFilename);
+      statusMsg = 'uploaded';
     }
 
     var statusItem = document.createElement('div');
-    statusItem.textContent = 'Uploading ' + file.name + '...';
+    statusItem.textContent = 'Processing ' + file.name + '...';
     statusEl.appendChild(statusItem);
 
-    fetch('/api/v1/libs/upload', {
-      method: 'POST',
-      body: formData
-    })
+    fetch(endpoint, { method: 'POST', body: formData })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (data.success) {
+        if (data.success || data.staged) {
           statusItem.className = 'success';
           if (data.reused) {
-            statusItem.textContent = file.name + ' - using existing ' + data.name;
+            statusItem.textContent = file.name + ' - using existing';
           } else {
-            statusItem.textContent = file.name + ' uploaded to ' + data.type;
+            statusItem.textContent = file.name + ' ' + statusMsg;
           }
 
-          if (data.type === 'footprints' && footprintInput) {
-            footprintInput.value = data.linked_value || ('DMTDB:' + data.name);
+          // Update form fields
+          if (fileType === 'footprint' && footprintInput) {
+            if (data.linked_value) {
+              footprintInput.value = data.linked_value;
+            } else if (useStaging) {
+              footprintInput.value = 'DMTDB:' + file.name.replace('.kicad_mod', '');
+            }
           }
-          if (data.type === '3dmodels' && model3dInput) {
-            model3dInput.value = data.name;
+          if (fileType === '3dmodel' && model3dInput) {
+            model3dInput.value = data.name || file.name;
           }
         } else {
           statusItem.className = 'error';
@@ -457,7 +535,6 @@
       });
   }
 
-  // Set up modal event handlers (called once when modal is first shown)
   var handlersAttached = false;
   function attachModalHandlers() {
     if (handlersAttached) return;

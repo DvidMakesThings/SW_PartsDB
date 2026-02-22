@@ -64,14 +64,32 @@
     </div>
     <div class="field-row"><span class="field-label">Sequence (XXX)</span><span class="field-value">{{ part.xxx
         }}</span></div>
-    <div class="field-row"><span class="field-label">KiCad Symbol</span><span class="field-value">{{ part.kicad_symbol
+    <div class="field-row"><span class="field-label">KiCad Symbol</span><span class="field-value" id="kicad-symbol">{{
+        part.kicad_symbol
         or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">KiCad Footprint</span><span class="field-value">{{
+    <div class="field-row"><span class="field-label">KiCad Footprint</span><span class="field-value"
+        id="kicad-footprint">{{
         part.kicad_footprint or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">KiCad 3D Model</span><span class="field-value">{{
+    <div class="field-row"><span class="field-label">KiCad 3D Model</span><span class="field-value"
+        id="kicad-3dmodel">{{
         part.kicad_3dmodel or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">LCSC Part</span><span class="field-value">{{ part.kicad_libref
+    <div class="field-row"><span class="field-label">LCSC Part</span><span class="field-value" id="kicad-lcsc">{{
+        part.kicad_libref
         or '—' }}</span></div>
+
+    <!-- KiCad File Drop Zone -->
+    <div id="kicadDropzone" class="kicad-dropzone" data-dmtuid="{{ part.dmtuid }}" data-mpn="{{ part.mpn or '' }}"
+      data-value="{{ part.value or '' }}" data-footprint="{{ part.kicad_footprint or '' }}"
+      data-datasheet="{{ part.datasheet or '' }}" data-description="{{ part.description or '' }}"
+      data-manufacturer="{{ part.manufacturer or '' }}">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      <p>Drop .kicad_sym, .kicad_mod, .step files here</p>
+    </div>
+    <div id="kicadUploadStatus" class="kicad-upload-status"></div>
   </div>
 
   {% if part.fields %}
@@ -100,4 +118,433 @@
   {% endif %}
 
 </div>
+
+<!-- Symbol Property Editor Modal -->
+<div class="modal-overlay" id="symbolEditorModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Symbol Properties</h3>
+      <button type="button" class="modal-close" id="symbolEditorClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Edit properties before saving. Values auto-filled from part data where available.</p>
+      <div class="symbol-props-grid" id="symbolPropsGrid">
+        <!-- Dynamic property fields -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="symbolEditorCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="symbolEditorSave">Save Symbol</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* KiCad Dropzone */
+  .kicad-dropzone {
+    margin-top: 1rem;
+    padding: 1.5rem;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+
+  .kicad-dropzone:hover,
+  .kicad-dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+  }
+
+  .kicad-dropzone.dragover {
+    transform: scale(1.02);
+  }
+
+  .kicad-dropzone p {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.9rem;
+  }
+
+  .kicad-upload-status {
+    margin-top: 0.5rem;
+  }
+
+  .kicad-upload-status>div {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .kicad-upload-status .success {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--green);
+  }
+
+  .kicad-upload-status .error {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--red);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: var(--surface);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-dim);
+  }
+
+  .modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-hint {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .modal-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .symbol-props-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .symbol-prop-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .symbol-prop-row label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .symbol-prop-row input {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .symbol-prop-row input.auto-filled {
+    border-color: var(--accent);
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    "use strict";
+
+    var dropzone = document.getElementById('kicadDropzone');
+    var statusEl = document.getElementById('kicadUploadStatus');
+    var modal = document.getElementById('symbolEditorModal');
+    var propsGrid = document.getElementById('symbolPropsGrid');
+
+    if (!dropzone) return;
+
+    // Get data from dropzone attributes
+    var dmtuid = dropzone.dataset.dmtuid;
+    var partData = {
+      Value: dropzone.dataset.value || dropzone.dataset.mpn || '',
+      Footprint: dropzone.dataset.footprint || '',
+      Datasheet: dropzone.dataset.datasheet || '',
+      Description: dropzone.dataset.description || '',
+      MFR: dropzone.dataset.manufacturer || '',
+      MPN: dropzone.dataset.mpn || '',
+      ROHS: 'YES'
+    };
+
+    var SYMBOL_PROPS = ['Value', 'Footprint', 'Datasheet', 'Description', 'MFR', 'MPN', 'ROHS', 'LCSC_PART', 'DIST1'];
+    var NO_INHERIT_PROPS = ['LCSC_PART', 'DIST1'];
+
+    var pendingFile = null;
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (evt) {
+      dropzone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    dropzone.addEventListener('dragenter', function () { dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragover', function () { dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('dragover'); });
+
+    dropzone.addEventListener('drop', function (e) {
+      dropzone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Click to select file
+    dropzone.addEventListener('click', function () {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.kicad_sym,.kicad_mod,.step,.stp,.wrl';
+      input.multiple = true;
+      input.onchange = function (e) {
+        handleFiles(e.target.files);
+      };
+      input.click();
+    });
+
+    function handleFiles(files) {
+      // Separate files by type
+      var symbols = [];
+      var footprints = [];
+      var models = [];
+
+      Array.from(files).forEach(function (file) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'kicad_sym') {
+          symbols.push(file);
+        } else if (ext === 'kicad_mod') {
+          footprints.push(file);
+        } else if (['step', 'stp', 'wrl'].indexOf(ext) >= 0) {
+          models.push(file);
+        }
+      });
+
+      // Upload models first, then footprints with model reference
+      var modelFilename = models.length === 1 ? models[0].name : null;
+
+      models.forEach(function (file) { uploadFile(file, null); });
+      footprints.forEach(function (file) { uploadFile(file, modelFilename); });
+      symbols.forEach(function (file) { previewSymbol(file); });
+    }
+
+    function previewSymbol(file) {
+      var formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', 'true');
+
+      var statusItem = document.createElement('div');
+      statusItem.textContent = 'Parsing ' + file.name + '...';
+      statusEl.appendChild(statusItem);
+
+      fetch('/api/v1/libs/upload', {
+        method: 'POST',
+        body: formData
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.preview) {
+            statusItem.textContent = file.name + ' - edit properties below';
+            pendingFile = file;
+            showSymbolEditor(data.properties);
+          } else if (data.error) {
+            statusItem.className = 'error';
+            statusItem.textContent = file.name + ': ' + data.error;
+          }
+        })
+        .catch(function (err) {
+          statusItem.className = 'error';
+          statusItem.textContent = file.name + ': ' + err;
+        });
+    }
+
+    function showSymbolEditor(existingProps) {
+      propsGrid.innerHTML = '';
+
+      SYMBOL_PROPS.forEach(function (propName) {
+        var existingValue = existingProps[propName] || '';
+        var partValue = partData[propName] || '';
+
+        if (NO_INHERIT_PROPS.indexOf(propName) >= 0 && !partValue) {
+          existingValue = '';
+        }
+
+        var value = partValue || existingValue;
+        var autoFilled = partValue && !existingValue;
+
+        var row = document.createElement('div');
+        row.className = 'symbol-prop-row';
+
+        var label = document.createElement('label');
+        label.textContent = propName;
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'symbol_' + propName;
+        input.value = value;
+        input.dataset.propName = propName;
+        if (autoFilled) {
+          input.className = 'auto-filled';
+          input.title = 'Auto-filled from part data';
+        }
+
+        row.appendChild(label);
+        row.appendChild(input);
+        propsGrid.appendChild(row);
+      });
+
+      modal.style.display = 'flex';
+    }
+
+    function hideSymbolEditor() {
+      modal.style.display = 'none';
+      pendingFile = null;
+    }
+
+    function saveSymbol() {
+      if (!pendingFile) return;
+
+      var props = {};
+      var inputs = propsGrid.querySelectorAll('input[data-prop-name]');
+      inputs.forEach(function (input) {
+        props[input.dataset.propName] = input.value;
+      });
+
+      var formData = new FormData();
+      formData.append('file', pendingFile);
+      formData.append('symbol_props', JSON.stringify(props));
+      formData.append('dmtuid', dmtuid);
+
+      var statusItem = document.createElement('div');
+      statusItem.textContent = 'Saving ' + pendingFile.name + '...';
+      statusEl.appendChild(statusItem);
+
+      fetch('/api/v1/libs/upload', {
+        method: 'POST',
+        body: formData
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            statusItem.className = 'success';
+            statusItem.textContent = pendingFile.name + ' saved';
+
+            // Update displayed values
+            var symbolEl = document.getElementById('kicad-symbol');
+            if (symbolEl && data.linked_value) {
+              symbolEl.textContent = data.linked_value;
+            }
+
+            var footprintEl = document.getElementById('kicad-footprint');
+            if (footprintEl && props.Footprint) {
+              footprintEl.textContent = props.Footprint;
+            }
+          } else {
+            statusItem.className = 'error';
+            statusItem.textContent = pendingFile.name + ': ' + data.error;
+          }
+          hideSymbolEditor();
+        })
+        .catch(function (err) {
+          statusItem.className = 'error';
+          statusItem.textContent = pendingFile.name + ': ' + err;
+          hideSymbolEditor();
+        });
+    }
+
+    function uploadFile(file, modelFilename) {
+      var formData = new FormData();
+      formData.append('file', file);
+      formData.append('dmtuid', dmtuid);
+      if (modelFilename) {
+        formData.append('model_filename', modelFilename);
+      }
+
+      var statusItem = document.createElement('div');
+      statusItem.textContent = 'Uploading ' + file.name + '...';
+      statusEl.appendChild(statusItem);
+
+      fetch('/api/v1/libs/upload', {
+        method: 'POST',
+        body: formData
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            statusItem.className = 'success';
+            if (data.reused) {
+              statusItem.textContent = file.name + ' - using existing ' + data.name;
+            } else {
+              statusItem.textContent = file.name + ' uploaded to ' + data.type;
+            }
+
+            // Update displayed values
+            if (data.type === 'footprints') {
+              var fpEl = document.getElementById('kicad-footprint');
+              if (fpEl) fpEl.textContent = data.linked_value || ('DMTDB:' + data.name);
+            }
+            if (data.type === '3dmodels') {
+              var modelEl = document.getElementById('kicad-3dmodel');
+              if (modelEl) modelEl.textContent = data.name;
+            }
+          } else {
+            statusItem.className = 'error';
+            statusItem.textContent = file.name + ': ' + data.error;
+          }
+        })
+        .catch(function (err) {
+          statusItem.className = 'error';
+          statusItem.textContent = file.name + ': ' + err;
+        });
+    }
+
+    // Modal event handlers
+    document.getElementById('symbolEditorClose').addEventListener('click', hideSymbolEditor);
+    document.getElementById('symbolEditorCancel').addEventListener('click', hideSymbolEditor);
+    document.getElementById('symbolEditorSave').addEventListener('click', saveSymbol);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) hideSymbolEditor();
+    });
+  })();
+</script>
 {% endblock %}

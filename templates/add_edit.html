@@ -10,6 +10,8 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
 </div>
 
 <form method="post" id="partForm">
+  <!-- Staging session ID for KiCad file uploads -->
+  <input type="hidden" name="staging_session_id" id="stagingSessionId" value="">
 
   <!-- Classification -->
   <div class="detail-card" style="margin-bottom:1rem;">

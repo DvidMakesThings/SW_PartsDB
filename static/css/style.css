@@ -578,6 +578,41 @@ th.ds-header {
   color: var(--accent-hover);
 }
 
+/* ── KiCad Availability Icons ───────────────────────────────── */
+
+.kicad-icons {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.kicad-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 3px;
+  margin: 0 1px;
+  cursor: default;
+  transition: opacity .15s;
+}
+
+.kicad-icon svg {
+  display: block;
+}
+
+.kicad-icon.available {
+  color: var(--green);
+}
+
+.kicad-icon.unavailable {
+  color: var(--text-dim);
+  opacity: 0.35;
+}
+
+.kicad-icon:hover {
+  opacity: 1;
+}
+
 .truncate {
   max-width: 220px;
   overflow: hidden;

@@ -136,6 +136,160 @@ def list_libs():
     return jsonify(result)
 
 
+# ── Staging Endpoints ─────────────────────────────────────────────────
+
+@api_bp.route("/libs/stage/session", methods=["POST"])
+def create_staging_session():
+    """
+    POST /api/v1/libs/stage/session
+    
+    Create a new staging session for file uploads.
+    Returns a session_id to use for subsequent stage operations.
+    """
+    from services.kicad_staging import create_session
+    
+    session_id = create_session()
+    return jsonify({
+        "success": True,
+        "session_id": session_id
+    })
+
+
+@api_bp.route("/libs/stage", methods=["POST"])
+def stage_lib_file():
+    """
+    POST /api/v1/libs/stage
+    
+    Stage a KiCad library file for later processing.
+    Files are stored temporarily and processed when the part form is submitted.
+    
+    Form data:
+      - file: The file to stage
+      - session_id: Staging session ID (from /libs/stage/session)
+      - preview: (optional) If "true", parse and return properties without staging
+    
+    Returns:
+      - For symbols: extracted properties for editing
+      - For footprints/3dmodels: staging confirmation
+    """
+    from services.kicad_staging import stage_file, get_staged_files
+    from services.kicad_symbol_processor import KiCadSymbolProcessor
+    
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"error": "Empty filename"}), 400
+    
+    session_id = request.form.get("session_id", "").strip()
+    if not session_id:
+        return jsonify({"error": "No session_id provided"}), 400
+    
+    filename = secure_filename(file.filename)
+    _, ext = os.path.splitext(filename)
+    ext = ext.lower()
+    
+    if ext not in EXT_MAP:
+        return jsonify({
+            "error": f"Unknown file type: {ext}",
+            "allowed": list(EXT_MAP.keys()),
+        }), 400
+    
+    file_type, _ = EXT_MAP[ext]
+    preview_mode = request.form.get("preview", "").lower() == "true"
+    is_text_file = file_type in ("symbols", "footprints")
+    
+    # Read file content
+    content = file.read()
+    if is_text_file:
+        content_str = content.decode("utf-8")
+        content_str = content_str.replace('\r\n', '\n').replace('\r', '\n')
+    
+    # For symbols, extract properties for preview/editing
+    if file_type == "symbols":
+        props = KiCadSymbolProcessor.extract_properties(content_str)
+        symbol_name = KiCadSymbolProcessor.get_symbol_name(content_str)
+        
+        if preview_mode:
+            return jsonify({
+                "preview": True,
+                "type": "symbol",
+                "filename": filename,
+                "symbol_name": symbol_name,
+                "properties": props,
+                "session_id": session_id
+            })
+        
+        # Stage the symbol file
+        result = stage_file(
+            session_id, "symbol", filename, content_str, 
+            is_text=True, 
+            metadata={"symbol_name": symbol_name, "original_props": props}
+        )
+        result["properties"] = props
+        result["symbol_name"] = symbol_name
+        return jsonify(result)
+    
+    elif file_type == "footprints":
+        # Stage footprint
+        result = stage_file(session_id, "footprint", filename, content_str, is_text=True)
+        return jsonify(result)
+    
+    else:  # 3dmodels
+        # Stage 3D model (binary)
+        result = stage_file(session_id, "3dmodel", filename, content, is_text=False)
+        return jsonify(result)
+
+
+@api_bp.route("/libs/stage/<session_id>", methods=["GET"])
+def get_staged(session_id: str):
+    """
+    GET /api/v1/libs/stage/<session_id>
+    
+    Get info about staged files for a session.
+    """
+    from services.kicad_staging import get_staged_files
+    
+    meta = get_staged_files(session_id)
+    return jsonify(meta)
+
+
+@api_bp.route("/libs/stage/<session_id>/props", methods=["POST"])
+def update_staged_props(session_id: str):
+    """
+    POST /api/v1/libs/stage/<session_id>/props
+    
+    Update symbol properties for a staged symbol.
+    
+    JSON body:
+      - symbol_props: dict of property name -> value
+    """
+    from services.kicad_staging import update_staged_metadata
+    
+    data = request.get_json() or {}
+    symbol_props = data.get("symbol_props", {})
+    
+    update_staged_metadata(session_id, "symbol", {"symbol_props": symbol_props})
+    
+    return jsonify({"success": True})
+
+
+@api_bp.route("/libs/stage/<session_id>", methods=["DELETE"])
+def clear_staged(session_id: str):
+    """
+    DELETE /api/v1/libs/stage/<session_id>
+    
+    Clear all staged files for a session.
+    """
+    from services.kicad_staging import clear_session
+    
+    clear_session(session_id)
+    return jsonify({"success": True})
+
+
+# ── Direct Upload Endpoint ────────────────────────────────────────────
+
 @api_bp.route("/libs/upload", methods=["POST"])
 def upload_lib_file():
     """
@@ -376,11 +530,21 @@ def upload_lib_file():
                 return jsonify(result), 200
             
             # Update 3D model path in footprints to use DMTDB environment variable
-            # Replace absolute model paths with ${DMTDB_3D}/filename.ext
-            # Matches: (model "any/path/to/model.step"
-            model_pattern = r'\(model\s+"[^"]*[/\\]([^"/\\]+\.[^"]+)"'
-            model_replacement = r'(model "${DMTDB_3D}/\1"'
-            content = re.sub(model_pattern, model_replacement, content, flags=re.IGNORECASE)
+            # If model_filename is provided, use that; otherwise extract from existing path
+            model_filename = request.form.get("model_filename", "").strip()
+            
+            if model_filename:
+                # Replace any existing model path with the specified filename
+                model_pattern = r'\(model\s+"[^"]*"'
+                model_replacement = f'(model "${{DMTDB_3D}}/{model_filename}"'
+                content = re.sub(model_pattern, model_replacement, content, flags=re.IGNORECASE)
+            else:
+                # Default: preserve original filename but normalize path
+                # Replace absolute model paths with ${DMTDB_3D}/filename.ext
+                # Matches: (model "any/path/to/model.step"
+                model_pattern = r'\(model\s+"[^"]*[/\\]([^"/\\]+\.[^"]+)"'
+                model_replacement = r'(model "${DMTDB_3D}/\1"'
+                content = re.sub(model_pattern, model_replacement, content, flags=re.IGNORECASE)
             
             # Save footprint file
             dest_path.write_text(content, encoding="utf-8")

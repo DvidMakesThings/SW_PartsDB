@@ -2,12 +2,12 @@
 	(version 20241209)
 	(generator "kicad_symbol_editor")
 	(generator_version "9.0")
-	(symbol "0402"
+	(symbol "0805"
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(property "Reference" "R"
-			(at 2.032 2.032 0)
+		(property "Reference" "C"
+			(at 3.81 2.032 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16,7 +16,7 @@
 			)
 		)
 		(property "Value" ""
-			(at 2.032 0 0)
+			(at 3.81 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -24,8 +24,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 2.032 -4.064 0)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 3.81 -4.064 0)
 			(show_name)
 			(effects
 				(font
@@ -36,7 +36,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 2.032 -14.986 0)
+			(at 3.81 -8.128 0)
 			(show_name)
 			(effects
 				(font
@@ -47,7 +47,27 @@
 			)
 		)
 		(property "Description" ""
-			(at 2.032 -8.382 0)
+			(at 3.81 -12.192 0)
+			(show_name)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "FOOTPRINT_SHORT" "0805"
+			(at 3.81 -2.032 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "ROHS" "YES"
+			(at 3.81 -14.224 0)
 			(show_name)
 			(effects
 				(font
@@ -58,7 +78,7 @@
 			)
 		)
 		(property "LCSC_PART" ""
-			(at 2.032 -12.954 0)
+			(at 3.81 -6.096 0)
 			(show_name)
 			(effects
 				(font
@@ -66,30 +86,10 @@
 				)
 				(justify left)
 				(hide yes)
-			)
-		)
-		(property "ROHS" "YES"
-			(at 2.032 -6.35 0)
-			(show_name)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "FOOTPRINT_SHORT" "0402"
-			(at 2.032 -2.032 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 			)
 		)
 		(property "MFR" ""
-			(at 2.032 -10.668 0)
+			(at 3.81 -10.16 0)
 			(show_name)
 			(effects
 				(font
@@ -100,7 +100,7 @@
 			)
 		)
 		(property "MPN" ""
-			(at 2.032 -17.018 0)
+			(at 4.064 -18.034 0)
 			(show_name)
 			(effects
 				(font
@@ -111,7 +111,7 @@
 			)
 		)
 		(property "DIST1" ""
-			(at 2.286 -19.304 0)
+			(at 3.81 -16.002 0)
 			(show_name)
 			(effects
 				(font
@@ -121,12 +121,25 @@
 				(hide yes)
 			)
 		)
-		(symbol "0402_0_1"
-			(rectangle
-				(start -1.016 2.54)
-				(end 1.016 -2.54)
+		(symbol "0805_0_1"
+			(polyline
+				(pts
+					(xy -2.032 0.762) (xy 2.032 0.762)
+				)
 				(stroke
-					(width 0.254)
+					(width 0.508)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -2.032 -0.762) (xy 2.032 -0.762)
+				)
+				(stroke
+					(width 0.508)
 					(type default)
 				)
 				(fill
@@ -134,10 +147,10 @@
 				)
 			)
 		)
-		(symbol "0402_1_1"
+		(symbol "0805_1_1"
 			(pin passive line
 				(at 0 3.81 270)
-				(length 1.27)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font
@@ -155,7 +168,7 @@
 			)
 			(pin passive line
 				(at 0 -3.81 90)
-				(length 1.27)
+				(length 2.794)
 				(name "~"
 					(effects
 						(font

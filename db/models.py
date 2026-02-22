@@ -118,3 +118,47 @@ class PartField(Base):
     __table_args__ = (
         Index("ix_field_lookup", "dmtuid", "field_name"),
     )
+
+
+class ClientConfig(Base):
+    """
+    Stores KiCad library path configurations for each client PC.
+    
+    Clients register themselves with a unique identifier (hostname or custom name).
+    The server remembers their local paths so they can sync updates.
+    """
+    __tablename__ = "client_configs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(String(200), unique=True, nullable=False, index=True)  # Hostname or custom name
+    client_name = Column(String(200), default="")  # Friendly display name
+    
+    # Local paths on the client machine
+    path_symbols = Column(String(500), default="")
+    path_footprints = Column(String(500), default="")
+    path_3dmodels = Column(String(500), default="")
+    
+    # Server URL as seen from the client
+    server_url = Column(String(500), default="")
+    
+    # Sync tracking
+    last_sync = Column(DateTime, nullable=True)
+    last_sync_hash = Column(String(64), default="")  # SHA256 of library state at last sync
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "client_id": self.client_id,
+            "client_name": self.client_name or self.client_id,
+            "path_symbols": self.path_symbols or "",
+            "path_footprints": self.path_footprints or "",
+            "path_3dmodels": self.path_3dmodels or "",
+            "server_url": self.server_url or "",
+            "last_sync": self.last_sync.isoformat() if self.last_sync else None,
+            "last_sync_hash": self.last_sync_hash or "",
+        }

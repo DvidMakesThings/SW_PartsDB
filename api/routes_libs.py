@@ -4,11 +4,15 @@ api.routes_libs - /api/v1/libs/* endpoints for KiCad library management.
 Handles listing and uploading symbol, footprint, and 3D model files.
 """
 
+import hashlib
+import io
 import os
 import re
+import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import request, jsonify
+from flask import request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 
 from api import api_bp
@@ -29,6 +33,370 @@ EXT_MAP = {
     ".stp": ("3dmodels", MODELS_DIR),
     ".wrl": ("3dmodels", MODELS_DIR),
 }
+
+
+# ── KiCad Library Download ────────────────────────────────────────────
+
+@api_bp.route("/libs/download")
+def download_kicad_libs():
+    """
+    GET /api/v1/libs/download
+    
+    Download all KiCad library files (symbols, footprints, 3dmodels) as a ZIP.
+    The ZIP structure matches the expected folder layout for KiCad.
+    
+    Returns a ZIP file: DMTDB_KiCad_Libraries.zip containing:
+      - symbols/*.kicad_sym
+      - footprints/*.kicad_mod
+      - 3dmodels/*.step, *.stp, *.wrl
+    """
+    # Create in-memory ZIP
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # Add symbols
+        if SYMBOLS_DIR.exists():
+            for f in SYMBOLS_DIR.iterdir():
+                if f.suffix == ".kicad_sym":
+                    zf.write(f, f"symbols/{f.name}")
+        
+        # Add footprints
+        if FOOTPRINTS_DIR.exists():
+            for item in FOOTPRINTS_DIR.iterdir():
+                if item.suffix == ".kicad_mod":
+                    zf.write(item, f"footprints/{item.name}")
+                elif item.is_dir() and item.suffix == ".pretty":
+                    # Include .pretty folders with their contents
+                    for mod in item.iterdir():
+                        if mod.suffix == ".kicad_mod":
+                            zf.write(mod, f"footprints/{item.name}/{mod.name}")
+        
+        # Add 3D models
+        if MODELS_DIR.exists():
+            for f in MODELS_DIR.iterdir():
+                if f.suffix.lower() in (".step", ".stp", ".wrl"):
+                    zf.write(f, f"3dmodels/{f.name}")
+        
+        # Add a README for setup instructions
+        readme_content = """# DMTDB KiCad Libraries
+
+Extract this ZIP to a location of your choice, then configure KiCad:
+
+## KiCad Path Variables
+
+In KiCad, go to Preferences → Configure Paths and add:
+
+| Name            | Path                                    |
+|-----------------|-----------------------------------------|
+| DMTDB_SYM       | /path/to/extracted/symbols/             |
+| DMTDB_FOOTPRINT | /path/to/extracted/footprints/          |
+| DMTDB_3D        | /path/to/extracted/3dmodels/            |
+
+Replace "/path/to/extracted/" with the actual path where you extracted this ZIP.
+
+## Add Libraries
+
+### Footprint Library
+1. Preferences → Manage Footprint Libraries → Global Libraries
+2. Click Add (+)
+3. Nickname: DMTDB
+4. Library Path: ${DMTDB_FOOTPRINT}
+
+### Symbol Library (HTTP)
+The HTTP library provides real-time symbol browsing from the DMTDB server.
+See the main DMTDB README for HTTP library setup.
+
+## Sync Updates
+
+To get the latest library files, download a fresh copy from:
+  http://YOUR_SERVER:5000 → "Download Libraries" button
+
+Or run the sync manually by re-downloading and extracting.
+"""
+        zf.writestr("README.md", readme_content)
+    
+    zip_buffer.seek(0)
+    
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name='DMTDB_KiCad_Libraries.zip'
+    )
+
+
+# ── Client Configuration & Sync ───────────────────────────────────────
+
+def _get_client_ip() -> str:
+    """Get the client's IP address from the request."""
+    # Check for forwarded headers (reverse proxy)
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr or "unknown"
+
+
+def _compute_libs_hash() -> str:
+    """
+    Compute a hash of all library files to detect changes.
+    Uses file names and modification times for speed.
+    """
+    hasher = hashlib.sha256()
+    
+    for folder, exts in [
+        (SYMBOLS_DIR, [".kicad_sym"]),
+        (FOOTPRINTS_DIR, [".kicad_mod"]),
+        (MODELS_DIR, [".step", ".stp", ".wrl"]),
+    ]:
+        if folder.exists():
+            files = sorted(folder.iterdir(), key=lambda f: f.name)
+            for f in files:
+                if f.suffix.lower() in exts:
+                    stat = f.stat()
+                    hasher.update(f"{f.name}:{stat.st_size}:{stat.st_mtime}".encode())
+    
+    return hasher.hexdigest()[:16]  # Short hash is enough
+
+
+def _get_changed_files(since_hash: str) -> list[dict]:
+    """
+    Get list of files that may have changed since a given hash.
+    Since we can't reverse the hash, we return all files with metadata.
+    The client can compare against their local files.
+    """
+    files = []
+    
+    for folder, file_type, exts in [
+        (SYMBOLS_DIR, "symbols", [".kicad_sym"]),
+        (FOOTPRINTS_DIR, "footprints", [".kicad_mod"]),
+        (MODELS_DIR, "3dmodels", [".step", ".stp", ".wrl"]),
+    ]:
+        if folder.exists():
+            for f in folder.iterdir():
+                if f.suffix.lower() in exts:
+                    stat = f.stat()
+                    files.append({
+                        "type": file_type,
+                        "name": f.name,
+                        "size": stat.st_size,
+                        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                    })
+    
+    return files
+
+
+@api_bp.route("/libs/client", methods=["GET"])
+def get_client_config():
+    """
+    GET /api/v1/libs/client
+    
+    Get the configuration for the current client (identified by IP).
+    If no config exists, returns a template with empty paths.
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    client_ip = _get_client_ip()
+    
+    session = get_session()
+    try:
+        config_row = session.query(ClientConfig).filter(
+            ClientConfig.client_id == client_ip
+        ).first()
+        
+        current_hash = _compute_libs_hash()
+        
+        if config_row:
+            needs_sync = config_row.last_sync_hash != current_hash
+            return jsonify({
+                "found": True,
+                "client_ip": client_ip,
+                "config": config_row.to_dict(),
+                "current_libs_hash": current_hash,
+                "needs_sync": needs_sync,
+            })
+        else:
+            return jsonify({
+                "found": False,
+                "client_ip": client_ip,
+                "config": {
+                    "client_id": client_ip,
+                    "client_name": "",
+                    "path_symbols": "",
+                    "path_footprints": "",
+                    "path_3dmodels": "",
+                    "server_url": request.host_url.rstrip('/'),
+                    "last_sync": None,
+                    "last_sync_hash": "",
+                },
+                "current_libs_hash": current_hash,
+                "needs_sync": True,
+            })
+    finally:
+        session.close()
+
+
+@api_bp.route("/libs/client", methods=["POST"])
+def save_client_config():
+    """
+    POST /api/v1/libs/client
+    
+    Save/update configuration for the current client.
+    
+    JSON body:
+      - client_name: (optional) Friendly name for this PC
+      - path_symbols: Local path to symbols folder
+      - path_footprints: Local path to footprints folder
+      - path_3dmodels: Local path to 3D models folder
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    client_ip = _get_client_ip()
+    data = request.get_json() or {}
+    
+    session = get_session()
+    try:
+        config_row = session.query(ClientConfig).filter(
+            ClientConfig.client_id == client_ip
+        ).first()
+        
+        if not config_row:
+            config_row = ClientConfig(client_id=client_ip)
+            session.add(config_row)
+        
+        # Update fields
+        if "client_name" in data:
+            config_row.client_name = data["client_name"]
+        if "path_symbols" in data:
+            config_row.path_symbols = data["path_symbols"]
+        if "path_footprints" in data:
+            config_row.path_footprints = data["path_footprints"]
+        if "path_3dmodels" in data:
+            config_row.path_3dmodels = data["path_3dmodels"]
+        if "server_url" in data:
+            config_row.server_url = data["server_url"]
+        
+        session.commit()
+        
+        return jsonify({
+            "success": True,
+            "client_ip": client_ip,
+            "config": config_row.to_dict(),
+        })
+    finally:
+        session.close()
+
+
+@api_bp.route("/libs/client/mark-synced", methods=["POST"])
+def mark_client_synced():
+    """
+    POST /api/v1/libs/client/mark-synced
+    
+    Mark the current client as synced with the current library state.
+    Call this after successfully downloading/syncing library files.
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    client_ip = _get_client_ip()
+    current_hash = _compute_libs_hash()
+    
+    session = get_session()
+    try:
+        config_row = session.query(ClientConfig).filter(
+            ClientConfig.client_id == client_ip
+        ).first()
+        
+        if not config_row:
+            config_row = ClientConfig(client_id=client_ip)
+            session.add(config_row)
+        
+        config_row.last_sync = datetime.now(timezone.utc)
+        config_row.last_sync_hash = current_hash
+        
+        session.commit()
+        
+        return jsonify({
+            "success": True,
+            "client_ip": client_ip,
+            "synced_at": config_row.last_sync.isoformat(),
+            "libs_hash": current_hash,
+        })
+    finally:
+        session.close()
+
+
+@api_bp.route("/libs/sync/status")
+def sync_status():
+    """
+    GET /api/v1/libs/sync/status
+    
+    Check if the current client needs to sync library files.
+    Returns sync status and list of all library files with metadata.
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    client_ip = _get_client_ip()
+    current_hash = _compute_libs_hash()
+    
+    session = get_session()
+    try:
+        config_row = session.query(ClientConfig).filter(
+            ClientConfig.client_id == client_ip
+        ).first()
+        
+        if config_row and config_row.last_sync_hash == current_hash:
+            return jsonify({
+                "needs_sync": False,
+                "client_ip": client_ip,
+                "last_sync": config_row.last_sync.isoformat() if config_row.last_sync else None,
+                "current_hash": current_hash,
+                "files": [],  # No need to list files if in sync
+            })
+        else:
+            return jsonify({
+                "needs_sync": True,
+                "client_ip": client_ip,
+                "last_sync": config_row.last_sync.isoformat() if config_row and config_row.last_sync else None,
+                "last_hash": config_row.last_sync_hash if config_row else None,
+                "current_hash": current_hash,
+                "files": _get_changed_files(config_row.last_sync_hash if config_row else ""),
+            })
+    finally:
+        session.close()
+
+
+@api_bp.route("/libs/clients")
+def list_clients():
+    """
+    GET /api/v1/libs/clients
+    
+    List all registered client configurations.
+    Useful for admin overview of which PCs have synced.
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    current_hash = _compute_libs_hash()
+    
+    session = get_session()
+    try:
+        clients = session.query(ClientConfig).order_by(ClientConfig.client_id).all()
+        return jsonify({
+            "current_libs_hash": current_hash,
+            "clients": [
+                {
+                    **c.to_dict(),
+                    "needs_sync": c.last_sync_hash != current_hash,
+                }
+                for c in clients
+            ],
+        })
+    finally:
+        session.close()
 
 
 def _generate_symbol_value(part_data: dict, tt: str = "", ff: str = "") -> str:

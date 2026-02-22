@@ -502,6 +502,32 @@ body {
   font-size: .8rem;
 }
 
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .8rem;
+  border-radius: var(--radius);
+  font-size: .8rem;
+  font-weight: 500;
+  text-decoration: none;
+  background: var(--green);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.btn-download:hover {
+  background: #22c55e;
+  transform: translateY(-1px);
+}
+
+.btn-download svg {
+  flex-shrink: 0;
+}
+
 /* ── Table ──────────────────────────────────────────────────── */
 
 .table-wrap {

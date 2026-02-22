@@ -275,3 +275,10 @@ def part_delete(dmtuid: str):
     finally:
         session.close()
 
+
+# ── Client Setup ────────────────────────────────────────────────────────
+
+@ui_bp.route("/client-setup")
+def client_setup():
+    """Render the client setup page for configuring local KiCad paths."""
+    return render_template("client_setup.html")

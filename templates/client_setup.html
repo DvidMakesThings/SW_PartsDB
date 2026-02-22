@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+{% block title %}Client Setup - DMTDB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Client Setup</h1>
+    <p class="subtitle">Configure local KiCad library paths for this PC</p>
+</div>
+
+<div class="client-info-card">
+    <div class="client-info-header">
+        <div class="client-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8" />
+                <path d="M12 17v4" />
+            </svg>
+        </div>
+        <div class="client-info-text">
+            <span class="client-ip" id="clientIp">Loading...</span>
+            <span class="client-status" id="clientStatus"></span>
+        </div>
+    </div>
+</div>
+
+<div class="setup-section">
+    <h2>PC Configuration</h2>
+    <form id="clientConfigForm">
+        <div class="form-group">
+            <label for="clientName">PC Name (optional)</label>
+            <input type="text" id="clientName" placeholder="e.g., WORKSTATION-01, DMT's Laptop">
+            <small>A friendly name to identify this PC in the clients list</small>
+        </div>
+
+        <div class="form-group">
+            <label for="pathSymbols">Symbols Folder</label>
+            <input type="text" id="pathSymbols" placeholder="e.g., C:\Users\Name\Documents\KiCad\symbols">
+            <small>Where to extract .kicad_sym files (optional - HTTP library handles symbols)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="pathFootprints">Footprints Folder</label>
+            <input type="text" id="pathFootprints" placeholder="e.g., C:\Users\Name\Documents\KiCad\footprints">
+            <small>Where to extract .kicad_mod files</small>
+        </div>
+
+        <div class="form-group">
+            <label for="path3dModels">3D Models Folder</label>
+            <input type="text" id="path3dModels" placeholder="e.g., C:\Users\Name\Documents\KiCad\3dmodels">
+            <small>Where to extract .step/.wrl files</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+        </div>
+    </form>
+</div>
+
+<div class="setup-section">
+    <h2>Sync Status</h2>
+    <div class="sync-status-card" id="syncStatusCard">
+        <div class="sync-info">
+            <div class="sync-hash">
+                <span class="label">Current Library Version:</span>
+                <code id="currentHash">-</code>
+            </div>
+            <div class="sync-hash">
+                <span class="label">Your Last Sync:</span>
+                <code id="lastSyncHash">Never</code>
+                <span id="lastSyncTime" class="sync-time"></span>
+            </div>
+        </div>
+        <div class="sync-actions">
+            <button id="downloadBtn" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Download Libraries
+            </button>
+            <button id="markSyncedBtn" class="btn btn-secondary">Mark as Synced</button>
+        </div>
+    </div>
+    <p class="sync-note">
+        <strong>Note:</strong> After downloading and extracting the ZIP to your local folders,
+        click "Mark as Synced" to record this sync. You'll be notified when new updates are available.
+    </p>
+</div>
+
+<div class="setup-section">
+    <h2>All Registered Clients</h2>
+    <div class="clients-table-wrapper">
+        <table class="clients-table" id="clientsTable">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Name</th>
+                    <th>Last Sync</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="clientsBody">
+                <tr>
+                    <td colspan="4" class="loading">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .client-info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .client-info-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .client-icon {
+        color: var(--accent);
+    }
+
+    .client-info-text {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+    }
+
+    .client-ip {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .client-status {
+        font-size: .85rem;
+        color: var(--text-dim);
+    }
+
+    .client-status.needs-sync {
+        color: var(--warning, #f59e0b);
+    }
+
+    .client-status.synced {
+        color: var(--success, #10b981);
+    }
+
+    .setup-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .setup-section h2 {
+        font-size: 1.1rem;
+        margin: 0 0 1rem 0;
+        padding-bottom: .5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: .3rem;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: .5rem .75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        color: var(--text);
+        font-size: .95rem;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: .25rem;
+        color: var(--text-dim);
+        font-size: .8rem;
+    }
+
+    .form-actions {
+        margin-top: 1.5rem;
+    }
+
+    .sync-status-card {
+        background: var(--surface2);
+        border-radius: var(--radius);
+        padding: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .sync-info {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+    }
+
+    .sync-hash {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .sync-hash .label {
+        color: var(--text-dim);
+        font-size: .85rem;
+    }
+
+    .sync-hash code {
+        background: var(--bg);
+        padding: .15rem .5rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: .85rem;
+    }
+
+    .sync-time {
+        color: var(--text-dim);
+        font-size: .8rem;
+    }
+
+    .sync-actions {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .sync-note {
+        margin-top: 1rem;
+        padding: .75rem;
+        background: var(--surface2);
+        border-radius: var(--radius);
+        font-size: .85rem;
+        color: var(--text-dim);
+    }
+
+    .sync-note strong {
+        color: var(--text);
+    }
+
+    .clients-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .clients-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .clients-table th,
+    .clients-table td {
+        padding: .5rem .75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .clients-table th {
+        background: var(--surface2);
+        font-weight: 500;
+        font-size: .85rem;
+        color: var(--text-dim);
+    }
+
+    .clients-table tr.current-client {
+        background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+    }
+
+    .clients-table .loading {
+        text-align: center;
+        color: var(--text-dim);
+        padding: 1rem;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: .15rem .5rem;
+        border-radius: 4px;
+        font-size: .75rem;
+        font-weight: 500;
+    }
+
+    .badge.synced {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+    }
+
+    .badge.needs-sync {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+    }
+
+    .badge.never {
+        background: var(--surface2);
+        color: var(--text-dim);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .sync-status-card {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sync-actions {
+            justify-content: stretch;
+        }
+
+        .sync-actions .btn {
+            flex: 1;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let clientConfig = null;
+        let currentHash = '';
+
+        // Load client config and sync status
+        async function loadClientConfig() {
+            try {
+                const resp = await fetch('/api/v1/libs/client');
+                const data = await resp.json();
+
+                clientConfig = data.config;
+                currentHash = data.current_libs_hash;
+
+                // Update UI
+                document.getElementById('clientIp').textContent = data.client_ip;
+                document.getElementById('currentHash').textContent = currentHash;
+
+                const statusEl = document.getElementById('clientStatus');
+                if (data.needs_sync) {
+                    statusEl.textContent = 'Updates available';
+                    statusEl.className = 'client-status needs-sync';
+                } else {
+                    statusEl.textContent = 'Up to date';
+                    statusEl.className = 'client-status synced';
+                }
+
+                // Fill form
+                document.getElementById('clientName').value = clientConfig.client_name || '';
+                document.getElementById('pathSymbols').value = clientConfig.path_symbols || '';
+                document.getElementById('pathFootprints').value = clientConfig.path_footprints || '';
+                document.getElementById('path3dModels').value = clientConfig.path_3dmodels || '';
+
+                // Sync info
+                if (clientConfig.last_sync_hash) {
+                    document.getElementById('lastSyncHash').textContent = clientConfig.last_sync_hash;
+                }
+                if (clientConfig.last_sync) {
+                    const syncDate = new Date(clientConfig.last_sync);
+                    document.getElementById('lastSyncTime').textContent =
+                        `(${syncDate.toLocaleDateString()} ${syncDate.toLocaleTimeString()})`;
+                }
+
+            } catch (err) {
+                console.error('Failed to load config:', err);
+                document.getElementById('clientIp').textContent = 'Error loading config';
+            }
+        }
+
+        // Load all clients list
+        async function loadClientsList() {
+            try {
+                const resp = await fetch('/api/v1/libs/clients');
+                const data = await resp.json();
+
+                const tbody = document.getElementById('clientsBody');
+
+                if (data.clients.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="loading">No clients registered yet</td></tr>';
+                    return;
+                }
+
+                const currentIp = document.getElementById('clientIp').textContent;
+
+                tbody.innerHTML = data.clients.map(c => {
+                    const isCurrentClass = c.client_id === currentIp ? 'current-client' : '';
+                    const lastSync = c.last_sync
+                        ? new Date(c.last_sync).toLocaleString()
+                        : '-';
+                    const statusBadge = !c.last_sync
+                        ? '<span class="badge never">Never synced</span>'
+                        : c.needs_sync
+                            ? '<span class="badge needs-sync">Needs sync</span>'
+                            : '<span class="badge synced">Synced</span>';
+
+                    return `<tr class="${isCurrentClass}">
+                    <td>${c.client_id}${c.client_id === currentIp ? ' <small>(this PC)</small>' : ''}</td>
+                    <td>${c.client_name || '-'}</td>
+                    <td>${lastSync}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+                }).join('');
+
+            } catch (err) {
+                console.error('Failed to load clients:', err);
+            }
+        }
+
+        // Save configuration
+        document.getElementById('clientConfigForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const resp = await fetch('/api/v1/libs/client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_name: document.getElementById('clientName').value,
+                        path_symbols: document.getElementById('pathSymbols').value,
+                        path_footprints: document.getElementById('pathFootprints').value,
+                        path_3dmodels: document.getElementById('path3dModels').value,
+                    }),
+                });
+
+                if (resp.ok) {
+                    btn.textContent = 'Saved!';
+                    setTimeout(() => {
+                        btn.textContent = origText;
+                        btn.disabled = false;
+                    }, 1500);
+                    loadClientsList(); // Refresh list
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (err) {
+                btn.textContent = 'Error';
+                setTimeout(() => {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        });
+
+        // Download button
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            window.location.href = '/api/v1/libs/download';
+        });
+
+        // Mark synced button
+        document.getElementById('markSyncedBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('markSyncedBtn');
+            const origText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+                const resp = await fetch('/api/v1/libs/client/mark-synced', {
+                    method: 'POST',
+                });
+
+                if (resp.ok) {
+                    btn.textContent = 'Synced!';
+                    setTimeout(() => {
+                        btn.textContent = origText;
+                        btn.disabled = false;
+                    }, 1500);
+                    loadClientConfig(); // Refresh status
+                    loadClientsList();
+                } else {
+                    throw new Error('Failed');
+                }
+            } catch (err) {
+                btn.textContent = 'Error';
+                setTimeout(() => {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        });
+
+        // Initial load
+        loadClientConfig();
+        loadClientsList();
+    });
+</script>
+{% endblock %}

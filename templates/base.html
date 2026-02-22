@@ -55,8 +55,18 @@
       <a href="/part/add" {% if request.endpoint=='ui.part_add' %}class="active" {% endif %}>+ Add Part</a>
       <a href="/libs" {% if request.endpoint=='ui.libs_page' %}class="active" {% endif %}>KiCad Libs</a>
       <a href="/import" {% if request.endpoint=='ui.import_page' %}class="active" {% endif %}>Import CSV</a>
+      <a href="/client-setup" {% if request.endpoint=='ui.client_setup' %}class="active" {% endif %}>Client Setup</a>
       <a href="/api/docs" {% if request.endpoint=='ui.api_docs' %}class="active" {% endif %}>API Docs</a>
     </div>
+    <a href="/api/v1/libs/download" class="btn btn-download"
+      title="Download KiCad Libraries (symbols, footprints, 3D models)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+      <span>Download Libs</span>
+    </a>
     <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
       <svg class="theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2">

@@ -969,6 +969,28 @@
     "RoHS",
     "Datasheet"
   ],
+  "0805": [
+    "MPN",
+    "Location",
+    "Quantity",
+    "Value",
+    "Type",
+    "Voltage - Max",
+    "Current - Hold (Ih) (Max)",
+    "Current - Trip (It)",
+    "Current - Max",
+    "Resistance - 25°C (Typ)",
+    "Grade",
+    "Qualification",
+    "Ratings",
+    "Operating Temperature",
+    "Mounting Type",
+    "Package / Case",
+    "Manufacturer",
+    "Description",
+    "RoHS",
+    "Datasheet"
+  ],
   "0901": [
     "MPN",
     "Location",
@@ -997,7 +1019,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0902": [
     "MPN",
     "Location",
@@ -1025,7 +1046,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0903": [
     "MPN",
     "Location",
@@ -1052,7 +1072,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0904": [
     "MPN",
     "Location",
@@ -1079,7 +1098,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0905": [
     "MPN",
     "Location",
@@ -1106,7 +1124,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0906": [
     "MPN",
     "Location",
@@ -1134,7 +1151,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0907": [
     "MPN",
     "Location",
@@ -1161,7 +1177,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0908": [
     "MPN",
     "Location",
@@ -1188,7 +1203,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0909": [
     "MPN",
     "Location",
@@ -1215,7 +1229,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0910": [
     "MPN",
     "Location",
@@ -1242,7 +1255,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0911": [
     "MPN",
     "Location",
@@ -1269,7 +1281,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0912": [
     "MPN",
     "Location",
@@ -1295,7 +1306,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0913": [
     "MPN",
     "Location",
@@ -1321,7 +1331,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0914": [
     "MPN",
     "Location",
@@ -1348,7 +1357,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0915": [
     "MPN",
     "Location",
@@ -1375,7 +1383,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0916": [
     "MPN",
     "Location",
@@ -1402,7 +1409,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0917": [
     "MPN",
     "Location",
@@ -1465,7 +1471,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "0999": [
     "MPN",
     "Location",
@@ -1497,7 +1502,6 @@
     "Location",
     "Quantity",
     "Value",
-
     "Family Type",
     "Connector A",
     "Connector B",
@@ -1523,7 +1527,6 @@
     "Flame Rating",
     "Halogen Free",
     "Approvals / Certifications",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1532,13 +1535,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1002": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Impedance (Ω)",
     "Frequency (Max)",
     "Connector A",
@@ -1557,7 +1558,6 @@
     "Armored",
     "Right-angle Ends",
     "Bulkhead / Panel Mount",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1566,13 +1566,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1003": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Category (Cat5e/Cat6/…)",
     "Shielding Type (UTP/FTP/S-FTP)",
     "Conductor Type (Stranded/Solid)",
@@ -1588,7 +1586,6 @@
     "Jacket Rating (CM/CMR/CMP/LSZH)",
     "Color",
     "IP Rating",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1597,13 +1594,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1004": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Type (FFC/FPC)",
     "Contact Style (A same / B opposite)",
     "Pitch (mm)",
@@ -1618,7 +1613,6 @@
     "Rated Voltage",
     "Bend Radius (Min)",
     "Jacket / Film Material",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1627,13 +1621,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1005": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Region / Plug Standard",
     "Connector A (Plug Type)",
     "Connector B (IEC/NEMA)",
@@ -1651,7 +1643,6 @@
     "Color",
     "Approvals / Certifications",
     "IP Rating",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1660,13 +1651,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1006": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Fiber Mode (OS2/OM1/OM2/OM3/OM4/OM5)",
     "Core/Cladding (µm)",
     "Connector A",
@@ -1683,7 +1672,6 @@
     "Operating Wavelength",
     "CPR / Fire Rating",
     "IP Rating",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1692,13 +1680,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1007": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Cable Type (Hook-up/Ribbon/Multi-conductor)",
     "Conductor Count",
     "Pair Count",
@@ -1718,7 +1704,6 @@
     "Jacket Rating (CM/CMR/CMP/PLENUM/LSZH)",
     "Flex Rating (Drag-chain/High-flex)",
     "Length Unit (Per m / Reel)",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1727,13 +1712,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1090": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Accessory Type",
     "Material",
     "Size / Range",
@@ -1749,7 +1732,6 @@
     "Halogen Free",
     "Length per Piece/Reel",
     "Mounting Feature (Hole/Panel/Adhesive)",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1758,13 +1740,11 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1099": [
     "MPN",
     "Location",
     "Quantity",
     "Value",
-
     "Accessory Type",
     "Compatible Connector Type",
     "Wire Size Range",
@@ -1779,7 +1759,6 @@
     "Current Rating",
     "Tooling Required",
     "Contents / Pieces",
-
     "Operating Temperature",
     "Mounting Type",
     "Package / Case",
@@ -1788,7 +1767,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1201": [
     "MPN",
     "Location",
@@ -1823,7 +1801,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1202": [
     "MPN",
     "Location",
@@ -1856,7 +1833,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1203": [
     "MPN",
     "Location",
@@ -1888,7 +1864,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1204": [
     "MPN",
     "Location",
@@ -1919,7 +1894,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1205": [
     "MPN",
     "Location",
@@ -1947,7 +1921,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "1299": [
     "MPN",
     "Location",
@@ -1966,7 +1939,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2901": [
     "MPN",
     "Location",
@@ -1997,7 +1969,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2902": [
     "MPN",
     "Location",
@@ -2027,7 +1998,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2903": [
     "MPN",
     "Location",
@@ -2057,7 +2027,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2904": [
     "MPN",
     "Location",
@@ -2087,7 +2056,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2905": [
     "MPN",
     "Location",
@@ -2118,7 +2086,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2906": [
     "MPN",
     "Location",
@@ -2149,7 +2116,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2907": [
     "MPN",
     "Location",
@@ -2180,7 +2146,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2908": [
     "MPN",
     "Location",
@@ -2209,7 +2174,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2909": [
     "MPN",
     "Location",
@@ -2239,7 +2203,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2910": [
     "MPN",
     "Location",
@@ -2270,7 +2233,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2911": [
     "MPN",
     "Location",
@@ -2302,7 +2264,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2912": [
     "MPN",
     "Location",
@@ -2332,7 +2293,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2913": [
     "MPN",
     "Location",
@@ -2362,7 +2322,6 @@
     "RoHS",
     "Datasheet"
   ],
-
   "2914": [
     "MPN",
     "Location",

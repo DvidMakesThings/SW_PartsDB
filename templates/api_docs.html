@@ -41,7 +41,8 @@
 <div class="detail-card" style="margin-bottom:1rem;">
   <h2>Parts CRUD</h2>
   <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
-      class="field-value"><code>/api/v1/parts?q=&amp;tt=&amp;ff=&amp;limit=100&amp;offset=0</code> — List/search
+      class="field-value"><code>/api/v1/parts?q=&amp;tt=&amp;ff=&amp;sort=&amp;order=&amp;limit=100&amp;offset=0</code>
+      — List/search
       parts</span></div>
   <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
       class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Get a single part by DMTUID</span></div>
@@ -52,6 +53,11 @@
       class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Update fields (JSON body)</span></div>
   <div class="field-row"><span class="field-label" style="color:var(--red);">DELETE</span><span
       class="field-value"><code>/api/v1/parts/{dmtuid}</code> — Delete a part</span></div>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-top:.75rem;">
+    <strong>Sort params:</strong> <code>sort</code> = dmtuid | created_at | MPN | Value | Manufacturer | Package |
+    Location | props<br>
+    <code>order</code> = asc | desc
+  </p>
 </div>
 
 <!-- KiCad HTTP Library -->
@@ -84,6 +90,47 @@
   <p style="color:var(--text-dim); font-size:.85rem; margin-top:.75rem;">
     Returns KiCad-friendly records: <code>kicad_symbol</code>, <code>kicad_footprint</code>, <code>kicad_3dmodel</code>,
     <code>kicad_libref</code>
+  </p>
+</div>
+
+<!-- Label Printing -->
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>Label Printing</h2>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-bottom:.75rem;">
+    Generate labels with Code 128 barcodes in multiple sizes (50×30mm, 75×50mm, 100×50mm, 4"×6").
+  </p>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/labels</code> — Label printing page with search and filtering</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/labels/svg/{dmtuid}?size={size}</code> — Get label as SVG (sizes: 50x30, 75x50, 100x50,
+      4x6)</span></div>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-top:.75rem;">
+    Labels include: MPN, Value, Package, DMTUID barcode, Location, Description. All text auto-adjusts for readability.
+  </p>
+</div>
+
+<!-- Niimbot Printer -->
+<div class="detail-card" style="margin-bottom:1rem;">
+  <h2>Niimbot Printer (BLE)</h2>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-bottom:.75rem;">
+    Direct BLE integration for Niimbot B1 thermal label printers (203 DPI, 384px width).
+  </p>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/labels/niimbot/scan</code> — Scan for nearby Niimbot printers</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/labels/niimbot/connect</code> — Connect to printer (JSON: address)</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/labels/niimbot/disconnect</code> — Disconnect from printer</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--green);">GET</span><span
+      class="field-value"><code>/labels/niimbot/status</code> — Get current connection status</span></div>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/labels/niimbot/print</code> — Print single label (JSON: dmtuid, size, density)</span>
+  </div>
+  <div class="field-row"><span class="field-label" style="color:var(--yellow);">POST</span><span
+      class="field-value"><code>/labels/niimbot/batch</code> — Print multiple labels (JSON: dmtuids[], size,
+      density)</span></div>
+  <p style="color:var(--text-dim); font-size:.85rem; margin-top:.75rem;">
+    Density values: 1 (lightest) to 5 (darkest). Requires <code>bleak</code> library for BLE communication.
   </p>
 </div>
 
@@ -163,8 +210,8 @@
   <h2>cURL Examples</h2>
   <pre
     style="font-size:.8rem; color:var(--text-dim); overflow-x:auto; white-space:pre-wrap; background:var(--bg); padding:.75rem; border-radius:var(--radius);">
-# Search parts
-curl "http://localhost:5000/api/v1/parts?q=MOSFET&limit=10"
+# Search parts (supports: q, tt, ff, sort, order, limit, offset)
+curl "http://localhost:5000/api/v1/parts?q=MOSFET&limit=10&sort=created_at&order=desc"
 
 # Get single part
 curl "http://localhost:5000/api/v1/parts/DMT-02030110001"
@@ -202,6 +249,27 @@ curl "http://localhost:5000/api/v1/libs/sync/status"
 
 # KiCad search by MPN
 curl "http://localhost:5000/api/v1/kicad/search?mpn=BSS138LT1G"
+
+# Get label SVG (sizes: 50x30, 75x50, 100x50, 4x6)
+curl "http://localhost:5000/labels/svg/DMT-01020103001?size=75x50" -o label.svg
+
+# Scan for Niimbot printers
+curl "http://localhost:5000/labels/niimbot/scan"
+
+# Connect to Niimbot printer
+curl -X POST "http://localhost:5000/labels/niimbot/connect" \
+  -H "Content-Type: application/json" \
+  -d '{"address":"AA:BB:CC:DD:EE:FF"}'
+
+# Print single label on Niimbot
+curl -X POST "http://localhost:5000/labels/niimbot/print" \
+  -H "Content-Type: application/json" \
+  -d '{"dmtuid":"DMT-01020103001","size":"50x30","density":3}'
+
+# Batch print on Niimbot
+curl -X POST "http://localhost:5000/labels/niimbot/batch" \
+  -H "Content-Type: application/json" \
+  -d '{"dmtuids":["DMT-01020103001","DMT-01020103002"],"size":"50x30","density":3}'
   </pre>
 </div>
 {% endblock %}

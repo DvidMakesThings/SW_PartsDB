@@ -10,6 +10,11 @@ A self-hosted electronic components inventory system built around the **DMT clas
 - REST API for automation and external tool integration
 - Dark-themed responsive web interface
 - Cross-platform: runs on Windows, Linux, and macOS
+- **Label printing** with Code 128 barcodes (4 sizes: 50×30mm, 75×50mm, 100×50mm, 4"×6")
+- **Niimbot B1 thermal printer** integration via Bluetooth LE
+- **Advanced filtering** with property-based facets and empty value detection
+- **RoHS compliance tracking** for each component
+- **Date tracking** – sort by when parts were added
 
 **Stack:** Python 3.10+ / Flask 3.0+ / SQLAlchemy 2.0+ / SQLite (or PostgreSQL)
 
@@ -19,16 +24,17 @@ A self-hosted electronic components inventory system built around the **DMT clas
 
 1. [Quick Start](#quick-start)
 2. [Web Interface Guide](#web-interface-guide)
-3. [Configuration Reference](#configuration-reference)
-4. [DMTUID Format](#dmtuid-format)
-5. [REST API](#rest-api)
-6. [KiCad HTTP Library Integration](#kicad-http-library-integration)
-7. [CSV Import Guide](#csv-import-guide)
-8. [Datasheet Handling](#datasheet-handling)
-9. [Database](#database)
-10. [Project Structure](#project-structure)
-11. [Linux Deployment](#linux-deployment)
-12. [Architecture Notes](#architecture-notes)
+3. [Label Printing](#label-printing)
+4. [Configuration Reference](#configuration-reference)
+5. [DMTUID Format](#dmtuid-format)
+6. [REST API](#rest-api)
+7. [KiCad HTTP Library Integration](#kicad-http-library-integration)
+8. [CSV Import Guide](#csv-import-guide)
+9. [Datasheet Handling](#datasheet-handling)
+10. [Database](#database)
+11. [Project Structure](#project-structure)
+12. [Linux Deployment](#linux-deployment)
+13. [Architecture Notes](#architecture-notes)
 
 ---
 
@@ -71,7 +77,6 @@ On first launch:
 The browse page is your primary interface for finding and managing parts.
 
 ![Browse Page Screenshot](static/img/browse_page.png)
-*Screenshot: Main browse page showing the parts table with search, filters, and pagination.*
 
 **Features:**
 
@@ -79,7 +84,7 @@ The browse page is your primary interface for finding and managing parts.
 |---------|-------------|
 | **Live Search** | Type in the search box and results appear instantly (120ms debounce). Searches across DMTUID, MPN, Value, Manufacturer, and Description fields. |
 | **Domain Filter** | Dropdown to filter by component domain (Passives, Semiconductors, etc.). |
-| **Sortable Columns** | Click any column header to sort. Click again to reverse. Works with smart value sorting for component values. |
+| **Sortable Columns** | Click any column header to sort. Click again to reverse. Works with smart value sorting for component values. Includes **Added** column to see newest parts. |
 | **KiCad Icons** | Three icons show which KiCad files are linked to each part: Symbol (op-amp icon), Footprint (IC package icon), 3D Model (cube icon). |
 | **Pagination** | 50 parts per page with Previous/Next navigation. |
 | **Barcode Scanner Support** | Press Enter after typing a DMTUID to jump directly to that part. |
@@ -97,14 +102,13 @@ The "Value" column understands metric prefixes, so components sort in the correc
 Click any part row to view its complete details.
 
 ![Part Detail Screenshot](static/img/part_detail.png)
-*Screenshot: Part detail page showing core info, classification, and template fields.*
 
 **Sections:**
 
 | Section | Contents |
 |---------|----------|
 | **Header** | DMTUID, MPN, value badge, quantity badge |
-| **Core Info** | Manufacturer, description, location, datasheet link |
+| **Core Info** | Manufacturer, description, RoHS status (Yes/No), location, datasheet link |
 | **Classification** | Domain, Family, Class, Style badges with human-readable names |
 | **Template Fields** | All EAV fields specific to this component type (e.g., Capacitance, Voltage - Rated, Tolerance for capacitors) |
 | **KiCad Links** | Symbol, footprint, and 3D model references |
@@ -117,7 +121,6 @@ Click any part row to view its complete details.
 Create new parts or modify existing ones.
 
 ![Add Edit Screenshot](static/img/add_edit_form.png)
-*Screenshot: Add/edit form with dynamic template fields based on component family.*
 
 **How It Works:**
 
@@ -147,7 +150,6 @@ Files are first staged in a temporary area (2-hour auto-cleanup) until the form 
 Bulk import parts from CSV files.
 
 ![Import Screenshot](static/img/import_page.png)
-*Screenshot: CSV import page with upload form and import results.*
 
 **Options:**
 - **Replace Existing** – Check this to overwrite parts with duplicate DMTUIDs (default: skip duplicates)
@@ -165,9 +167,122 @@ A detailed report shows:
 Manage your KiCad symbol, footprint, and 3D model files.
 
 ![Libraries Screenshot](static/img/libs_page.png)
-*Screenshot: KiCad libraries page showing available files by type.*
 
 Access at `/libs` to see all files in your `kicad_libs/` folder organized by type.
+
+---
+
+## Label Printing
+
+DMTDB includes a dedicated label printing system for component identification on ESD bags, reels, and bins.
+
+### Label Sizes
+
+| Size | Dimensions | Use Case |
+|------|------------|----------|
+| **50×30mm** | Small | Individual SMD components, ESD bags |
+| **75×50mm** | Medium | Reels, component boxes |
+| **100×50mm** | Large | Larger packaging, bins |
+| **4"×6"** | Shipping | Full-size shipping labels |
+
+### Label Contents
+
+Each label includes:
+- **DMTUID** – The unique component identifier
+- **MPN** – Manufacturer Part Number
+- **MFR** – Manufacturer name
+- **Value** – Component value (e.g., 10K, 100nF)
+- **Package** – Package type (e.g., 0603, SOT-23)
+- **Description** – Brief component description
+- **Code 128 Barcode** – Machine-scannable DMTUID
+
+### Using the Labels Page
+
+Access at `/labels` to:
+
+1. **Search & Select** – Find parts using the search bar and domain/family filters
+2. **Select Parts** – Check individual parts or use "Select All" for the current page
+3. **Choose Size** – Select from the 4 available label sizes
+4. **Preview** – Click a part to see a live label preview
+5. **Print** – Print via browser, download as SVG, or print directly to a Niimbot printer
+
+### Advanced Filtering
+
+The labels page includes powerful filtering options:
+
+- **Domain (TT)** – Filter by component category
+- **Family (FF)** – Filter by specific family within a domain
+- **Class (CC)** and **Style (SS)** – Fine-grained classification filters
+- **Property Facets** – Dynamic filters based on component properties (e.g., Package, Voltage, Tolerance)
+- **Location Filter** – Filter by storage location, includes "(Empty)" option to find unlocated parts
+- **Sort by Added** – Click the "Added" column to see most recently added parts first
+
+### Niimbot B1 Printer Integration
+
+DMTDB supports direct printing to Niimbot B1 thermal label printers via Bluetooth LE.
+
+**Requirements:**
+- Niimbot B1 thermal printer (or compatible models: B18, B21)
+- Computer with Bluetooth LE support
+- Python `bleak` package (included in requirements.txt)
+
+**Setup:**
+
+1. Turn on your Niimbot printer
+2. Click the **Niimbot** button in the top navigation bar
+3. Click **Scan** to discover nearby printers
+4. Select your printer from the dropdown
+5. Click **Connect**
+
+The connection indicator turns green when connected. The connection persists across page navigation.
+
+**Printing:**
+
+| Action | How |
+|--------|-----|
+| **Single Label** | Click a part to preview, then "Print to Niimbot" |
+| **Batch Print** | Select multiple parts, click "Niimbot (N)" button |
+
+**Print Settings:**
+- **Density** – Adjustable 1-5 (1=light, 5=dark). Default: 3
+
+### Label API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/labels` | Labels page with search, selection, and printing |
+| GET | `/labels/svg/{dmtuid}?size=50x30` | Generate SVG label for a part |
+| GET | `/labels/niimbot/scan` | Scan for Niimbot printers |
+| POST | `/labels/niimbot/connect` | Connect to a Niimbot printer |
+| POST | `/labels/niimbot/disconnect` | Disconnect from printer |
+| GET | `/labels/niimbot/status` | Check connection status |
+| POST | `/labels/niimbot/print` | Print a single label |
+| POST | `/labels/niimbot/batch` | Print multiple labels |
+
+**cURL Examples:**
+
+```bash
+# Generate SVG label
+curl "http://localhost:5000/labels/svg/DMT-01020103001?size=75x50"
+
+# Scan for Niimbot printers
+curl "http://localhost:5000/labels/niimbot/scan?timeout=10"
+
+# Connect to a printer
+curl -X POST "http://localhost:5000/labels/niimbot/connect" \
+  -H "Content-Type: application/json" \
+  -d '{"address": "AA:BB:CC:DD:EE:FF", "model": "b1"}'
+
+# Print a label
+curl -X POST "http://localhost:5000/labels/niimbot/print" \
+  -H "Content-Type: application/json" \
+  -d '{"dmtuid": "DMT-01020103001", "size": "50x30", "density": 3}'
+
+# Batch print
+curl -X POST "http://localhost:5000/labels/niimbot/batch" \
+  -H "Content-Type: application/json" \
+  -d '{"dmtuids": ["DMT-01020103001", "DMT-01020103002"], "size": "50x30", "density": 3}'
+```
 
 ---
 
@@ -352,8 +467,9 @@ All API endpoints return JSON. Errors return `{"error": "message"}` with appropr
 | `ff` | string | Filter by family code |
 | `cc` | string | Filter by class code |
 | `ss` | string | Filter by style code |
-| `sort_by` | string | Column to sort by (dmtuid, mpn, value, quantity, location, manufacturer) |
-| `sort_order` | string | `asc` or `desc` |
+| `props` | string | Property filters (JSON or URL-encoded, e.g., `{"Location":["Bin A"]}`) |
+| `sort` | string | Column to sort by: `dmtuid`, `mpn`, `value`, `quantity`, `location`, `manufacturer`, `created_at` |
+| `order` | string | `asc` or `desc` |
 | `limit` | int | Results per page (default: 100) |
 | `offset` | int | Pagination offset (default: 0) |
 

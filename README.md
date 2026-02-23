@@ -236,6 +236,8 @@ DMTDB supports direct printing to Niimbot B1 thermal label printers via Bluetoot
 
 The connection indicator turns green when connected. The connection persists across page navigation.
 
+![Niimbot Connection](static/img/niimbot.png)
+
 **Printing:**
 
 | Action | How |
@@ -336,6 +338,8 @@ DMTDB_DB=postgresql://user:password@localhost/dmtdb
 
 ### Multi-PC Client Sync
 
+![Multi-PC Client Sync](static/img/client.png)
+
 For local network deployments where multiple workstations share the server:
 
 1. **Navigate to Client Setup** (`/client-setup`) on each PC
@@ -348,6 +352,8 @@ The server tracks each client by IP address and notifies when updates are availa
 - Current sync status (up-to-date or needs sync)
 - All registered clients and their sync states
 - Library version hash for change detection
+
+![Multi-PC Client Sync](static/img/client2.png)
 
 ### Display Settings
 

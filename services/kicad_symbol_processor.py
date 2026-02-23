@@ -459,7 +459,7 @@ class KiCadSymbolProcessor:
 			)
 		)'''
             pin_positions = (3.81, -3.81)  # pins for resistor
-            pin_length = 2.794
+            pin_length = 1.27  # connects exactly to rectangle body edge
         
         # Generate symbol content with proper template
         symbol_content = f'''	(symbol "{symbol_name}"

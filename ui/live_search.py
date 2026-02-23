@@ -122,6 +122,29 @@ def ui_facets():
         if mfr_counts:
             facets["Manufacturer"] = [{"value": v, "count": c} for v, c in mfr_counts if v]
 
+        # Location facet (including empty locations)
+        loc_counts = (
+            session.query(Part.location, func.count(Part.dmtuid))
+            .filter(Part.dmtuid.in_(part_ids))
+            .filter(Part.location != None, Part.location != "")
+            .group_by(Part.location)
+            .order_by(func.count(Part.dmtuid).desc())
+            .limit(49)
+            .all()
+        )
+        # Count empty locations
+        empty_loc_count = (
+            session.query(func.count(Part.dmtuid))
+            .filter(Part.dmtuid.in_(part_ids))
+            .filter((Part.location == None) | (Part.location == ""))
+            .scalar()
+        )
+        location_facet = [{"value": v, "count": c} for v, c in loc_counts if v]
+        if empty_loc_count > 0:
+            location_facet.append({"value": "(Empty)", "count": empty_loc_count})
+        if location_facet:
+            facets["Location"] = location_facet
+
         # Get EAV field facets from PartField table
         eav_facets = (
             session.query(

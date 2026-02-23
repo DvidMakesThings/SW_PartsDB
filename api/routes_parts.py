@@ -2,6 +2,7 @@
 api.routes_parts - /api/v1/parts CRUD endpoints.
 """
 
+import json
 from flask import request, jsonify
 
 from api import api_bp
@@ -14,22 +15,43 @@ import config
 @api_bp.route("/parts")
 def list_parts():
     """
-    GET /api/v1/parts?q=&tt=&ff=&limit=100&offset=0
+    GET /api/v1/parts?q=&tt=&ff=&cc=&ss=&props=&limit=100&offset=0
 
-    Search / list parts.  Supports text query, domain/family filter,
-    and pagination.
+    Search / list parts.  Supports text query, domain/family/class/style filter,
+    property filters (JSON), and pagination.
     """
     q      = request.args.get("q", "").strip()
     tt     = request.args.get("tt", "").strip()
     ff     = request.args.get("ff", "").strip()
+    cc     = request.args.get("cc", "").strip()
+    ss     = request.args.get("ss", "").strip()
+    props_str = request.args.get("props", "").strip()
+    sort_by = request.args.get("sort", "dmtuid").strip()
+    sort_order = request.args.get("order", "asc").strip()
     limit  = min(int(request.args.get("limit", config.API_DEFAULT_LIMIT)),
                  config.API_MAX_LIMIT)
     offset = int(request.args.get("offset", 0))
 
+    # Validate sort params
+    if sort_by not in SearchService.SORTABLE_COLUMNS:
+        sort_by = "dmtuid"
+    if sort_order not in ("asc", "desc"):
+        sort_order = "asc"
+
+    # Parse property filters from JSON
+    props = {}
+    if props_str:
+        try:
+            props = json.loads(props_str)
+        except json.JSONDecodeError:
+            props = {}
+
     session = get_session()
     try:
         parts, total = SearchService.search(
-            session, q=q, tt=tt, ff=ff, limit=limit, offset=offset,
+            session, q=q, tt=tt, ff=ff, cc=cc, ss=ss, props=props,
+            sort_by=sort_by, sort_order=sort_order,
+            limit=limit, offset=offset,
         )
         return jsonify({
             "total": total,

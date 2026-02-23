@@ -25,6 +25,12 @@
     </select>
     <button type="submit" class="btn btn-secondary">Search</button>
     <button type="button" class="btn btn-secondary" id="advSearchToggle">▼ Advanced</button>
+    <select name="per_page" id="perPageSelect" onchange="this.form.submit()"
+      style="padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);">
+      {% for opt in page_size_options %}
+      <option value="{{ opt }}" {% if opt==per_page %}selected{% endif %}>{{ opt }}/page</option>
+      {% endfor %}
+    </select>
   </div>
 
   <!-- Advanced Search Panel (collapsed by default) -->
@@ -184,28 +190,32 @@
   </table>
 </div>
 
-{% if total_pages > 1 %}
+{% if total > 0 %}
 <div class="pager">
-  {% if page > 1 %}
-  <a
-    href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page - 1 }}">←
-    Prev</a>
-  {% endif %}
-  {% for p in range(1, total_pages + 1) %}
-  {% if p == page %}
-  <span class="current">{{ p }}</span>
-  {% elif p <= 3 or p>= total_pages - 2 or (p >= page - 2 and p <= page + 2) %} <a
-      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ p }}">
-      {{ p }}</a>
-      {% elif p == 4 or p == total_pages - 3 %}
-      <span class="info">…</span>
-      {% endif %}
-      {% endfor %}
-      {% if page < total_pages %} <a
-        href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&page={{ page + 1 }}">
-        Next →</a>
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    {% if page > 1 %}
+    <a
+      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page - 1 }}">←
+      Prev</a>
+    {% endif %}
+    {% if total_pages > 1 %}
+    {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+    <span class="current">{{ p }}</span>
+    {% elif p <= 3 or p>= total_pages - 2 or (p >= page - 2 and p <= page + 2) %} <a
+        href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ p }}">
+        {{ p }}</a>
+        {% elif p == 4 or p == total_pages - 3 %}
+        <span class="info">…</span>
         {% endif %}
-        <span class="info">({{ total }} total)</span>
+        {% endfor %}
+        {% endif %}
+        {% if page < total_pages %} <a
+          href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page + 1 }}">
+          Next →</a>
+          {% endif %}
+  </div>
+  <span class="info">({{ total }} total)</span>
 </div>
 {% endif %}
 {% endblock %}

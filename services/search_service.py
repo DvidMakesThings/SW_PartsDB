@@ -209,7 +209,20 @@ class SearchService:
             if isinstance(search_values, list):
                 # Multi-select: exact match, OR between values
                 if field_name in direct_cols:
-                    query = query.filter(direct_cols[field_name].in_(search_values))
+                    col = direct_cols[field_name]
+                    # Special handling for "(Empty)" values
+                    if "(Empty)" in search_values:
+                        other_values = [v for v in search_values if v != "(Empty)"]
+                        if other_values:
+                            query = query.filter(or_(
+                                col.in_(other_values),
+                                col == None,
+                                col == ""
+                            ))
+                        else:
+                            query = query.filter(or_(col == None, col == ""))
+                    else:
+                        query = query.filter(col.in_(search_values))
                 else:
                     # EAV field
                     subq = query.session.query(PartField.dmtuid).filter(

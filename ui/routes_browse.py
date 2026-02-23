@@ -12,6 +12,11 @@ from schema.loader import get_domains, domain_name, family_name
 import config
 
 
+# Available page sizes
+PAGE_SIZE_OPTIONS = [25, 50, 100, 200, 500]
+DEFAULT_PER_PAGE = 100
+
+
 @ui_bp.route("/")
 def index():
     q     = request.args.get("q", "").strip()
@@ -23,6 +28,14 @@ def index():
     page  = max(int(request.args.get("page", 1)), 1)
     sort_by = request.args.get("sort", "dmtuid").strip()
     sort_order = request.args.get("order", "asc").strip()
+    
+    # Get per_page with validation
+    try:
+        per_page = int(request.args.get("per_page", DEFAULT_PER_PAGE))
+    except ValueError:
+        per_page = DEFAULT_PER_PAGE
+    if per_page not in PAGE_SIZE_OPTIONS:
+        per_page = DEFAULT_PER_PAGE
     
     # Validate sort params
     if sort_by not in SearchService.SORTABLE_COLUMNS:
@@ -43,16 +56,16 @@ def index():
         parts, total = SearchService.search(
             session, q=q, tt=tt, ff=ff, cc=cc, ss=ss, props=props_parsed,
             sort_by=sort_by, sort_order=sort_order,
-            limit=config.DEFAULT_PAGE_SIZE,
-            offset=(page - 1) * config.DEFAULT_PAGE_SIZE,
+            limit=per_page,
+            offset=(page - 1) * per_page,
         )
-        total_pages = max((total + config.DEFAULT_PAGE_SIZE - 1) //
-                          config.DEFAULT_PAGE_SIZE, 1)
+        total_pages = max((total + per_page - 1) // per_page, 1)
         return render_template(
             "index.html",
             parts=parts, q=q, tt=tt, ff=ff, cc=cc, ss=ss,
             props=props, props_parsed=props_parsed,
             page=page, total_pages=total_pages, total=total,
+            per_page=per_page, page_size_options=PAGE_SIZE_OPTIONS,
             sort_by=sort_by, sort_order=sort_order,
             domains=get_domains(),
             domain_name=domain_name,

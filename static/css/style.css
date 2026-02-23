@@ -531,10 +531,9 @@ body {
 /* ── Table ──────────────────────────────────────────────────── */
 
 .table-wrap {
-  overflow: auto;
+  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  max-height: calc(100vh - 200px);
 }
 
 table {
@@ -545,9 +544,6 @@ table {
 
 thead {
   background: var(--surface2);
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 th {
@@ -698,7 +694,8 @@ th.ds-header {
   gap: .5rem;
   align-items: center;
   margin-top: 1rem;
-  justify-content: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .pager a,

@@ -54,6 +54,7 @@
       <a href="/" {% if request.endpoint=='ui.index' %}class="active" {% endif %}>Browse</a>
       <a href="/part/add" {% if request.endpoint=='ui.part_add' %}class="active" {% endif %}>+ Add Part</a>
       <a href="/libs" {% if request.endpoint=='ui.libs_page' %}class="active" {% endif %}>KiCad Libs</a>
+      <a href="/labels" {% if request.endpoint=='ui.labels_page' %}class="active" {% endif %}>Labels</a>
       <a href="/import" {% if request.endpoint=='ui.import_page' %}class="active" {% endif %}>Import CSV</a>
       <a href="/client-setup" {% if request.endpoint=='ui.client_setup' %}class="active" {% endif %}>Client Setup</a>
       <a href="/api/docs" {% if request.endpoint=='ui.api_docs' %}class="active" {% endif %}>API Docs</a>

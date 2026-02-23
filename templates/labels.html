@@ -51,6 +51,14 @@
                 Print Selected (<span id="selectedCount">0</span>)
             </button>
         </div>
+        <div>
+            <button id="batchNiimbotBtn" class="btn" onclick="batchPrintNiimbot()" disabled
+                title="Print selected labels to Niimbot B1">
+                <span id="batchNiimbotStatus"
+                    style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 0.3rem;"></span>
+                Niimbot (<span id="selectedCountNiimbot">0</span>)
+            </button>
+        </div>
     </div>
 
     <!-- Advanced Search Panel -->
@@ -149,7 +157,7 @@
                 Loading...
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="flex-wrap: wrap; gap: 0.5rem;">
             <select id="modalSize" onchange="refreshModalPreview()"
                 style="padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);">
                 {% for key, (w, h, name) in sizes.items() %}
@@ -158,6 +166,12 @@
             </select>
             <button class="btn" onclick="downloadCurrentLabel()">Download SVG</button>
             <button class="btn btn-primary" onclick="printCurrentLabel()">Print</button>
+            <div style="border-left: 1px solid var(--border); height: 30px; margin: 0 0.5rem;"></div>
+            <button class="btn btn-primary" id="niimbotPrintBtn" onclick="printToNiimbot()" disabled>
+                <span id="niimbotModalStatus"
+                    style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 0.5rem;"></span>
+                Print to Niimbot
+            </button>
         </div>
     </div>
 </div>
@@ -315,6 +329,25 @@
             position: absolute;
             left: 0;
             top: 0;
+        }
+    }
+
+    /* Spinner for loading states */
+    .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+        margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
         }
     }
 </style>
@@ -735,8 +768,16 @@
 
     function updateSelectedCount() {
         const count = selectedParts.size;
-        document.getElementById('selectedCount').textContent = count;
-        document.getElementById('batchPrintBtn').disabled = count === 0;
+        const countEl = document.getElementById('selectedCount');
+        const countNiimbotEl = document.getElementById('selectedCountNiimbot');
+        const batchPrintBtn = document.getElementById('batchPrintBtn');
+        const batchNiimbotBtn = document.getElementById('batchNiimbotBtn');
+
+        if (countEl) countEl.textContent = count;
+        if (countNiimbotEl) countNiimbotEl.textContent = count;
+        if (batchPrintBtn) batchPrintBtn.disabled = count === 0;
+        // Batch Niimbot button enabled if connected AND parts selected
+        if (batchNiimbotBtn) batchNiimbotBtn.disabled = !window.niimbotConnected || count === 0;
     }
 
     // Modal functions
@@ -885,7 +926,143 @@
 
     // ESC to close modal
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Escape') {
+            closeModal();
+        }
     });
+
+    // ─── Niimbot B1 Integration (uses global state from base.html) ─────────
+    // Update local Niimbot UI elements when global state changes
+    function updateLocalNiimbotUI() {
+        const modalStatusDot = document.getElementById('niimbotModalStatus');
+        const batchStatusDot = document.getElementById('batchNiimbotStatus');
+        const printBtn = document.getElementById('niimbotPrintBtn');
+        const batchBtn = document.getElementById('batchNiimbotBtn');
+
+        const connected = window.niimbotConnected || false;
+
+        if (connected) {
+            if (modalStatusDot) modalStatusDot.style.background = '#4CAF50';
+            if (batchStatusDot) batchStatusDot.style.background = '#4CAF50';
+            if (printBtn) printBtn.disabled = false;
+            if (batchBtn) batchBtn.disabled = selectedParts.size === 0;
+        } else {
+            if (modalStatusDot) modalStatusDot.style.background = '#666';
+            if (batchStatusDot) batchStatusDot.style.background = '#666';
+            if (printBtn) printBtn.disabled = true;
+            if (batchBtn) batchBtn.disabled = true;
+        }
+    }
+
+    // Listen for global Niimbot state changes
+    window.addEventListener('niimbotStateChanged', updateLocalNiimbotUI);
+
+    async function printToNiimbot() {
+        if (!currentModalDmtuid) return;
+        if (!window.niimbotConnected) {
+            alert('Not connected to Niimbot printer. Use the Niimbot button in the top bar to connect.');
+            return;
+        }
+
+        const printBtn = document.getElementById('niimbotPrintBtn');
+        const size = document.getElementById('modalSize').value;
+        const densityEl = document.getElementById('niimbotGlobalDensity');
+        const density = densityEl ? parseInt(densityEl.value) : 3;
+
+        printBtn.disabled = true;
+        const originalHtml = printBtn.innerHTML;
+        printBtn.innerHTML = '<span class="spinner"></span> Printing...';
+
+        try {
+            const resp = await fetch('/labels/niimbot/print', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dmtuid: currentModalDmtuid,
+                    size: size,
+                    density: density,
+                    address: window.niimbotAddress
+                })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Brief success feedback
+            printBtn.innerHTML = '<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-right: 0.5rem;"></span> Printed!';
+            setTimeout(() => {
+                printBtn.innerHTML = originalHtml;
+                printBtn.disabled = false;
+            }, 1500);
+
+        } catch (err) {
+            alert('Print failed: ' + err.message);
+            printBtn.innerHTML = originalHtml;
+            printBtn.disabled = false;
+        }
+    }
+
+    async function batchPrintNiimbot() {
+        if (selectedParts.size === 0) {
+            alert('No parts selected');
+            return;
+        }
+        if (!window.niimbotConnected) {
+            alert('Not connected to Niimbot printer. Use the Niimbot button in the top bar to connect.');
+            return;
+        }
+
+        const batchBtn = document.getElementById('batchNiimbotBtn');
+        const size = document.getElementById('labelSize').value;
+        const densityEl = document.getElementById('niimbotGlobalDensity');
+        const density = densityEl ? parseInt(densityEl.value) : 3;
+        const dmtuids = Array.from(selectedParts);
+
+        const originalText = batchBtn.innerHTML;
+        batchBtn.disabled = true;
+        batchBtn.innerHTML = `<span class="spinner"></span> Printing 0/${dmtuids.length}...`;
+
+        try {
+            const resp = await fetch('/labels/niimbot/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dmtuids: dmtuids,
+                    size: size,
+                    density: density
+                })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Show results
+            const msg = `Printed ${data.printed} labels` +
+                (data.failed > 0 ? `, ${data.failed} failed` : '');
+            alert(msg);
+
+            // Clear selection after successful batch
+            if (data.printed > 0) {
+                selectedParts.clear();
+                updateSelectedCount();
+                loadParts(); // Refresh to uncheck boxes
+            }
+
+        } catch (err) {
+            alert('Batch print failed: ' + err.message);
+        } finally {
+            if (batchBtn) {
+                batchBtn.innerHTML = originalText;
+                batchBtn.disabled = selectedParts.size === 0 || !window.niimbotConnected;
+            }
+        }
+    }
+
+    // Initialize local Niimbot UI on page load
+    document.addEventListener('DOMContentLoaded', updateLocalNiimbotUI);
 </script>
 {% endblock %}

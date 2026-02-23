@@ -52,7 +52,7 @@ def _generate_label_50x30(part: Part, for_print: bool = False) -> str:
     Compact label for small ESD bags.
     """
     # Scale: viewBox 500x300 = 50x30mm (10 units per mm)
-    barcode = generate_barcode_svg_centered(part.dmtuid, 250, 210, width=400, height=50)
+    barcode = generate_barcode_svg_centered(part.dmtuid, 250, 190, width=450, height=75)
     
     mpn = _truncate(part.mpn or "", 25)
     mfr = _truncate(part.manufacturer or "", 25)
@@ -76,7 +76,7 @@ def _generate_label_50x30(part: Part, for_print: bool = False) -> str:
   <text x="15" y="180" font-size="17" font-family="Arial, sans-serif"><tspan font-weight="bold">Desc:</tspan> {desc}</text>
   
   {barcode}
-  <text x="250" y="285" font-size="14" font-family="monospace" text-anchor="middle" fill="#333">{part.dmtuid}</text>
+  <text x="250" y="285" font-size="20" font-family="monospace" text-anchor="middle" fill="#333">{part.dmtuid}</text>
 </svg>'''
     return svg
 
@@ -269,5 +269,273 @@ def label_download():
             mimetype="image/svg+xml",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
+    finally:
+        session.close()
+
+
+# =============================================================================
+# Niimbot B1 Direct Printing
+# =============================================================================
+
+# Global state for connected Niimbot printer
+_niimbot_connection = {
+    "address": None,
+    "transport": None,
+    "printer": None,
+}
+
+
+@ui_bp.route("/labels/niimbot/scan")
+def niimbot_scan():
+    """
+    GET /labels/niimbot/scan?filter=B1&timeout=10
+    
+    Scan for Niimbot Bluetooth devices.
+    """
+    from services.niimbot_service import NiimbotScanner
+    
+    name_filter = request.args.get("filter", "B1")
+    timeout = float(request.args.get("timeout", "10"))
+    
+    try:
+        devices = NiimbotScanner.scan(name_filter=name_filter, timeout=timeout)
+        return jsonify({"devices": devices})
+    except Exception as e:
+        return jsonify({"error": str(e), "devices": []}), 500
+
+
+@ui_bp.route("/labels/niimbot/connect", methods=["POST"])
+def niimbot_connect():
+    """
+    POST /labels/niimbot/connect
+    Body: {"address": "XX:XX:XX:XX:XX:XX", "model": "b1"}
+    
+    Connect to a Niimbot printer and keep connection open.
+    """
+    from services.niimbot_service import NiimbotTransport, NiimbotPrinter
+    
+    data = request.get_json() or {}
+    address = data.get("address")
+    model = data.get("model", "b1")
+    
+    if not address:
+        return jsonify({"error": "address required"}), 400
+    
+    # Disconnect existing connection if any
+    if _niimbot_connection["transport"]:
+        try:
+            _niimbot_connection["transport"].disconnect()
+        except:
+            pass
+        _niimbot_connection["transport"] = None
+        _niimbot_connection["printer"] = None
+        _niimbot_connection["address"] = None
+    
+    try:
+        transport = NiimbotTransport(address)
+        if not transport.connect():
+            return jsonify({"error": "Failed to connect to printer"}), 500
+        
+        printer = NiimbotPrinter(transport, model)
+        
+        _niimbot_connection["address"] = address
+        _niimbot_connection["transport"] = transport
+        _niimbot_connection["printer"] = printer
+        
+        return jsonify({"success": True, "address": address, "model": model})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@ui_bp.route("/labels/niimbot/disconnect", methods=["POST"])
+def niimbot_disconnect():
+    """
+    POST /labels/niimbot/disconnect
+    
+    Disconnect from current Niimbot printer.
+    """
+    if _niimbot_connection["transport"]:
+        try:
+            _niimbot_connection["transport"].disconnect()
+        except:
+            pass
+    
+    _niimbot_connection["transport"] = None
+    _niimbot_connection["printer"] = None
+    _niimbot_connection["address"] = None
+    
+    return jsonify({"success": True})
+
+
+@ui_bp.route("/labels/niimbot/status")
+def niimbot_status():
+    """
+    GET /labels/niimbot/status
+    
+    Get current Niimbot connection status.
+    """
+    connected = _niimbot_connection["transport"] is not None
+    return jsonify({
+        "connected": connected,
+        "address": _niimbot_connection["address"] if connected else None
+    })
+
+
+@ui_bp.route("/labels/niimbot/print", methods=["POST"])
+def niimbot_print():
+    """
+    POST /labels/niimbot/print
+    Body: {"dmtuid": "...", "size": "50x30", "density": 3, "address": "XX:XX:XX:XX:XX:XX"}
+    
+    Print label to Niimbot printer.
+    If address is provided and different from current, reconnect.
+    If no address and not connected, return error.
+    """
+    from services.niimbot_service import NiimbotTransport, NiimbotPrinter, svg_to_image
+    
+    data = request.get_json() or {}
+    dmtuid = (data.get("dmtuid") or "").strip().upper()
+    size = data.get("size", "50x30")
+    density = int(data.get("density", 3))
+    address = data.get("address")
+    model = data.get("model", "b1")
+    
+    if not dmtuid:
+        return jsonify({"error": "dmtuid required"}), 400
+    
+    if size not in LABEL_GENERATORS:
+        return jsonify({"error": f"Invalid size. Valid: {list(LABEL_SIZES.keys())}"}), 400
+    
+    # Handle connection
+    printer = _niimbot_connection["printer"]
+    
+    if address and address != _niimbot_connection["address"]:
+        # Need to connect/reconnect
+        if _niimbot_connection["transport"]:
+            try:
+                _niimbot_connection["transport"].disconnect()
+            except:
+                pass
+        
+        transport = NiimbotTransport(address)
+        if not transport.connect():
+            return jsonify({"error": "Failed to connect to printer"}), 500
+        
+        printer = NiimbotPrinter(transport, model)
+        _niimbot_connection["address"] = address
+        _niimbot_connection["transport"] = transport
+        _niimbot_connection["printer"] = printer
+    
+    if not printer:
+        return jsonify({"error": "Not connected to printer. Provide address or connect first."}), 400
+    
+    # Get part and generate SVG
+    session = get_session()
+    try:
+        part = session.query(Part).filter(Part.dmtuid == dmtuid).first()
+        if not part:
+            return jsonify({"error": "Part not found"}), 404
+        
+        svg = LABEL_GENERATORS[size](part, for_print=True)
+        
+        # Convert SVG to image and print
+        # DPI: B1 is 203 DPI (8 dots/mm)
+        # 50x30mm = 400x240px, 75x50mm = 600x400px, 100x50mm = 800x400px
+        dpi_map = {
+            "50x30": 203,
+            "75x50": 203,
+            "100x50": 203,
+            "4x6": 203,
+        }
+        dpi = dpi_map.get(size, 203)
+        
+        image = svg_to_image(svg, dpi=dpi)
+        
+        # Ensure image fits printhead (384px for B1)
+        max_width = 384
+        if image.width > max_width:
+            ratio = max_width / image.width
+            new_height = int(image.height * ratio)
+            from PIL import Image as PILImage
+            image = image.resize((max_width, new_height), PILImage.Resampling.LANCZOS)
+        
+        printer.print_image(image, density=density)
+        
+        return jsonify({"success": True, "dmtuid": dmtuid, "size": size})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
+@ui_bp.route("/labels/niimbot/batch", methods=["POST"])
+def niimbot_batch_print():
+    """
+    POST /labels/niimbot/batch
+    Body: {"dmtuids": ["...", "..."], "size": "50x30", "density": 3}
+    
+    Batch print multiple labels to Niimbot printer.
+    Requires existing connection.
+    """
+    from services.niimbot_service import svg_to_image
+    import time
+    
+    data = request.get_json() or {}
+    dmtuids = data.get("dmtuids", [])
+    size = data.get("size", "50x30")
+    density = int(data.get("density", 3))
+    
+    if not dmtuids:
+        return jsonify({"error": "dmtuids required"}), 400
+    
+    if size not in LABEL_GENERATORS:
+        return jsonify({"error": f"Invalid size"}), 400
+    
+    printer = _niimbot_connection["printer"]
+    if not printer:
+        return jsonify({"error": "Not connected to printer"}), 400
+    
+    session = get_session()
+    results = {"success": [], "failed": []}
+    
+    try:
+        for dmtuid in dmtuids:
+            dmtuid = dmtuid.strip().upper()
+            try:
+                part = session.query(Part).filter(Part.dmtuid == dmtuid).first()
+                if not part:
+                    results["failed"].append({"dmtuid": dmtuid, "error": "Not found"})
+                    continue
+                
+                svg = LABEL_GENERATORS[size](part, for_print=True)
+                image = svg_to_image(svg, dpi=203)
+                
+                # Resize if needed
+                max_width = 384
+                if image.width > max_width:
+                    ratio = max_width / image.width
+                    new_height = int(image.height * ratio)
+                    from PIL import Image as PILImage
+                    image = image.resize((max_width, new_height), PILImage.Resampling.LANCZOS)
+                
+                printer.print_image(image, density=density)
+                results["success"].append(dmtuid)
+                
+                # Small delay between prints to let printer catch up
+                time.sleep(0.5)
+                
+            except Exception as e:
+                results["failed"].append({"dmtuid": dmtuid, "error": str(e)})
+        
+        return jsonify({
+            "success": True,
+            "printed": len(results["success"]),
+            "failed": len(results["failed"]),
+            "details": results
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         session.close()

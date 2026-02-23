@@ -80,7 +80,356 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
     </button>
+    <button class="niimbot-toggle" id="niimbotToggle" title="Niimbot B1 Printer" onclick="openNiimbotGlobalModal()">
+      <span id="niimbotGlobalStatus"
+        style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #666;"></span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="6" y="2" width="12" height="20" rx="2" />
+        <line x1="6" y1="6" x2="18" y2="6" />
+        <line x1="9" y1="10" x2="15" y2="10" />
+        <line x1="9" y1="13" x2="15" y2="13" />
+        <line x1="9" y1="16" x2="15" y2="16" />
+      </svg>
+    </button>
   </nav>
+
+  <!-- Niimbot Global Connection Modal -->
+  <div id="niimbotGlobalModal" class="niimbot-modal" onclick="if(event.target===this)closeNiimbotGlobalModal()">
+    <div class="niimbot-modal-content">
+      <div class="niimbot-modal-header">
+        <h3>Niimbot B1 Printer</h3>
+        <button class="niimbot-modal-close" onclick="closeNiimbotGlobalModal()">&times;</button>
+      </div>
+      <div class="niimbot-modal-body">
+        <div id="niimbotGlobalConnStatus" class="niimbot-status">
+          <span id="niimbotGlobalConnText">Not connected</span>
+        </div>
+
+        <div class="niimbot-field">
+          <label>Discovered Devices</label>
+          <select id="niimbotGlobalDeviceSelect">
+            <option value="">Click "Scan" to find devices</option>
+          </select>
+        </div>
+
+        <div class="niimbot-field">
+          <label>Print Density</label>
+          <select id="niimbotGlobalDensity">
+            <option value="1">1 - Light</option>
+            <option value="2">2</option>
+            <option value="3" selected>3 - Normal</option>
+            <option value="4">4</option>
+            <option value="5">5 - Dark</option>
+          </select>
+        </div>
+
+        <div id="niimbotGlobalScanProgress" class="niimbot-progress" style="display: none;">
+          <span class="niimbot-spinner"></span> Scanning...
+        </div>
+        <div id="niimbotGlobalError" class="niimbot-error" style="display: none;"></div>
+      </div>
+      <div class="niimbot-modal-footer">
+        <button class="btn" onclick="scanNiimbotGlobal()" id="niimbotGlobalScanBtn">Scan</button>
+        <button class="btn btn-primary" onclick="connectNiimbotGlobal()" id="niimbotGlobalConnectBtn"
+          disabled>Connect</button>
+        <button class="btn" onclick="disconnectNiimbotGlobal()" id="niimbotGlobalDisconnectBtn"
+          style="display: none;">Disconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .niimbot-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--text-dim);
+      margin-left: 0.5rem;
+    }
+
+    .niimbot-toggle:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .niimbot-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 80px;
+    }
+
+    .niimbot-modal.active {
+      display: flex;
+    }
+
+    .niimbot-modal-content {
+      background: var(--surface);
+      border-radius: var(--radius);
+      width: 380px;
+      max-width: 90vw;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .niimbot-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .niimbot-modal-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .niimbot-modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-dim);
+      line-height: 1;
+    }
+
+    .niimbot-modal-close:hover {
+      color: var(--text);
+    }
+
+    .niimbot-modal-body {
+      padding: 1rem;
+    }
+
+    .niimbot-modal-footer {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .niimbot-status {
+      padding: 0.6rem;
+      background: var(--bg);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .niimbot-field {
+      margin-bottom: 0.75rem;
+    }
+
+    .niimbot-field label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .niimbot-field select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+    }
+
+    .niimbot-progress {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .niimbot-error {
+      color: var(--red);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    .niimbot-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: niimbotSpin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4rem;
+    }
+
+    @keyframes niimbotSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <script>
+    // ─── Global Niimbot Connection ─────────────────────────────────────────
+    window.niimbotConnected = false;
+    window.niimbotAddress = null;
+
+    function updateNiimbotGlobalUI() {
+      const statusDot = document.getElementById('niimbotGlobalStatus');
+      const statusText = document.getElementById('niimbotGlobalConnText');
+      const connectBtn = document.getElementById('niimbotGlobalConnectBtn');
+      const disconnectBtn = document.getElementById('niimbotGlobalDisconnectBtn');
+
+      if (window.niimbotConnected) {
+        statusDot.style.background = '#4CAF50';
+        statusText.innerHTML = '<span style="color:#4CAF50;">●</span> Connected to <code>' + window.niimbotAddress + '</code>';
+        connectBtn.style.display = 'none';
+        disconnectBtn.style.display = '';
+      } else {
+        statusDot.style.background = '#666';
+        statusText.textContent = 'Not connected';
+        connectBtn.style.display = '';
+        disconnectBtn.style.display = 'none';
+      }
+
+      // Notify other page scripts of state change
+      window.dispatchEvent(new CustomEvent('niimbotStateChanged'));
+      // Update any page-specific UI
+      if (typeof updateNiimbotUI === 'function') updateNiimbotUI();
+    }
+
+    async function checkNiimbotGlobalStatus() {
+      try {
+        const resp = await fetch('/labels/niimbot/status');
+        const data = await resp.json();
+        window.niimbotConnected = data.connected;
+        window.niimbotAddress = data.address;
+        updateNiimbotGlobalUI();
+      } catch (err) {
+        console.error('Niimbot status check failed:', err);
+      }
+    }
+
+    function openNiimbotGlobalModal() {
+      document.getElementById('niimbotGlobalModal').classList.add('active');
+      checkNiimbotGlobalStatus();
+    }
+
+    function closeNiimbotGlobalModal() {
+      document.getElementById('niimbotGlobalModal').classList.remove('active');
+    }
+
+    async function scanNiimbotGlobal() {
+      const scanBtn = document.getElementById('niimbotGlobalScanBtn');
+      const progress = document.getElementById('niimbotGlobalScanProgress');
+      const errorDiv = document.getElementById('niimbotGlobalError');
+      const deviceSelect = document.getElementById('niimbotGlobalDeviceSelect');
+      const connectBtn = document.getElementById('niimbotGlobalConnectBtn');
+
+      scanBtn.disabled = true;
+      progress.style.display = 'block';
+      errorDiv.style.display = 'none';
+      deviceSelect.innerHTML = '<option value="">Scanning...</option>';
+      connectBtn.disabled = true;
+
+      try {
+        const resp = await fetch('/labels/niimbot/scan?timeout=10');
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+
+        const devices = data.devices || [];
+        if (devices.length === 0) {
+          deviceSelect.innerHTML = '<option value="">No devices found</option>';
+        } else {
+          deviceSelect.innerHTML = devices.map(d =>
+            '<option value="' + d.address + '">' + d.name + ' (' + d.address + ')' + (d.rssi ? ' ' + d.rssi + 'dB' : '') + '</option>'
+          ).join('');
+          connectBtn.disabled = false;
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Scan failed: ' + err.message;
+        errorDiv.style.display = 'block';
+        deviceSelect.innerHTML = '<option value="">Scan failed</option>';
+      } finally {
+        scanBtn.disabled = false;
+        progress.style.display = 'none';
+      }
+    }
+
+    async function connectNiimbotGlobal() {
+      const deviceSelect = document.getElementById('niimbotGlobalDeviceSelect');
+      const address = deviceSelect.value;
+      const errorDiv = document.getElementById('niimbotGlobalError');
+      const connectBtn = document.getElementById('niimbotGlobalConnectBtn');
+
+      if (!address) {
+        errorDiv.textContent = 'Please select a device';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      connectBtn.disabled = true;
+      connectBtn.textContent = 'Connecting...';
+      errorDiv.style.display = 'none';
+
+      try {
+        const resp = await fetch('/labels/niimbot/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: address, model: 'b1' })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+
+        window.niimbotConnected = true;
+        window.niimbotAddress = address;
+        updateNiimbotGlobalUI();
+      } catch (err) {
+        errorDiv.textContent = 'Connection failed: ' + err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        connectBtn.disabled = false;
+        connectBtn.textContent = 'Connect';
+      }
+    }
+
+    async function disconnectNiimbotGlobal() {
+      const errorDiv = document.getElementById('niimbotGlobalError');
+      const disconnectBtn = document.getElementById('niimbotGlobalDisconnectBtn');
+
+      disconnectBtn.disabled = true;
+      errorDiv.style.display = 'none';
+
+      try {
+        await fetch('/labels/niimbot/disconnect', { method: 'POST' });
+        window.niimbotConnected = false;
+        window.niimbotAddress = null;
+        updateNiimbotGlobalUI();
+      } catch (err) {
+        errorDiv.textContent = 'Disconnect failed: ' + err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        disconnectBtn.disabled = false;
+      }
+    }
+
+    // ESC to close modal
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeNiimbotGlobalModal();
+    });
+
+    // Check status on page load
+    checkNiimbotGlobalStatus();
+  </script>
 
   <script>
     (function () {

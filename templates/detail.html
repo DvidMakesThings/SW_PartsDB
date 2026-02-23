@@ -43,6 +43,11 @@
         or '—' }}</span></div>
     <div class="field-row"><span class="field-label">Description</span><span class="field-value">{{ part.description or
         '—' }}</span></div>
+    {% set rohs_val = namespace(value='—') %}
+    {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_val.value = f.field_value %}{% endfor %}
+    <div class="field-row"><span class="field-label">RoHS</span><span class="field-value"
+        style="{% if rohs_val.value in ['Yes', 'YES', 'Compliant', 'COMPLIANT'] %}color:var(--green);{% elif rohs_val.value in ['No', 'NO', 'Non-Compliant'] %}color:var(--red);{% endif %}">{{
+        rohs_val.value }}</span></div>
     <div class="field-row"><span class="field-label">Quantity</span><span class="field-value"
         style="color:var(--green);">{{ part.quantity or '—' }}</span></div>
     <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ part.location or '—'
@@ -78,10 +83,12 @@
         or '—' }}</span></div>
 
     <!-- KiCad File Drop Zone -->
+    {% set rohs_data = 'YES' %}
+    {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_data = f.field_value %}{% endfor %}
     <div id="kicadDropzone" class="kicad-dropzone" data-dmtuid="{{ part.dmtuid }}" data-mpn="{{ part.mpn or '' }}"
       data-value="{{ part.value or '' }}" data-footprint="{{ part.kicad_footprint or '' }}"
       data-datasheet="{{ part.datasheet or '' }}" data-description="{{ part.description or '' }}"
-      data-manufacturer="{{ part.manufacturer or '' }}">
+      data-manufacturer="{{ part.manufacturer or '' }}" data-rohs="{{ rohs_data }}">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
         <polyline points="17 8 12 3 7 8" />
@@ -299,6 +306,12 @@
 
     // Get data from dropzone attributes
     var dmtuid = dropzone.dataset.dmtuid;
+    var rohsVal = dropzone.dataset.rohs || 'YES';
+    if (rohsVal.toUpperCase() === 'NO' || rohsVal.toUpperCase() === 'NON-COMPLIANT') {
+      rohsVal = 'NO';
+    } else {
+      rohsVal = 'YES';
+    }
     var partData = {
       Value: dropzone.dataset.value || dropzone.dataset.mpn || '',
       Footprint: dropzone.dataset.footprint || '',
@@ -306,7 +319,7 @@
       Description: dropzone.dataset.description || '',
       MFR: dropzone.dataset.manufacturer || '',
       MPN: dropzone.dataset.mpn || '',
-      ROHS: 'YES'
+      ROHS: rohsVal
     };
 
     var SYMBOL_PROPS = ['Value', 'Footprint', 'Datasheet', 'Description', 'MFR', 'MPN', 'ROHS', 'LCSC_PART', 'DIST1'];

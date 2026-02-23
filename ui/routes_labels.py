@@ -105,9 +105,9 @@ def _generate_label_75x50(part: Part, for_print: bool = False) -> str:
   
   <text x="25" y="128" font-size="30" font-family="Arial, sans-serif"><tspan font-weight="bold">MPN:</tspan> {mpn}</text>
   <text x="25" y="175" font-size="30" font-family="Arial, sans-serif"><tspan font-weight="bold">MFR:</tspan> {mfr}</text>
-  <text x="75" y="238" font-size="35" font-family="Arial, sans-serif"><tspan font-weight="bold">Value:</tspan> {value}</text>
-  <text x="390" y="238" font-size="35" font-family="Arial, sans-serif"><tspan font-weight="bold">Package:</tspan> {package}</text>
-  <line x1="25" y1="258" x2="725" y2="258" stroke="#999" stroke-width="1"/>
+  <text x="100" y="220" font-size="30" font-family="Arial, sans-serif"><tspan font-weight="bold">Value:</tspan> {value}</text>
+  <text x="100" y="255" font-size="30" font-family="Arial, sans-serif"><tspan font-weight="bold">Package:</tspan> {package}</text>
+  <line x1="25" y1="270" x2="725" y2="270" stroke="#999" stroke-width="1"/>
   <text x="25" y="300" font-size="25" font-family="Arial, sans-serif"><tspan font-weight="bold">Desc:</tspan> {desc}</text>
   
   {barcode}

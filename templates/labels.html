@@ -123,11 +123,13 @@
                 <th class="sortable" data-sort="manufacturer" onclick="toggleSort('manufacturer')">Manufacturer <span
                         class="sort-indicator"></span></th>
                 <th>Description</th>
+                <th class="sortable" data-sort="created_at" onclick="toggleSort('created_at')">Added <span
+                        class="sort-indicator"></span></th>
             </tr>
         </thead>
         <tbody id="partsBody">
             <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-dim);">Loading...</td>
+                <td colspan="7" style="text-align: center; color: var(--text-dim);">Loading...</td>
             </tr>
         </tbody>
     </table>
@@ -678,11 +680,13 @@
         const tbody = document.getElementById('partsBody');
 
         if (parts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">No parts found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);">No parts found</td></tr>';
             return;
         }
 
-        tbody.innerHTML = parts.map(p => `
+        tbody.innerHTML = parts.map(p => {
+            const addedDate = p.created_at ? p.created_at.split('T')[0] : '';
+            return `
     <tr>
       <td><input type="checkbox" class="part-check" data-dmtuid="${p.dmtuid}" 
                  ${selectedParts.has(p.dmtuid) ? 'checked' : ''} onchange="togglePart('${p.dmtuid}')"></td>
@@ -691,8 +695,10 @@
       <td>${p.value || '-'}</td>
       <td>${p.manufacturer || '-'}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.description || ''}">${p.description || '-'}</td>
+      <td style="font-size:.8rem;color:var(--text-dim);white-space:nowrap;">${addedDate}</td>
     </tr>
-  `).join('');
+  `;
+        }).join('');
     }
 
     function updatePagination() {

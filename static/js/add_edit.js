@@ -213,6 +213,8 @@
 
   // Part data for auto-fill (from form fields)
   function getPartData() {
+    var rohsSelect = document.querySelector('select[name="RoHS"]');
+    var rohsVal = rohsSelect ? (rohsSelect.value === 'No' ? 'NO' : 'YES') : 'YES';
     return {
       Value: document.querySelector('input[name="Value"]')?.value ||
         document.querySelector('input[name="MPN"]')?.value || '',
@@ -221,7 +223,7 @@
       Description: document.querySelector('textarea[name="Description"]')?.value || '',
       MFR: document.querySelector('input[name="Manufacturer"]')?.value || '',
       MPN: document.querySelector('input[name="MPN"]')?.value || '',
-      ROHS: 'YES'
+      ROHS: rohsVal
     };
   }
 
@@ -610,6 +612,8 @@
 
   // Part data for auto-fill (from form fields)
   function getPartData() {
+    var rohsSelect = document.querySelector('select[name="RoHS"]');
+    var rohsVal = rohsSelect ? (rohsSelect.value === 'No' ? 'NO' : 'YES') : 'YES';
     return {
       Value: document.querySelector('input[name="Value"]')?.value ||
         document.querySelector('input[name="MPN"]')?.value || '',
@@ -618,7 +622,7 @@
       Description: document.querySelector('textarea[name="Description"]')?.value || '',
       MFR: document.querySelector('input[name="Manufacturer"]')?.value || '',
       MPN: document.querySelector('input[name="MPN"]')?.value || '',
-      ROHS: 'YES'
+      ROHS: rohsVal
     };
   }
 

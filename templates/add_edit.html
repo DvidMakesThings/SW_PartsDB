@@ -90,6 +90,19 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
         <label>Description</label>
         <textarea name="Description" rows="2">{{ part.description if part else '' }}</textarea>
       </div>
+      <div class="form-group">
+        <label>RoHS</label>
+        {% set rohs_val = '' %}
+        {% if part and part.fields %}
+        {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_val = f.field_value %}{% endfor %}
+        {% endif %}
+        <select name="RoHS">
+          <option value="">—</option>
+          <option value="Yes" {% if rohs_val in ['Yes', 'YES' , 'Compliant' , 'COMPLIANT' ] %}selected{% endif %}>Yes
+          </option>
+          <option value="No" {% if rohs_val in ['No', 'NO' , 'Non-Compliant' ] %}selected{% endif %}>No</option>
+        </select>
+      </div>
     </div>
   </div>
 

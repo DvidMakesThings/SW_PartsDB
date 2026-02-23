@@ -91,8 +91,7 @@ class Part(Base):
             "kicad_footprint": self.kicad_footprint or "",
             "kicad_libref": self.kicad_libref or "",
             "kicad_3dmodel": self.kicad_3dmodel or "",
-            "notes": self.notes or "",
-        }
+            "notes": self.notes or "",            "created_at": self.created_at.isoformat() if self.created_at else "",        }
         for f in self.fields:
             d[f.field_name] = f.field_value
         if self.extra_json:

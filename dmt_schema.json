@@ -1162,6 +1162,9 @@
         "40": "Hot swap Ideal diode",
         "50": "PoE controllers",
         "60": "Supervisors Reset",
+        "70": "USB-C PD Source Controllers",
+        "71": "USB-C PD Sink Controllers",
+        "72": "USB-C PD Source-Sink Controllers",
         "99": "Special"
       },
       "ss": {
@@ -1217,7 +1220,9 @@
         "01": "I2C",
         "02": "SPI",
         "03": "Parallel",
+        "04": "Analog",
         "10": "High speed LVDS JESD",
+        "20": "Data Acquisition",
         "99": "Other"
       }
     },
@@ -1310,6 +1315,7 @@
         "38": "Reset Supervisors Power-On Reset Logic",
         "39": "Glue Logic Small Gate Arrays",
         "40": "Programmable Logic PAL GAL PLD CPLD FPGA",
+        "50": "Signal Switches, Multiplexers, Decoders",
         "99": "Special Mixed Logic"
       },
       "ss": {
@@ -1343,6 +1349,7 @@
         "28": "CBT CBTLV CB3Q QuickSwitch",
         "29": "Digital Bus Buffers and Translators",
         "30": "Multifunction Configurable Universal Logic",
+        "31": "Bus Switches and Multiplexers",
         "99": "Other or Unknown"
       }
     },

@@ -118,6 +118,7 @@
         <th>Domain / Family</th>
         {{ sort_header('Manufacturer', 'manufacturer') }}
         <th class="truncate">Description</th>
+        {{ sort_header('Added', 'created_at') }}
         <th title="KiCad Assets">KiCad</th>
         <th title="Datasheet">DS</th>
       </tr>
@@ -137,6 +138,7 @@
         </td>
         <td>{{ p.manufacturer or '' }}</td>
         <td class="truncate" title="{{ p.description or '' }}">{{ p.description or '' }}</td>
+        <td style="font-size:.8rem;color:var(--text-dim);white-space:nowrap;">{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '' }}</td>
         <td class="kicad-icons">
           <span class="kicad-icon {% if p.kicad_symbol %}available{% else %}unavailable{% endif %}"
             title="Symbol: {{ p.kicad_symbol or 'Not available' }}">

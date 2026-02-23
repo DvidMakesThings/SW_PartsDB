@@ -95,6 +95,7 @@ class SearchService:
         "location": Part.location,
         "manufacturer": Part.manufacturer,
         "description": Part.description,
+        "created_at": Part.created_at,
     }
 
     @staticmethod

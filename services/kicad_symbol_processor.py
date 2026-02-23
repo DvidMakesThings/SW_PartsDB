@@ -27,7 +27,7 @@ class KiCadSymbolProcessor:
         "Description": "description",
         "MFR": "manufacturer",
         "MPN": "mpn",
-        "ROHS": "_const_YES",
+        "ROHS": "_get_rohs",
     }
 
     @classmethod
@@ -81,9 +81,17 @@ class KiCadSymbolProcessor:
         return ""
 
     @classmethod
-    def _const_YES(cls, part: Part) -> str:
-        """Return constant YES for RoHS."""
-        return "YES"
+    def _get_rohs(cls, part: Part) -> str:
+        """Get RoHS status from part fields, default to YES."""
+        for f in part.fields:
+            if f.field_name == 'RoHS':
+                val = f.field_value.upper()
+                if val in ('YES', 'COMPLIANT'):
+                    return 'YES'
+                elif val in ('NO', 'NON-COMPLIANT'):
+                    return 'NO'
+                return val
+        return 'YES'  # Default for legacy parts
 
     @classmethod
     def _set_property(cls, content: str, prop_name: str, value: str) -> str:

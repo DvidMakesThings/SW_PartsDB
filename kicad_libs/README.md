@@ -71,9 +71,10 @@ Go to **Preferences → Configure Paths** and add these entries:
 
 | Name | Path (adjust to your extraction location) |
 |------|-------------------------------------------|
-| `DMTDB_SYM` | `C:/KiCad_Libs/DMTDB/symbols/` |
-| `DMTDB_FOOTPRINT` | `C:/KiCad_Libs/DMTDB/footprints/` |
-| `DMTDB_3D` | `C:/KiCad_Libs/DMTDB/3dmodels/` |
+| `DMTDB_ROOT` | `C:/KiCad_Libs/DMTDB/` |
+| `DMTDB_SYM` | `${DMTDB_ROOT}/symbols/` |
+| `DMTDB_FOOTPRINT` | `${DMTDB_ROOT}/footprints/` |
+| `DMTDB_3D` | `${DMTDB_ROOT}/3dmodels/` |
 
 > **Note:** Use forward slashes `/` in paths, even on Windows.
 
@@ -87,20 +88,33 @@ Go to **Preferences → Manage Footprint Libraries → Global Libraries**:
    - **Library Path:** `${DMTDB_FOOTPRINT}`
    - **Library Type:** KiCad
 
-### Step 4: Add HTTP Symbol Library
+### Step 4: Add Symbol Drawing Libraries
+
+The HTTP library provides part metadata, but the actual symbol **drawings** come from `.kicad_sym` files. Add each symbol library to **Preferences → Manage Symbol Libraries → Global Libraries**:
+
+| Nickname (must match exactly) | Library Path |
+|-------------------------------|-------------|
+| `DMTDB_PassiveComponents_Capacitors` | `${DMTDB_SYM}/DMTDB_PassiveComponents_Capacitors.kicad_sym` |
+| `DMTDB_PassiveComponents_Resistors` | `${DMTDB_SYM}/DMTDB_PassiveComponents_Resistors.kicad_sym` |
+| `DMTDB_PassiveComponents_Inductors` | `${DMTDB_SYM}/DMTDB_PassiveComponents_Inductors.kicad_sym` |
+
+> **Critical:** The nicknames **must match exactly** as shown. Parts in the database reference symbols like `DMTDB_PassiveComponents_Resistors:R_Chip`. A mismatched nickname causes "symbol not found" errors.
+
+### Step 5: Add HTTP Symbol Library
 
 Go to **Preferences → Manage Symbol Libraries → Global Libraries**:
 
 1. Click **Add library** (+)
 2. Set:
-   - **Nickname:** `DMTDB`
-   - **Library Path:** `http://YOUR_SERVER:5000/kicad_libs/DMTDB.kicad_httplib`
+   - **Nickname:** `DMTDB` *(must be exactly this name)*
+   - **Library Path:** `${DMTDB_ROOT}/kicad_libs/DMTDB.kicad_httplib`
+   - **Library Type:** KiCad (HTTP)
 
-Replace `YOUR_SERVER` with:
-- `localhost` – if DMTDB runs on the same computer
-- Server IP/hostname – for network access (e.g., `192.168.1.100`)
+> **Critical:** The nickname **must be exactly `DMTDB`**. Parts in the database reference symbols using this library name (e.g., `DMTDB:R_Chip`). Using a different nickname will cause symbol lookup failures.
 
-### Step 5: Test the Setup
+> **Important:** The `.kicad_httplib` file must be a **local file path**, not an HTTP URL. KiCad reads this local file, which contains the `root_url` pointing to the DMTDB server API. Edit the file to set the correct server address if needed.
+
+### Step 6: Test the Setup
 
 1. Open a schematic in KiCad
 2. Press **A** to add a symbol

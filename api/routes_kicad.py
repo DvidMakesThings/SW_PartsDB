@@ -219,6 +219,7 @@ def kicad_http_part_detail(part_id):
     All values must be strings per KiCad spec.
     """
     from db.models import Part
+    import json as json_module
     
     session = get_session()
     try:
@@ -262,14 +263,31 @@ def kicad_http_part_detail(part_id):
         if part.kicad_libref:
             fields["fields"]["LCSC"] = {"value": str(part.kicad_libref), "visible": "false"}
         
-        # Add extra_json fields (DIST1, etc.)
-        if part.extra_json:
-            import json
+        # Add distributor fields as DIST1, DIST2, etc.
+        if part.distributor:
             try:
-                extra = json.loads(part.extra_json)
+                distributors = json_module.loads(part.distributor)
+                if isinstance(distributors, list):
+                    for i, dist in enumerate(distributors, 1):
+                        url = dist.get('url', '')
+                        name = dist.get('name', '')
+                        # Format: "DigiKey: https://..." or just URL if no name
+                        if name and url:
+                            value = f"{name}: {url}"
+                        else:
+                            value = url
+                        fields["fields"][f"DIST{i}"] = {"value": value, "visible": "false"}
+            except (json_module.JSONDecodeError, TypeError):
+                # Legacy single URL format
+                fields["fields"]["DIST1"] = {"value": str(part.distributor), "visible": "false"}
+        
+        # Add extra_json fields
+        if part.extra_json:
+            try:
+                extra = json_module.loads(part.extra_json)
                 for k, v in extra.items():
                     fields["fields"][k] = {"value": str(v), "visible": "false"}
-            except (json.JSONDecodeError, TypeError):
+            except (json_module.JSONDecodeError, TypeError):
                 pass
         
         return jsonify(fields)

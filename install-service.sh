@@ -12,6 +12,7 @@
 #   sudo systemctl daemon-reload
 #
 
+
 set -e  # Exit on error
 
 # ── Check for root privileges ──────────────────────────────────────────

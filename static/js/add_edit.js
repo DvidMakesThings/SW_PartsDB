@@ -930,3 +930,54 @@
       });
   }
 })();
+
+/**
+ * Dynamic Distributor Fields
+ * Allows adding/removing multiple distributor entries
+ */
+(function () {
+  "use strict";
+
+  var container = document.getElementById("distributorsContainer");
+  var addBtn = document.getElementById("addDistributorBtn");
+  var countInput = document.getElementById("distributorCount");
+
+  if (!container || !addBtn) return;
+
+  var nextIndex = parseInt(countInput.value, 10) || 0;
+
+  function createDistributorRow(index) {
+    var row = document.createElement("div");
+    row.className = "distributor-row";
+    row.dataset.index = index;
+    row.innerHTML =
+      '<div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">' +
+      '  <div class="form-group">' +
+      '    <label>Name</label>' +
+      '    <input type="text" name="dist_name_' + index + '" placeholder="DigiKey, Mouser, etc.">' +
+      '  </div>' +
+      '  <div class="form-group">' +
+      '    <label>URL</label>' +
+      '    <input type="text" name="dist_url_' + index + '" placeholder="https://...">' +
+      '  </div>' +
+      '  <button type="button" class="btn btn-danger btn-sm remove-distributor" title="Remove distributor">🗑</button>' +
+      '</div>';
+    return row;
+  }
+
+  addBtn.addEventListener("click", function () {
+    var row = createDistributorRow(nextIndex);
+    container.appendChild(row);
+    nextIndex++;
+    countInput.value = nextIndex;
+  });
+
+  container.addEventListener("click", function (e) {
+    if (e.target.classList.contains("remove-distributor")) {
+      var row = e.target.closest(".distributor-row");
+      if (row) {
+        row.remove();
+      }
+    }
+  });
+})();

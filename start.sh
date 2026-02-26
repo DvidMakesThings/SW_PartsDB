@@ -64,3 +64,4 @@ echo ""
 
 # ── Start the server ───────────────────────────────────────────────────
 exec python3 "$SCRIPT_DIR/main.py"
+

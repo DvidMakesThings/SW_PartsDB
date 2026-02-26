@@ -47,3 +47,4 @@ echo "  The DMTDB service has been removed."
 echo "  Your project files remain intact."
 echo "  You can still run manually with: ./start.sh"
 echo ""
+

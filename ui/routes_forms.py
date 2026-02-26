@@ -3,6 +3,7 @@ ui.routes_forms - Add / Edit / Delete part forms.
 """
 
 import re
+import json
 from pathlib import Path
 from flask import request, render_template, redirect, url_for, flash, abort
 
@@ -18,6 +19,25 @@ from schema.templates import get_fields
 from schema.numbering import build_dmtuid
 from services.sequence_service import next_xxx
 from import_engine.field_map import DIRECT_FIELDS, SKIP_FOR_EAV
+
+
+def parse_distributors(distributor_field: str) -> list:
+    """
+    Parse the distributor field which can be:
+    - Empty/null → []
+    - Single URL string (legacy) → []  (handled in template)
+    - JSON array of {name, url} objects → list
+    """
+    if not distributor_field:
+        return []
+    try:
+        data = json.loads(distributor_field)
+        if isinstance(data, list):
+            return data
+        return []
+    except (json.JSONDecodeError, TypeError):
+        # Not JSON, it's a legacy single URL
+        return []
 
 # Mapping of passive families to library names
 PASSIVE_LIBRARY_MAP = {
@@ -97,6 +117,7 @@ def part_add():
         return render_template(
             "add_edit.html", part=None, domains=domains,
             template_fields=None, mode="add", template_part=template_part,
+            parse_distributors=parse_distributors,
         )
 
     # POST: collect form data into a dict and delegate to PartsService
@@ -185,6 +206,7 @@ def part_edit(dmtuid: str):
             return render_template(
                 "add_edit.html", part=part, domains=domains,
                 template_fields=template, mode="edit",
+                parse_distributors=parse_distributors,
             )
 
         # POST

@@ -82,10 +82,6 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
         <label>Datasheet (URL or local filename)</label>
         <input type="text" name="Datasheet" value="{{ part.datasheet if part else '' }}">
       </div>
-      <div class="form-group">
-        <label>Distributor URL (DigiKey, Mouser, etc.)</label>
-        <input type="text" name="Distributor" value="{{ part.distributor if part else '' }}">
-      </div>
       <div class="form-group full">
         <label>Description</label>
         <textarea name="Description" rows="2">{{ part.description if part else '' }}</textarea>
@@ -104,6 +100,51 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
         </select>
       </div>
     </div>
+  </div>
+
+  <!-- Distributors -->
+  <div class="detail-card" style="margin-bottom:1rem;">
+    <h2>Distributors</h2>
+    <div id="distributorsContainer">
+      {% set distributors = parse_distributors(part.distributor if part else '') %}
+      {% if distributors %}
+        {% for dist in distributors %}
+        <div class="distributor-row" data-index="{{ loop.index0 }}">
+          <div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" name="dist_name_{{ loop.index0 }}" value="{{ dist.name }}" placeholder="DigiKey, Mouser, etc.">
+            </div>
+            <div class="form-group">
+              <label>URL</label>
+              <input type="text" name="dist_url_{{ loop.index0 }}" value="{{ dist.url }}" placeholder="https://...">
+            </div>
+            <button type="button" class="btn btn-danger btn-sm remove-distributor" title="Remove distributor">🗑</button>
+          </div>
+        </div>
+        {% endfor %}
+      {% elif part and part.distributor %}
+        <!-- Legacy single URL -->
+        <div class="distributor-row" data-index="0">
+          <div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" name="dist_name_0" value="" placeholder="DigiKey, Mouser, etc.">
+            </div>
+            <div class="form-group">
+              <label>URL</label>
+              <input type="text" name="dist_url_0" value="{{ part.distributor }}" placeholder="https://...">
+            </div>
+            <button type="button" class="btn btn-danger btn-sm remove-distributor" title="Remove distributor">🗑</button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    <button type="button" id="addDistributorBtn" class="btn btn-secondary" style="margin-top: 0.5rem;">
+      + Add Distributor
+    </button>
+    <!-- Hidden field to track distributor count -->
+    <input type="hidden" name="distributor_count" id="distributorCount" value="{{ distributors|length if distributors else (1 if part and part.distributor else 0) }}">
   </div>
 
   <!-- Template Fields -->

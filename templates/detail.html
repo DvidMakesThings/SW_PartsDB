@@ -99,6 +99,34 @@
     <div id="kicadUploadStatus" class="kicad-upload-status"></div>
   </div>
 
+  {% if part.distributor %}
+  <div class="detail-card">
+    <h2>Distributors</h2>
+    {% set distributors = parse_distributors(part.distributor) %}
+    {% if distributors %}
+    {% for dist in distributors %}
+    <div class="field-row">
+      <span class="field-label">{{ dist.name or 'Distributor ' ~ loop.index }}</span>
+      <span class="field-value">
+        <a href="{{ dist.url }}" target="_blank" rel="noopener" class="distributor-link">
+          🔗 {{ dist.url | truncate(50) }}
+        </a>
+      </span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="field-row">
+      <span class="field-label">Link</span>
+      <span class="field-value">
+        <a href="{{ part.distributor }}" target="_blank" rel="noopener" class="distributor-link">
+          🔗 {{ part.distributor | truncate(50) }}
+        </a>
+      </span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if part.fields %}
   <div class="detail-card" style="grid-column: 1 / -1;">
     <h2>Technical Parameters
@@ -288,6 +316,18 @@
 
   .symbol-prop-row input.auto-filled {
     border-color: var(--accent);
+  }
+
+  /* Distributor link */
+  .distributor-link {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .distributor-link:hover {
+    color: var(--accent-light, #818cf8);
+    text-decoration: underline;
   }
 </style>
 {% endblock %}

@@ -9,6 +9,7 @@ the caller to batch multiple operations in one transaction.
 from __future__ import annotations
 
 import json
+import re
 from sqlalchemy.orm import Session
 
 from db.models import Part, PartField
@@ -16,6 +17,31 @@ from schema.numbering import build_dmtuid
 from schema.templates import get_fields
 from import_engine.field_map import DIRECT_FIELDS, SKIP_FOR_EAV
 from services.sequence_service import next_xxx
+
+
+def collect_distributors_from_form(data: dict) -> str:
+    """
+    Collect distributor fields from form data.
+    Form fields are named: dist_name_0, dist_url_0, dist_name_1, dist_url_1, etc.
+    Returns JSON string or empty string if no distributors.
+    """
+    distributors = []
+    # Find all dist_name_* and dist_url_* fields
+    indices = set()
+    for key in data.keys():
+        match = re.match(r'dist_(name|url)_(\d+)', key)
+        if match:
+            indices.add(int(match.group(2)))
+    
+    for idx in sorted(indices):
+        name = data.get(f'dist_name_{idx}', '').strip()
+        url = data.get(f'dist_url_{idx}', '').strip()
+        if url:  # URL is required, name is optional
+            distributors.append({'name': name, 'url': url})
+    
+    if distributors:
+        return json.dumps(distributors, ensure_ascii=False)
+    return ""
 
 
 class PartsService:
@@ -38,11 +64,16 @@ class PartsService:
 
         part = Part(dmtuid=dmtuid, tt=tt, ff=ff, cc=cc, ss=ss, xxx=xxx)
 
-        # Direct fields
+        # Direct fields (excluding Distributor - handled separately)
         for csv_col, attr in DIRECT_FIELDS.items():
+            if csv_col == "Distributor":
+                continue  # Handled below
             val = str(data.get(csv_col, data.get(attr, ""))).strip()
             if val:
                 setattr(part, attr, val)
+
+        # Collect distributors from form fields (dist_name_*, dist_url_*)
+        part.distributor = collect_distributors_from_form(data)
 
         # KiCad fields
         for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref", "kicad_3dmodel"):
@@ -57,11 +88,17 @@ class PartsService:
         template = get_fields(tt, ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
                                 "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
-                                "tt", "ff", "cc", "ss", "xxx"}
+                                "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
+        # Also skip distributor form fields
+        skip_patterns = {'dist_name_', 'dist_url_'}
+        
         extra: dict[str, str] = {}
         if template:
             allowed = set(template) - skip
             for k, v in data.items():
+                # Skip distributor form fields
+                if any(k.startswith(p) for p in skip_patterns):
+                    continue
                 val = str(v).strip()
                 if not val:
                     continue
@@ -75,6 +112,9 @@ class PartsService:
         else:
             # No template → all non-skip fields go to extra_json
             for k, v in data.items():
+                # Skip distributor form fields
+                if any(k.startswith(p) for p in skip_patterns):
+                    continue
                 val = str(v).strip()
                 if val and k not in skip:
                     extra[k] = val
@@ -99,11 +139,18 @@ class PartsService:
         """
         Update direct, KiCad, notes, and EAV fields on an existing Part.
         """
-        # Direct fields
+        # Direct fields (excluding Distributor - handled separately)
         for csv_col, attr in DIRECT_FIELDS.items():
+            if csv_col == "Distributor":
+                continue  # Handled below
             if csv_col in data or attr in data:
                 val = str(data.get(csv_col, data.get(attr, ""))).strip()
                 setattr(part, attr, val)
+
+        # Collect distributors from form fields (dist_name_*, dist_url_*)
+        # Only update if distributor form fields are present
+        if any(k.startswith('dist_name_') or k.startswith('dist_url_') for k in data.keys()):
+            part.distributor = collect_distributors_from_form(data)
 
         # KiCad
         for kf in ("kicad_symbol", "kicad_footprint", "kicad_libref", "kicad_3dmodel"):
@@ -118,7 +165,9 @@ class PartsService:
         template = get_fields(part.tt, part.ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
                                 "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
-                                "tt", "ff", "cc", "ss", "xxx"}
+                                "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
+        # Also skip distributor form fields
+        skip_patterns = {'dist_name_', 'dist_url_'}
 
         # Load existing extra_json
         existing_extra: dict[str, str] = {}
@@ -132,6 +181,9 @@ class PartsService:
             allowed = set(template) - skip
             existing_map = {f.field_name: f for f in part.fields}
             for k, v in data.items():
+                # Skip distributor form fields
+                if any(k.startswith(p) for p in skip_patterns):
+                    continue
                 val = str(v).strip()
                 if k in allowed:
                     # Template field → EAV
@@ -153,6 +205,9 @@ class PartsService:
         else:
             # No template → all non-skip fields go to extra_json
             for k, v in data.items():
+                # Skip distributor form fields
+                if any(k.startswith(p) for p in skip_patterns):
+                    continue
                 val = str(v).strip()
                 if k in skip:
                     continue

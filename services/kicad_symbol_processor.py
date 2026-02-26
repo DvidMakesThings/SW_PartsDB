@@ -469,6 +469,52 @@ class KiCadSymbolProcessor:
             pin_positions = (3.81, -3.81)  # pins for resistor
             pin_length = 1.27  # connects exactly to rectangle body edge
         
+        # Generate distributor properties (DIST1, DIST2, etc.)
+        dist_properties = ""
+        if part.distributor:
+            import json
+            try:
+                distributors = json.loads(part.distributor)
+                if isinstance(distributors, list):
+                    y_offset = -19.304
+                    for i, dist in enumerate(distributors, 1):
+                        url = dist.get('url', '')
+                        name = dist.get('name', '')
+                        # Format: "DigiKey: https://..." or just URL if no name
+                        if name and url:
+                            dist_value = f"{name}: {url}"
+                        else:
+                            dist_value = url
+                        dist_value = dist_value.replace('"', "'")
+                        dist_properties += f'''(property "DIST{i}" "{dist_value}"
+			(at 2.286 {y_offset} 0)
+			(show_name)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		'''
+                        y_offset -= 2.286
+            except (json.JSONDecodeError, TypeError):
+                # Legacy single URL format
+                dist_value = str(part.distributor).replace('"', "'")
+                dist_properties = f'''(property "DIST1" "{dist_value}"
+			(at 2.286 -19.304 0)
+			(show_name)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		'''
+        
         # Generate symbol content with proper template
         symbol_content = f'''	(symbol "{symbol_name}"
 		(exclude_from_sim no)
@@ -578,17 +624,7 @@ class KiCadSymbolProcessor:
 				(hide yes)
 			)
 		)
-		(property "DIST1" "{part.distributor or ''}"
-			(at 2.286 -19.304 0)
-			(show_name)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
+		{dist_properties}
 		{symbol_shape}
 		(symbol "{symbol_name}_1_1"
 			(pin passive line

@@ -2,13 +2,43 @@
 
 This folder contains KiCad library files managed by DMTDB.
 
-**Important:** KiCad's HTTP Library only supports symbols. Footprints and 3D models must be stored locally on each workstation. Use the **Download Libs** button in DMTDB to get all library files.
+**Important:** KiCad's HTTP Library only supports symbols. Footprints and 3D models must be stored locally on each workstation.
 
 ---
 
-## Quick Start
+## Quick Start: Automatic Sync (Recommended)
 
-### For DMTDB Users (Downloading Libraries)
+Use the sync scripts to automatically download libraries and configure KiCad:
+
+### Windows
+
+1. Download `sync-kicad-libs.bat` and `sync-kicad-libs.ps1` from the server
+2. Edit `sync-kicad-libs.bat` to set your server URL if needed
+3. Double-click `sync-kicad-libs.bat`
+
+Or run from PowerShell:
+```powershell
+.\sync-kicad-libs.ps1 -ServerUrl "http://192.168.0.25:5000"
+```
+
+### Linux / macOS
+
+```bash
+chmod +x sync-kicad-libs.sh
+./sync-kicad-libs.sh --server http://192.168.0.25:5000
+```
+
+The sync scripts will:
+- ✅ Download all symbol, footprint, and 3D model files
+- ✅ Set up KiCad path variables (DMTDB_SYM, DMTDB_FOOTPRINT, DMTDB_3D)
+- ✅ Register new symbol libraries in KiCad (hidden by default)
+- ✅ Only download changed files on subsequent runs
+
+---
+
+## Manual Setup
+
+### For DMTDB Users (Downloading Libraries Manually)
 
 1. Open DMTDB in your browser
 2. Click the green **Download Libs** button in the navigation bar

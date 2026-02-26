@@ -71,20 +71,29 @@
             </div>
         </div>
         <div class="sync-actions">
-            <button id="downloadBtn" class="btn btn-primary">
+            <button id="syncScriptBtn" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4v16h16" />
+                    <polyline points="4 14 8 10 12 14 20 6" />
+                </svg>
+                Download Sync Script
+            </button>
+            <button id="downloadBtn" class="btn btn-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Download Libraries
+                Download ZIP
             </button>
             <button id="markSyncedBtn" class="btn btn-secondary">Mark as Synced</button>
         </div>
     </div>
     <p class="sync-note">
-        <strong>Note:</strong> After downloading and extracting the ZIP to your local folders,
-        click "Mark as Synced" to record this sync. You'll be notified when new updates are available.
+        <strong>Recommended:</strong> Click "Download Sync Script" to get a script customized for your paths.
+        Run it to automatically download libraries, configure KiCad path variables, and register symbol libraries.
+        <br><br>
+        <em>Alternative:</em> Download the ZIP manually and extract to your folders, then click "Mark as Synced".
     </p>
 </div>
 
@@ -463,6 +472,14 @@
                     btn.disabled = false;
                 }, 2000);
             }
+        });
+
+        // Download sync script button
+        document.getElementById('syncScriptBtn').addEventListener('click', () => {
+            // Get platform
+            const isWindows = navigator.platform.indexOf('Win') > -1;
+            const ext = isWindows ? 'ps1' : 'sh';
+            window.location.href = `/api/v1/libs/sync-script?platform=${isWindows ? 'windows' : 'unix'}`;
         });
 
         // Download button

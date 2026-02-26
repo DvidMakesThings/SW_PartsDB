@@ -399,6 +399,465 @@ def list_clients():
         session.close()
 
 
+@api_bp.route("/libs/sync-script")
+def generate_sync_script():
+    """
+    GET /api/v1/libs/sync-script?platform=windows|unix
+    
+    Generate a personalized sync script with the client's configured paths.
+    Downloads as a .ps1 (Windows) or .sh (Unix) file.
+    """
+    from db import get_session
+    from db.models import ClientConfig
+    
+    platform = request.args.get("platform", "windows").lower()
+    client_ip = _get_client_ip()
+    server_url = request.host_url.rstrip('/')
+    
+    # Get client config
+    session = get_session()
+    try:
+        config_row = session.query(ClientConfig).filter(
+            ClientConfig.client_id == client_ip
+        ).first()
+        
+        if config_row:
+            sym_path = config_row.path_symbols or ""
+            fp_path = config_row.path_footprints or ""
+            m3d_path = config_row.path_3dmodels or ""
+        else:
+            sym_path = ""
+            fp_path = ""
+            m3d_path = ""
+    finally:
+        session.close()
+    
+    if platform == "windows":
+        script = _generate_windows_sync_script(server_url, sym_path, fp_path, m3d_path)
+        filename = "sync-dmtdb.ps1"
+        mimetype = "text/plain"
+    else:
+        script = _generate_unix_sync_script(server_url, sym_path, fp_path, m3d_path)
+        filename = "sync-dmtdb.sh"
+        mimetype = "text/x-shellscript"
+    
+    return Response(
+        script,
+        mimetype=mimetype,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+def _generate_windows_sync_script(server_url: str, sym_path: str, fp_path: str, m3d_path: str) -> str:
+    """Generate PowerShell sync script."""
+    
+    # Use defaults if paths not configured
+    if not sym_path:
+        sym_path = "$env:USERPROFILE\\Documents\\KiCad\\DMTDB\\symbols"
+    if not fp_path:
+        fp_path = "$env:USERPROFILE\\Documents\\KiCad\\DMTDB\\footprints"
+    if not m3d_path:
+        m3d_path = "$env:USERPROFILE\\Documents\\KiCad\\DMTDB\\3dmodels"
+    
+    return f'''#Requires -Version 5.1
+<#
+.SYNOPSIS
+    DMTDB KiCad Library Sync Script
+    Generated for your PC with your configured paths.
+    
+.DESCRIPTION
+    Downloads library files from DMTDB server and configures KiCad.
+    Run this script whenever you want to sync the latest libraries.
+    
+.EXAMPLE
+    .\\sync-dmtdb.ps1
+#>
+
+$ErrorActionPreference = "Stop"
+
+# ============================================================================
+# Configuration (from your DMTDB Client Setup)
+# ============================================================================
+$ServerUrl = "{server_url}"
+$SymbolsPath = "{sym_path}"
+$FootprintsPath = "{fp_path}"
+$ModelsPath = "{m3d_path}"
+# ============================================================================
+
+function Write-Info {{ param([string]$m) Write-Host "[INFO] $m" -ForegroundColor Cyan }}
+function Write-OK {{ param([string]$m) Write-Host "[OK] $m" -ForegroundColor Green }}
+function Write-Warn {{ param([string]$m) Write-Host "[WARN] $m" -ForegroundColor Yellow }}
+
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "  DMTDB KiCad Library Sync" -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Test server
+Write-Info "Connecting to $ServerUrl..."
+try {{
+    $null = Invoke-RestMethod -Uri "$ServerUrl/api/v1/libs" -TimeoutSec 5
+    Write-OK "Server connected"
+}} catch {{
+    Write-Host "[ERROR] Cannot connect to server" -ForegroundColor Red
+    exit 1
+}}
+
+# Create directories
+Write-Info "Creating directories..."
+foreach ($dir in @($SymbolsPath, $FootprintsPath, $ModelsPath)) {{
+    if (-not (Test-Path $dir)) {{
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        Write-Info "Created: $dir"
+    }}
+}}
+
+# Get library list
+Write-Info "Fetching library list..."
+$libs = Invoke-RestMethod -Uri "$ServerUrl/api/v1/libs"
+
+# Download symbols
+Write-Info "Downloading symbols..."
+$symCount = 0
+foreach ($sym in $libs.symbols) {{
+    $dest = Join-Path $SymbolsPath $sym.filename
+    $url = "$ServerUrl/kicad_libs/symbols/$($sym.filename)"
+    
+    $needsDownload = (-not (Test-Path $dest)) -or ((Get-Item $dest).Length -ne $sym.size)
+    
+    if ($needsDownload) {{
+        Write-Host "  $($sym.filename)" -ForegroundColor Gray
+        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+        $symCount++
+    }}
+}}
+Write-OK "Symbols: $symCount new/updated"
+
+# Download footprints
+Write-Info "Downloading footprints..."
+$fpCount = 0
+foreach ($fp in $libs.footprints) {{
+    $dest = Join-Path $FootprintsPath $fp.filename
+    $url = "$ServerUrl/kicad_libs/footprints/$($fp.filename)"
+    
+    $needsDownload = (-not (Test-Path $dest)) -or ((Get-Item $dest).Length -ne $fp.size)
+    
+    if ($needsDownload) {{
+        Write-Host "  $($fp.filename)" -ForegroundColor Gray
+        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+        $fpCount++
+    }}
+}}
+Write-OK "Footprints: $fpCount new/updated"
+
+# Download 3D models
+Write-Info "Downloading 3D models..."
+$m3dCount = 0
+foreach ($model in $libs.'3dmodels') {{
+    $dest = Join-Path $ModelsPath $model.filename
+    $url = "$ServerUrl/kicad_libs/3dmodels/$($model.filename)"
+    
+    $needsDownload = (-not (Test-Path $dest)) -or ((Get-Item $dest).Length -ne $model.size)
+    
+    if ($needsDownload) {{
+        Write-Host "  $($model.filename)" -ForegroundColor Gray
+        Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+        $m3dCount++
+    }}
+}}
+Write-OK "3D Models: $m3dCount new/updated"
+
+# ── Configure KiCad ────────────────────────────────────────────────────────
+
+$kicadBase = Join-Path $env:APPDATA "kicad"
+$kicadConfig = $null
+
+if (Test-Path $kicadBase) {{
+    $versions = Get-ChildItem -Path $kicadBase -Directory | 
+        Where-Object {{ $_.Name -match '^\\d+\\.\\d+$' }} |
+        Sort-Object {{ [version]$_.Name }} -Descending
+    
+    if ($versions.Count -gt 0) {{
+        $kicadConfig = $versions[0].FullName
+    }}
+}}
+
+if ($kicadConfig) {{
+    Write-Info "Configuring KiCad at: $kicadConfig"
+    
+    # Update path variables in kicad_common.json
+    $commonFile = Join-Path $kicadConfig "kicad_common.json"
+    if (Test-Path $commonFile) {{
+        $json = Get-Content $commonFile -Raw | ConvertFrom-Json
+        
+        if (-not $json.environment) {{
+            $json | Add-Member -NotePropertyName "environment" -NotePropertyValue @{{}} -Force
+        }}
+        if (-not $json.environment.vars) {{
+            $json.environment | Add-Member -NotePropertyName "vars" -NotePropertyValue @{{}} -Force
+        }}
+        
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_SYM" -NotePropertyValue ($SymbolsPath -replace '\\\\', '/') -Force
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_FOOTPRINT" -NotePropertyValue ($FootprintsPath -replace '\\\\', '/') -Force
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_3D" -NotePropertyValue ($ModelsPath -replace '\\\\', '/') -Force
+        
+        $json | ConvertTo-Json -Depth 10 | Out-File $commonFile -Encoding utf8
+        Write-OK "Updated KiCad path variables"
+    }}
+    
+    # Update sym-lib-table
+    $symTable = Join-Path $kicadConfig "sym-lib-table"
+    
+    $existing = @()
+    if (Test-Path $symTable) {{
+        $content = Get-Content $symTable -Raw
+        $matches = [regex]::Matches($content, '\\(name\\s+"([^"]+)"\\)')
+        $existing = $matches | ForEach-Object {{ $_.Groups[1].Value }}
+    }}
+    
+    $newLibs = 0
+    $symFiles = Get-ChildItem -Path $SymbolsPath -Filter "*.kicad_sym" -ErrorAction SilentlyContinue
+    
+    foreach ($file in $symFiles) {{
+        $libName = $file.BaseName
+        
+        if ($libName -notin $existing) {{
+            Write-Info "Adding symbol library: $libName"
+            
+            if (-not (Test-Path $symTable)) {{
+                "(sym_lib_table`n  (version 7)`n)" | Out-File $symTable -Encoding utf8
+            }}
+            
+            $lines = Get-Content $symTable
+            $lines = $lines[0..($lines.Count - 2)]
+            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${{DMTDB_SYM}}/$($file.Name)`")(options `"hide`")(descr `"DMTDB`"))"
+            $lines += ")"
+            $lines | Out-File $symTable -Encoding utf8
+            
+            $newLibs++
+        }}
+    }}
+    
+    if ($newLibs -gt 0) {{
+        Write-OK "Added $newLibs new symbol libraries (hidden by default)"
+    }}
+}} else {{
+    Write-Warn "KiCad config not found. Please set paths manually:"
+    Write-Host "  DMTDB_SYM       = $($SymbolsPath -replace '\\\\', '/')"
+    Write-Host "  DMTDB_FOOTPRINT = $($FootprintsPath -replace '\\\\', '/')"
+    Write-Host "  DMTDB_3D        = $($ModelsPath -replace '\\\\', '/')"
+}}
+
+# Mark as synced on server
+try {{
+    $null = Invoke-RestMethod -Uri "$ServerUrl/api/v1/libs/client/mark-synced" -Method Post
+    Write-Info "Marked as synced on server"
+}} catch {{
+    Write-Warn "Could not mark sync status"
+}}
+
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Green
+Write-Host "  Sync Complete!" -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "Downloaded: $symCount symbols, $fpCount footprints, $m3dCount 3D models"
+Write-Host ""
+Write-Host "Restart KiCad to see the new libraries." -ForegroundColor Yellow
+Write-Host ""
+'''
+
+
+def _generate_unix_sync_script(server_url: str, sym_path: str, fp_path: str, m3d_path: str) -> str:
+    """Generate Bash sync script."""
+    
+    # Use defaults if paths not configured
+    if not sym_path:
+        sym_path = "$HOME/Documents/KiCad/DMTDB/symbols"
+    if not fp_path:
+        fp_path = "$HOME/Documents/KiCad/DMTDB/footprints"
+    if not m3d_path:
+        m3d_path = "$HOME/Documents/KiCad/DMTDB/3dmodels"
+    
+    return f'''#!/bin/bash
+# ============================================================================
+# DMTDB KiCad Library Sync Script
+# Generated for your PC with your configured paths.
+#
+# Run this script whenever you want to sync the latest libraries.
+# Usage: chmod +x sync-dmtdb.sh && ./sync-dmtdb.sh
+# ============================================================================
+
+set -e
+
+# Configuration (from your DMTDB Client Setup)
+SERVER_URL="{server_url}"
+SYMBOLS_PATH="{sym_path}"
+FOOTPRINTS_PATH="{fp_path}"
+MODELS_PATH="{m3d_path}"
+
+# Colors
+GREEN='\\033[0;32m'
+CYAN='\\033[0;36m'
+YELLOW='\\033[1;33m'
+NC='\\033[0m'
+
+info() {{ echo -e "${{CYAN}}[INFO]${{NC}} $1"; }}
+ok() {{ echo -e "${{GREEN}}[OK]${{NC}} $1"; }}
+warn() {{ echo -e "${{YELLOW}}[WARN]${{NC}} $1"; }}
+
+echo ""
+echo "======================================"
+echo "  DMTDB KiCad Library Sync"
+echo "======================================"
+echo ""
+
+# Test server
+info "Connecting to $SERVER_URL..."
+if ! curl -sf "$SERVER_URL/api/v1/libs" > /dev/null 2>&1; then
+    echo -e "\\033[0;31m[ERROR]\\033[0m Cannot connect to server"
+    exit 1
+fi
+ok "Server connected"
+
+# Create directories
+info "Creating directories..."
+mkdir -p "$SYMBOLS_PATH" "$FOOTPRINTS_PATH" "$MODELS_PATH"
+
+# Get library list
+info "Fetching library list..."
+LIBS_JSON=$(curl -s "$SERVER_URL/api/v1/libs")
+
+# Download symbols
+info "Downloading symbols..."
+SYM_COUNT=0
+for filename in $(echo "$LIBS_JSON" | grep -oE '"filename":"[^"]+\\.kicad_sym"' | cut -d'"' -f4); do
+    dest="$SYMBOLS_PATH/$filename"
+    url="$SERVER_URL/kicad_libs/symbols/$filename"
+    
+    if [[ ! -f "$dest" ]]; then
+        echo "  $filename"
+        curl -sf -o "$dest" "$url"
+        ((SYM_COUNT++)) || true
+    fi
+done
+ok "Symbols: $SYM_COUNT new/updated"
+
+# Download footprints
+info "Downloading footprints..."
+FP_COUNT=0
+for filename in $(echo "$LIBS_JSON" | grep -oE '"filename":"[^"]+\\.kicad_mod"' | cut -d'"' -f4); do
+    dest="$FOOTPRINTS_PATH/$filename"
+    url="$SERVER_URL/kicad_libs/footprints/$filename"
+    
+    if [[ ! -f "$dest" ]]; then
+        echo "  $filename"
+        curl -sf -o "$dest" "$url"
+        ((FP_COUNT++)) || true
+    fi
+done
+ok "Footprints: $FP_COUNT new/updated"
+
+# Download 3D models
+info "Downloading 3D models..."
+M3D_COUNT=0
+for filename in $(echo "$LIBS_JSON" | grep -oE '"filename":"[^"]+\\.(step|stp|STEP|STP)"' | cut -d'"' -f4); do
+    dest="$MODELS_PATH/$filename"
+    url="$SERVER_URL/kicad_libs/3dmodels/$filename"
+    
+    if [[ ! -f "$dest" ]]; then
+        echo "  $filename"
+        curl -sf -o "$dest" "$url"
+        ((M3D_COUNT++)) || true
+    fi
+done
+ok "3D Models: $M3D_COUNT new/updated"
+
+# ── Configure KiCad ────────────────────────────────────────────────────────
+
+# Find KiCad config
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    KICAD_CONFIG=$(ls -d "$HOME/Library/Preferences/kicad"/*/ 2>/dev/null | tail -1)
+else
+    KICAD_CONFIG=$(ls -d "$HOME/.config/kicad"/*/ 2>/dev/null | tail -1)
+fi
+
+if [[ -n "$KICAD_CONFIG" ]]; then
+    info "Configuring KiCad at: $KICAD_CONFIG"
+    
+    # Update path variables
+    COMMON_FILE="${{KICAD_CONFIG}}kicad_common.json"
+    if [[ -f "$COMMON_FILE" ]] && command -v jq &>/dev/null; then
+        cp "$COMMON_FILE" "$COMMON_FILE.bak"
+        jq --arg sym "$SYMBOLS_PATH" --arg fp "$FOOTPRINTS_PATH" --arg m3d "$MODELS_PATH" '
+           .environment.vars.DMTDB_SYM = $sym |
+           .environment.vars.DMTDB_FOOTPRINT = $fp |
+           .environment.vars.DMTDB_3D = $m3d
+        ' "$COMMON_FILE.bak" > "$COMMON_FILE"
+        ok "Updated KiCad path variables"
+    else
+        warn "Install jq for automatic path variable setup, or set manually:"
+        echo "  DMTDB_SYM       = $SYMBOLS_PATH"
+        echo "  DMTDB_FOOTPRINT = $FOOTPRINTS_PATH"
+        echo "  DMTDB_3D        = $MODELS_PATH"
+    fi
+    
+    # Update sym-lib-table
+    SYM_TABLE="${{KICAD_CONFIG}}sym-lib-table"
+    
+    EXISTING=""
+    if [[ -f "$SYM_TABLE" ]]; then
+        EXISTING=$(grep -oE '\\(name "[^"]+' "$SYM_TABLE" | sed 's/(name "//' || true)
+    fi
+    
+    NEW_LIBS=0
+    for symfile in "$SYMBOLS_PATH"/*.kicad_sym; do
+        [[ -f "$symfile" ]] || continue
+        
+        libname=$(basename "$symfile" .kicad_sym)
+        
+        if ! echo "$EXISTING" | grep -q "^${{libname}}$"; then
+            info "Adding symbol library: $libname"
+            
+            if [[ ! -f "$SYM_TABLE" ]]; then
+                echo "(sym_lib_table" > "$SYM_TABLE"
+                echo "  (version 7)" >> "$SYM_TABLE"
+                echo ")" >> "$SYM_TABLE"
+            fi
+            
+            sed -i.bak '$ d' "$SYM_TABLE"
+            echo "  (lib (name \\"$libname\\")(type \\"KiCad\\")(uri \\"\\${{DMTDB_SYM}}/$libname.kicad_sym\\")(options \\"hide\\")(descr \\"DMTDB\\"))" >> "$SYM_TABLE"
+            echo ")" >> "$SYM_TABLE"
+            rm -f "$SYM_TABLE.bak"
+            
+            ((NEW_LIBS++)) || true
+        fi
+    done
+    
+    if [[ $NEW_LIBS -gt 0 ]]; then
+        ok "Added $NEW_LIBS new symbol libraries (hidden by default)"
+    fi
+else
+    warn "KiCad config not found. Please set paths manually."
+fi
+
+# Mark as synced
+curl -sf -X POST "$SERVER_URL/api/v1/libs/client/mark-synced" > /dev/null 2>&1 || true
+info "Marked as synced on server"
+
+echo ""
+echo "======================================"
+echo -e "${{GREEN}}  Sync Complete!${{NC}}"
+echo "======================================"
+echo ""
+echo "Downloaded: $SYM_COUNT symbols, $FP_COUNT footprints, $M3D_COUNT 3D models"
+echo ""
+echo -e "${{YELLOW}}Restart KiCad to see the new libraries.${{NC}}"
+echo ""
+'''
+
+
 def _generate_symbol_value(part_data: dict, tt: str = "", ff: str = "") -> str:
     """
     Generate a symbol Value property from part database fields.

@@ -87,7 +87,8 @@ if ($useRsync) {
     
     Write-Info "Syncing 3D models..."
     & $rsyncPath -avz "${SshHost}:${RemotePath}/3dmodels/" "$modelsDir/"
-} else {
+}
+else {
     Write-Info "Using scp (rsync not found - install Git for faster syncs)"
     
     # Use scp - downloads everything each time
@@ -110,8 +111,8 @@ $kicadConfig = $null
 
 if (Test-Path $kicadBase) {
     $versions = Get-ChildItem -Path $kicadBase -Directory | 
-        Where-Object { $_.Name -match '^\d+\.\d+$' } |
-        Sort-Object { [version]$_.Name } -Descending
+    Where-Object { $_.Name -match '^\d+\.\d+$' } |
+    Sort-Object { [version]$_.Name } -Descending
     
     if ($versions.Count -gt 0) {
         $kicadConfig = $versions[0].FullName
@@ -188,7 +189,8 @@ if ($kicadConfig) {
         $json | ConvertTo-Json -Depth 10 | Out-File $commonFile -Encoding utf8
         Write-OK "Updated KiCad path variables"
     }
-} else {
+}
+else {
     Write-Warn "KiCad config not found. Set paths manually in Preferences → Configure Paths:"
     Write-Host "  DMTDB_SYM       = $($symbolsDir -replace '\\', '/')"
     Write-Host "  DMTDB_FOOTPRINT = $($footprintsDir -replace '\\', '/')"

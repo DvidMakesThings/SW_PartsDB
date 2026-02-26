@@ -86,14 +86,12 @@
                 </svg>
                 Download ZIP
             </button>
-            <button id="markSyncedBtn" class="btn btn-secondary">Mark as Synced</button>
         </div>
     </div>
     <p class="sync-note">
         <strong>Recommended:</strong> Click "Download Sync Script" to get a script customized for your paths.
         Run it to automatically download libraries, configure KiCad path variables, and register symbol libraries.
-        <br><br>
-        <em>Alternative:</em> Download the ZIP manually and extract to your folders, then click "Mark as Synced".
+        The script will automatically mark your client as synced.
     </p>
 </div>
 
@@ -306,26 +304,31 @@
         padding: 1rem;
     }
 
-    .badge {
+    .sync-dot {
         display: inline-block;
-        padding: .15rem .5rem;
-        border-radius: 4px;
-        font-size: .75rem;
-        font-weight: 500;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
     }
 
-    .badge.synced {
-        background: rgba(16, 185, 129, 0.2);
-        color: #10b981;
+    .sync-dot.synced {
+        background: #10b981;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
     }
 
-    .badge.needs-sync {
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
+    .sync-dot.needs-sync {
+        background: #ef4444;
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
     }
 
-    .badge.never {
-        background: var(--surface2);
+    .sync-dot.never {
+        background: #6b7280;
+    }
+
+    .sync-label {
+        font-size: 0.8rem;
         color: var(--text-dim);
     }
 
@@ -415,17 +418,17 @@
                     const lastSync = c.last_sync
                         ? new Date(c.last_sync).toLocaleString()
                         : '-';
-                    const statusBadge = !c.last_sync
-                        ? '<span class="badge never">Never synced</span>'
+                    const statusIndicator = !c.last_sync
+                        ? '<span class="sync-dot never"></span><span class="sync-label">Never</span>'
                         : c.needs_sync
-                            ? '<span class="badge needs-sync">Needs sync</span>'
-                            : '<span class="badge synced">Synced</span>';
+                            ? '<span class="sync-dot needs-sync"></span><span class="sync-label">Out of sync</span>'
+                            : '<span class="sync-dot synced"></span><span class="sync-label">Synced</span>';
 
                     return `<tr class="${isCurrentClass}">
                     <td>${c.client_id}${c.client_id === currentIp ? ' <small>(this PC)</small>' : ''}</td>
                     <td>${c.client_name || '-'}</td>
                     <td>${lastSync}</td>
-                    <td>${statusBadge}</td>
+                    <td>${statusIndicator}</td>
                 </tr>`;
                 }).join('');
 
@@ -487,37 +490,7 @@
             window.location.href = '/api/v1/libs/download';
         });
 
-        // Mark synced button
-        document.getElementById('markSyncedBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('markSyncedBtn');
-            const origText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Updating...';
-
-            try {
-                const resp = await fetch('/api/v1/libs/client/mark-synced', {
-                    method: 'POST',
-                });
-
-                if (resp.ok) {
-                    btn.textContent = 'Synced!';
-                    setTimeout(() => {
-                        btn.textContent = origText;
-                        btn.disabled = false;
-                    }, 1500);
-                    loadClientConfig(); // Refresh status
-                    loadClientsList();
-                } else {
-                    throw new Error('Failed');
-                }
-            } catch (err) {
-                btn.textContent = 'Error';
-                setTimeout(() => {
-                    btn.textContent = origText;
-                    btn.disabled = false;
-                }, 2000);
-            }
-        });
+        // Sync status is now automatic - scripts call mark-synced API endpoint
 
         // Initial load
         loadClientConfig();

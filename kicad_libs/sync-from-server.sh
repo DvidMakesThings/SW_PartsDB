@@ -104,7 +104,7 @@ if [[ -n "$KICAD_CONFIG" ]]; then
             
             # Insert before closing paren
             sed -i.bak '$d' "$SYM_TABLE"
-            echo "  (lib (name \"$libname\")(type \"KiCad\")(uri \"\${DMTDB_SYM}/$libname.kicad_sym\")(options \"hide\")(descr \"DMTDB\"))" >> "$SYM_TABLE"
+            echo "  (lib (name \"$libname\")(type \"KiCad\")(uri \"\${DMTDB_SYM}/$libname.kicad_sym\")(options \"\")(descr \"\")(hidden))" >> "$SYM_TABLE"
             echo ")" >> "$SYM_TABLE"
             rm -f "$SYM_TABLE.bak"
             

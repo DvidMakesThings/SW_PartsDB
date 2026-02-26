@@ -142,20 +142,19 @@ if ($kicadConfig) {
         if ($libName -notin $existing) {
             Write-Info "Adding: $libName"
             
+            # UTF-8 without BOM (KiCad doesn't like BOM)
+            $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+            
             if (-not (Test-Path $symLibTable)) {
-                @"
-(sym_lib_table
-  (version 7)
-)
-"@ | Out-File $symLibTable -Encoding utf8
+                [System.IO.File]::WriteAllText($symLibTable, "(sym_lib_table`n  (version 7)`n)", $utf8NoBom)
             }
             
             # Read file, remove last line (closing paren), add entry, add closing paren
             $lines = Get-Content $symLibTable
             $lines = $lines[0..($lines.Count - 2)]
-            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${DMTDB_SYM}/$($file.Name)`")(options `"hide`")(descr `"DMTDB`"))"
+            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${DMTDB_SYM}/$($file.Name)`")(options `"`")(descr `"`")(hidden))"
             $lines += ")"
-            $lines | Out-File $symLibTable -Encoding utf8
+            [System.IO.File]::WriteAllLines($symLibTable, $lines, $utf8NoBom)
             
             $newCount++
         }
@@ -186,7 +185,9 @@ if ($kicadConfig) {
         $json.environment.vars | Add-Member -NotePropertyName "DMTDB_3D" -NotePropertyValue $m3dPath -Force
         
         Copy-Item $commonFile "$commonFile.bak" -Force
-        $json | ConvertTo-Json -Depth 10 | Out-File $commonFile -Encoding utf8
+        # Write without BOM
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($commonFile, ($json | ConvertTo-Json -Depth 10), $utf8NoBom)
         Write-OK "Updated KiCad path variables"
     }
 }

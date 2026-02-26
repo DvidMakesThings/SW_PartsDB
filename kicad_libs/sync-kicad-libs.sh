@@ -221,7 +221,7 @@ update_sym_lib_table() {
         fi
         
         info "Adding new symbol library: $lib_name"
-        new_entries="$new_entries  (lib (name \"$lib_name\")(type \"KiCad\")(uri \"\${DMTDB_SYM}/$(basename "$file")\")(options \"hide\")(descr \"DMTDB - $lib_name\"))\n"
+        new_entries="$new_entries  (lib (name \"$lib_name\")(type \"KiCad\")(uri \"\${DMTDB_SYM}/$(basename "$file")\")(options \"\")(descr \"\")(hidden))\n"
         ((new_count++)) || true
     done
     
@@ -231,10 +231,10 @@ update_sym_lib_table() {
             cp "$table_file" "$table_file.bak"
             
             # Insert new entries before the closing parenthesis
-            # Read the file, remove last line (closing paren), add new entries, add closing paren back
-            head -n -1 "$table_file" > "$table_file.tmp"
-            echo -e "$new_entries)" >> "$table_file.tmp"
-            mv "$table_file.tmp" "$table_file"
+            # Remove last line (closing paren), add new entries, add closing paren back
+            sed -i.tmp '$ d' "$table_file"
+            echo -e "$new_entries)" >> "$table_file"
+            rm -f "$table_file.tmp"
         else
             # Create new table
             echo "(sym_lib_table" > "$table_file"

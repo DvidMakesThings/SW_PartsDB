@@ -602,7 +602,9 @@ if ($kicadConfig) {{
         $json.environment.vars | Add-Member -NotePropertyName "DMTDB_FOOTPRINT" -NotePropertyValue ($FootprintsPath -replace '\\\\', '/') -Force
         $json.environment.vars | Add-Member -NotePropertyName "DMTDB_3D" -NotePropertyValue ($ModelsPath -replace '\\\\', '/') -Force
         
-        $json | ConvertTo-Json -Depth 10 | Out-File $commonFile -Encoding utf8
+        # Write without BOM (KiCad doesn't like BOM)
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($commonFile, ($json | ConvertTo-Json -Depth 10), $utf8NoBom)
         Write-OK "Updated KiCad path variables"
     }}
     
@@ -619,6 +621,9 @@ if ($kicadConfig) {{
     $newLibs = 0
     $symFiles = Get-ChildItem -Path $SymbolsPath -Filter "*.kicad_sym" -ErrorAction SilentlyContinue
     
+    # UTF-8 without BOM encoder
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    
     foreach ($file in $symFiles) {{
         $libName = $file.BaseName
         
@@ -626,14 +631,14 @@ if ($kicadConfig) {{
             Write-Info "Adding symbol library: $libName"
             
             if (-not (Test-Path $symTable)) {{
-                "(sym_lib_table`n  (version 7)`n)" | Out-File $symTable -Encoding utf8
+                [System.IO.File]::WriteAllText($symTable, "(sym_lib_table`n  (version 7)`n)", $utf8NoBom)
             }}
             
             $lines = Get-Content $symTable
             $lines = $lines[0..($lines.Count - 2)]
-            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${{DMTDB_SYM}}/$($file.Name)`")(options `"hide`")(descr `"DMTDB`"))"
+            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${{DMTDB_SYM}}/$($file.Name)`")(options `"`")(descr `"`")(hidden))"
             $lines += ")"
-            $lines | Out-File $symTable -Encoding utf8
+            [System.IO.File]::WriteAllLines($symTable, $lines, $utf8NoBom)
             
             $newLibs++
         }}
@@ -827,7 +832,7 @@ if [[ -n "$KICAD_CONFIG" ]]; then
             fi
             
             sed -i.bak '$ d' "$SYM_TABLE"
-            echo "  (lib (name \\"$libname\\")(type \\"KiCad\\")(uri \\"\\${{DMTDB_SYM}}/$libname.kicad_sym\\")(options \\"hide\\")(descr \\"DMTDB\\"))" >> "$SYM_TABLE"
+            echo "  (lib (name \\"$libname\\")(type \\"KiCad\\")(uri \\"\\${{DMTDB_SYM}}/$libname.kicad_sym\\")(options \\"\\")(descr \\"\\")(hidden))" >> "$SYM_TABLE"
             echo ")" >> "$SYM_TABLE"
             rm -f "$SYM_TABLE.bak"
             

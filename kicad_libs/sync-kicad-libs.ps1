@@ -189,8 +189,8 @@ function Parse-SymLibTable {
     
     $content = Get-Content $Path -Raw
     
-    # Match each (lib ...) entry
-    $pattern = '\(lib\s*\(name\s+"?([^")]+)"?\)\s*\(type\s+"?([^")]+)"?\)\s*\(uri\s+"?([^")]+)"?\)(?:\s*\(options\s+"?([^")]*)"?\))?(?:\s*\(descr\s+"?([^")]*)"?\))?\)'
+    # Match each (lib ...) entry, including optional (hidden) flag
+    $pattern = '\(lib\s*\(name\s+"?([^")]+)"?\)\s*\(type\s+"?([^")]+)"?\)\s*\(uri\s+"?([^")]+)"?\)(?:\s*\(options\s+"?([^")]*)?"?\))?(?:\s*\(descr\s+"?([^")]*)?"?\))?(\(hidden\))?\)'
     
     $matches = [regex]::Matches($content, $pattern)
     
@@ -201,6 +201,7 @@ function Parse-SymLibTable {
             Uri         = $m.Groups[3].Value
             Options     = $m.Groups[4].Value
             Description = $m.Groups[5].Value
+            Hidden      = ($m.Groups[6].Value -eq "(hidden)")
         }
     }
     
@@ -223,12 +224,13 @@ function Write-SymLibTable {
     foreach ($entry in $Entries) {
         $line = "  (lib (name `"$($entry.Name)`")(type `"$($entry.Type)`")(uri `"$($entry.Uri)`")"
         
-        if ($entry.Options) {
-            $line += "(options `"$($entry.Options)`")"
-        }
+        # Always include options and descr (even if empty)
+        $line += "(options `"$($entry.Options)`")"
+        $line += "(descr `"$($entry.Description)`")"
         
-        if ($entry.Description) {
-            $line += "(descr `"$($entry.Description)`")"
+        # Add hidden flag if set
+        if ($entry.Hidden) {
+            $line += "(hidden)"
         }
         
         $line += ")"
@@ -243,7 +245,9 @@ function Write-SymLibTable {
         Copy-Item $Path $backup -Force
     }
     
-    $lines | Out-File -FilePath $Path -Encoding utf8 -Force
+    # Write UTF-8 without BOM (KiCad doesn't like BOM)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllLines($Path, $lines, $utf8NoBom)
 }
 
 function Update-SymLibTable {
@@ -284,8 +288,9 @@ function Update-SymLibTable {
                 Name        = $libName
                 Type        = "KiCad"
                 Uri         = "`${DMTDB_SYM}/$($file.Name)"
-                Options     = "hide"
-                Description = "DMTDB - $libName"
+                Options     = ""
+                Description = ""
+                Hidden      = $true
             }
             $newCount++
         }
@@ -343,7 +348,9 @@ function Update-KiCadPaths {
         if ($updated) {
             # Backup
             Copy-Item $commonFile "$commonFile.bak" -Force
-            $content | ConvertTo-Json -Depth 10 | Out-File $commonFile -Encoding utf8 -Force
+            # Write UTF-8 without BOM (KiCad doesn't like BOM)
+            $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+            [System.IO.File]::WriteAllText($commonFile, ($content | ConvertTo-Json -Depth 10), $utf8NoBom)
             Write-Success "Updated KiCad path variables"
         }
     }

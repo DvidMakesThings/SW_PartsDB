@@ -679,19 +679,67 @@
       "families": [
         {
           "ff": "01",
-          "name": "Evaluation Boards IC specific"
+          "name": "Development and Evaluation Boards"
         },
         {
           "ff": "02",
-          "name": "MCU FPGA Dev Boards"
+          "name": "Interface and Communication Boards"
         },
         {
           "ff": "03",
-          "name": "Programmers Debuggers Sockets"
+          "name": "Network and Ethernet Boards"
+        },
+        {
+          "ff": "04",
+          "name": "Power Supply and Power Management Boards"
+        },
+        {
+          "ff": "05",
+          "name": "Sensor and IO Boards"
+        },
+        {
+          "ff": "06",
+          "name": "Display and HMI Boards"
+        },
+        {
+          "ff": "07",
+          "name": "Audio and Video Boards"
+        },
+        {
+          "ff": "08",
+          "name": "Expansion and Adapter Boards"
+        },
+        {
+          "ff": "09",
+          "name": "PCIe and Computer Module Carriers"
+        },
+        {
+          "ff": "10",
+          "name": "Relay and Switching Boards"
+        },
+        {
+          "ff": "11",
+          "name": "Measurement and Data Acquisition Boards"
+        },
+        {
+          "ff": "12",
+          "name": "Test Fixtures and Programming Adapters"
+        },
+        {
+          "ff": "13",
+          "name": "Prototyping and Breakout Boards"
+        },
+        {
+          "ff": "14",
+          "name": "Custom Project Boards and Assemblies"
+        },
+        {
+          "ff": "90",
+          "name": "Kits and Multi Board Sets"
         },
         {
           "ff": "99",
-          "name": "Services and Software"
+          "name": "Miscellaneous or Accessories"
         }
       ]
     },
@@ -2473,6 +2521,343 @@
         "03": "For SSR",
         "04": "For contactor",
         "05": "Universal type",
+        "99": "Other"
+      }
+    },
+    "1901_Development_and_Evaluation_Boards": {
+      "cc": {
+        "01": "MCU evaluation board",
+        "02": "MPU or SoC evaluation board",
+        "03": "FPGA development board",
+        "04": "Microcontroller module",
+        "05": "AI accelerator module",
+        "06": "Demo board (vendor reference)",
+        "07": "Educational or starter kit",
+        "90": "Accessory or add-on",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Standalone board",
+        "02": "With expansion header",
+        "03": "With display or HMI",
+        "04": "Carrier-based system",
+        "05": "Stackable modular",
+        "06": "Compact / Mini",
+        "99": "Other"
+      }
+    },
+    "1902_Interface_and_Communication_Boards": {
+      "cc": {
+        "01": "USB interface",
+        "02": "UART/RS232/RS485 converter",
+        "03": "CAN or LIN interface",
+        "04": "I2C or SPI bridge",
+        "05": "GPIO expander",
+        "06": "Serial multiplexer or hub",
+        "07": "Isolated interface board",
+        "08": "Wireless transceiver (BT/WiFi/LoRa)",
+        "90": "Adapter or dongle",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Board mount",
+        "02": "Plug-in module",
+        "03": "USB dongle",
+        "04": "DIN-rail mount",
+        "05": "Isolated version",
+        "06": "Industrial version",
+        "99": "Other"
+      }
+    },
+    "1903_Network_and_Ethernet_Boards": {
+      "cc": {
+        "01": "Ethernet PHY or MAC board",
+        "02": "Ethernet controller module",
+        "03": "Ethernet switch",
+        "04": "PoE injector or splitter",
+        "05": "Network hub or bridge",
+        "06": "Firewall or router board",
+        "07": "WiFi or network interface",
+        "08": "Fiber or SFP board",
+        "90": "Accessory or adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single port",
+        "02": "Dual port",
+        "03": "4-port",
+        "04": "8-port or higher",
+        "05": "PoE-enabled",
+        "06": "Managed",
+        "07": "Unmanaged",
+        "99": "Other"
+      }
+    },
+    "1904_Power_Supply_and_Power_Management_Boards": {
+      "cc": {
+        "01": "DC-DC converter board",
+        "02": "AC-DC converter board",
+        "03": "USB-PD board",
+        "04": "Battery charger board",
+        "05": "UPS or backup module",
+        "06": "Power monitor/meter",
+        "07": "Power distributor",
+        "08": "Regulator module (buck/boost/LDO)",
+        "90": "Protection or fuse board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single output",
+        "02": "Multi output",
+        "03": "High current",
+        "04": "Isolated",
+        "05": "Programmable",
+        "06": "Compact form",
+        "07": "High voltage",
+        "99": "Other"
+      }
+    },
+    "1905_Sensor_and_IO_Boards": {
+      "cc": {
+        "01": "Environmental sensor",
+        "02": "Current or voltage sensor",
+        "03": "Motion or position sensor",
+        "04": "Optical or proximity sensor",
+        "05": "Touch or HMI input board",
+        "06": "Digital IO expander",
+        "07": "Analog IO interface",
+        "08": "Mixed IO module",
+        "90": "Evaluation daughterboard",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Analog output",
+        "02": "Digital output",
+        "03": "SPI interface",
+        "04": "I2C interface",
+        "05": "UART interface",
+        "06": "Wireless interface",
+        "07": "Isolated IO",
+        "99": "Other"
+      }
+    },
+    "1906_Display_and_HMI_Boards": {
+      "cc": {
+        "01": "Character LCD module",
+        "02": "Graphic LCD or TFT module",
+        "03": "OLED module",
+        "04": "ePaper module",
+        "05": "Touch controller board",
+        "06": "LED indicator or bargraph",
+        "07": "Button or keypad board",
+        "90": "Accessory interface board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "SPI interface",
+        "02": "I2C interface",
+        "03": "Parallel interface",
+        "04": "HDMI or DSI",
+        "05": "With touch panel",
+        "06": "Without touch",
+        "99": "Other"
+      }
+    },
+    "1907_Audio_and_Video_Boards": {
+      "cc": {
+        "01": "Audio codec or amplifier",
+        "02": "Microphone or preamp board",
+        "03": "Speaker driver board",
+        "04": "Video capture or encoder",
+        "05": "Camera interface",
+        "06": "Video output board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Mono",
+        "02": "Stereo",
+        "03": "Multi-channel",
+        "04": "Analog",
+        "05": "Digital I2S/TDM",
+        "06": "USB",
+        "99": "Other"
+      }
+    },
+    "1908_Expansion_and_Adapter_Boards": {
+      "cc": {
+        "01": "GPIO expansion board",
+        "02": "Protocol converter",
+        "03": "Bus adapter",
+        "04": "Level shifter",
+        "05": "Isolator module",
+        "06": "Bridge or interface card",
+        "07": "Stacking header board",
+        "08": "Backplane adapter",
+        "90": "Breakout or test adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single board",
+        "02": "Stackable",
+        "03": "Right angle",
+        "04": "Vertical",
+        "05": "DIN mount",
+        "99": "Other"
+      }
+    },
+    "1909_PCIe_and_Computer_Module_Carriers": {
+      "cc": {
+        "01": "PCIe card",
+        "02": "Mini PCIe board",
+        "03": "M.2 adapter",
+        "04": "Compute module carrier (CM4/CM5)",
+        "05": "NVMe adapter board",
+        "06": "Backplane extension",
+        "90": "Mechanical adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "x1",
+        "02": "x4",
+        "03": "x8",
+        "04": "x16",
+        "05": "Half length",
+        "06": "Full length",
+        "07": "Low profile",
+        "99": "Other"
+      }
+    },
+    "1910_Relay_and_Switching_Boards": {
+      "cc": {
+        "01": "Mechanical relay board",
+        "02": "Solid-state relay board",
+        "03": "High-current PDU module",
+        "04": "Signal relay board",
+        "05": "MOSFET switching board",
+        "06": "Triac or AC switching board",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single channel",
+        "02": "Dual channel",
+        "03": "4-channel",
+        "04": "8-channel",
+        "05": "Isolated",
+        "06": "DIN mount",
+        "99": "Other"
+      }
+    },
+    "1911_Measurement_and_Data_Acquisition_Boards": {
+      "cc": {
+        "01": "ADC board",
+        "02": "DAC board",
+        "03": "DAQ main board",
+        "04": "Signal conditioning board",
+        "05": "Current/voltage monitor board",
+        "06": "Calibration or reference board",
+        "90": "Measurement module",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single channel",
+        "02": "Multi-channel",
+        "03": "Differential",
+        "04": "Isolated",
+        "05": "High speed",
+        "06": "High accuracy",
+        "99": "Other"
+      }
+    },
+    "1912_Test_Fixtures_and_Programming_Adapters": {
+      "cc": {
+        "01": "Programming adapter",
+        "02": "Debug interface board",
+        "03": "Test fixture or jig",
+        "04": "Loopback adapter",
+        "05": "Load or dummy board",
+        "06": "Bed-of-nails interface",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "ISP interface",
+        "02": "JTAG interface",
+        "03": "UART interface",
+        "04": "USB interface",
+        "05": "Ethernet interface",
+        "99": "Other"
+      }
+    },
+    "1913_Prototyping_and_Breakout_Boards": {
+      "cc": {
+        "01": "Universal prototype board",
+        "02": "Breakout board (header/IC)",
+        "03": "Matrix or perf board",
+        "04": "Small component carrier",
+        "05": "Custom project prototype",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "SMD layout",
+        "02": "Through-hole layout",
+        "03": "Breadboard compatible",
+        "04": "With headers",
+        "05": "Without headers",
+        "99": "Other"
+      }
+    },
+    "1914_Custom_Project_Boards_and_Assemblies": {
+      "cc": {
+        "01": "Complete assembly board",
+        "02": "Main functional PCB",
+        "03": "Subassembly or module",
+        "04": "Mechanical interface board",
+        "05": "Client-specific variant",
+        "06": "Revision prototype",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Prototype",
+        "02": "Pre-production",
+        "03": "Production",
+        "04": "Legacy or retired",
+        "99": "Other"
+      }
+    },
+    "1990_Kits_and_Multi_Board_Sets": {
+      "cc": {
+        "01": "Development kit",
+        "02": "Evaluation kit",
+        "03": "Starter bundle",
+        "04": "Training or educational kit",
+        "05": "Accessory pack",
+        "90": "Board and cable set",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Single board kit",
+        "02": "Multi board kit",
+        "03": "With enclosure",
+        "04": "With power supply",
+        "05": "With sensors",
+        "99": "Other"
+      }
+    },
+    "1999_Miscellaneous_or_Accessories": {
+      "cc": {
+        "01": "Mounting accessory",
+        "02": "Cable accessory",
+        "03": "Cooling accessory",
+        "04": "Labeling or marking accessory",
+        "05": "Mechanical part",
+        "06": "Replacement part",
+        "90": "Add-on component",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "For main board",
+        "02": "For module",
+        "03": "For test setup",
+        "04": "General purpose",
         "99": "Other"
       }
     },

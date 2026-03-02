@@ -202,7 +202,8 @@ class KiCadSymbolProcessor:
         return content.replace('\r\n', '\n').replace('\r', '\n')
 
     @classmethod
-    def add_symbol_to_library(cls, library_path: Path, symbol_content: str, symbol_name: str, skip_exists_check: bool = False) -> str:
+    def add_symbol_to_library(cls, library_path: Path, symbol_content: str, symbol_name: str, 
+                              skip_exists_check: bool = False, update_existing: bool = False) -> str:
         """
         Add or update a symbol in the consolidated library file using string manipulation.
         This preserves existing formatting (including 'hide yes' attributes).
@@ -212,9 +213,11 @@ class KiCadSymbolProcessor:
             symbol_content: The (symbol ...) block to add (as string)
             symbol_name: Name of the symbol (for replacement detection)
             skip_exists_check: If True, skip duplicate check (not recommended)
+            update_existing: If True, update the symbol if it already exists
             
         Returns:
             "added" if symbol was added
+            "updated" if symbol was updated (when update_existing=True)
             "exists" if symbol already exists (skipped)
             "error" if failed
         """
@@ -262,19 +265,29 @@ class KiCadSymbolProcessor:
         pattern = rf'\(symbol\s+"{escaped_name}"\s+'
         
         if re.search(pattern, lib_text):
-            print(f"Note: Symbol '{symbol_name}' already exists in library")
-            return "exists"
-        
-        # Also check if MPN already exists in library (to prevent duplicates with different names)
-        mpn_match = re.search(r'\(property\s+"MPN"\s+"([^"]+)"', symbol_content)
-        if mpn_match:
-            mpn_value = mpn_match.group(1)
-            if mpn_value:  # Don't check empty MPNs
-                escaped_mpn = re.escape(mpn_value)
-                mpn_pattern = rf'\(property\s+"MPN"\s+"{escaped_mpn}"'
-                if re.search(mpn_pattern, lib_text):
-                    print(f"Note: Symbol with MPN '{mpn_value}' already exists in library")
-                    return "exists"
+            if update_existing:
+                # Remove existing symbol and add the new one
+                new_lib_text = cls._remove_symbol_from_library_text(lib_text, symbol_name)
+                if new_lib_text:
+                    lib_text = new_lib_text
+                    # Continue to add the updated symbol below
+                else:
+                    print(f"Warning: Could not remove existing symbol '{symbol_name}'")
+                    return "error"
+            else:
+                print(f"Note: Symbol '{symbol_name}' already exists in library")
+                return "exists"
+        else:
+            # Also check if MPN already exists in library (to prevent duplicates with different names)
+            mpn_match = re.search(r'\(property\s+"MPN"\s+"([^"]+)"', symbol_content)
+            if mpn_match:
+                mpn_value = mpn_match.group(1)
+                if mpn_value:  # Don't check empty MPNs
+                    escaped_mpn = re.escape(mpn_value)
+                    mpn_pattern = rf'\(property\s+"MPN"\s+"{escaped_mpn}"'
+                    if re.search(mpn_pattern, lib_text):
+                        print(f"Note: Symbol with MPN '{mpn_value}' already exists in library")
+                        return "exists"
         
         # Insert new symbol before the final closing paren
         # Find the last ) in the file
@@ -294,7 +307,66 @@ class KiCadSymbolProcessor:
         new_lib_text = before_text + "\n" + symbol_content + "\n" + lib_text[last_paren_idx:]
         
         library_path.write_text(new_lib_text, encoding=encoding)
+        
+        # Return "updated" if we replaced an existing symbol
+        if update_existing and re.search(pattern, library_path.read_text(encoding=encoding)):
+            return "updated"
         return "added"
+
+    @classmethod
+    def _remove_symbol_from_library_text(cls, lib_text: str, symbol_name: str) -> str:
+        """
+        Remove a symbol from library text by name.
+        
+        Args:
+            lib_text: The library file content as string
+            symbol_name: Name of the symbol to remove
+            
+        Returns:
+            Modified library text with symbol removed, or None if failed
+        """
+        import re
+        
+        escaped_name = re.escape(symbol_name)
+        # Match the entire symbol block including nested symbols
+        # Symbol blocks start with (symbol "name" and end with the matching )
+        pattern = rf'(\t|\s\s)\(symbol\s+"{escaped_name}"'
+        
+        match = re.search(pattern, lib_text)
+        if not match:
+            return None
+        
+        start_idx = match.start()
+        # Find the matching closing paren by counting parens
+        depth = 0
+        in_string = False
+        escape_next = False
+        idx = match.start()
+        
+        for i, char in enumerate(lib_text[idx:], start=idx):
+            if escape_next:
+                escape_next = False
+                continue
+            if char == '\\':
+                escape_next = True
+                continue
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+                if depth == 0:
+                    end_idx = i + 1
+                    # Remove the symbol block (including preceding newline if present)
+                    if start_idx > 0 and lib_text[start_idx - 1] == '\n':
+                        start_idx -= 1
+                    return lib_text[:start_idx] + lib_text[end_idx:]
+        
+        return None
 
     @classmethod
     def list_symbols_in_library(cls, library_path: Path) -> list[str]:
@@ -355,16 +427,18 @@ class KiCadSymbolProcessor:
         return False
 
     @classmethod
-    def generate_passive_symbol(cls, part: Part, library_path: Path) -> str:
+    def generate_passive_symbol(cls, part: Part, library_path: Path, update_existing: bool = False) -> str:
         """
         Auto-generate a symbol for a passive component (R/C) from part data.
         
         Args:
             part: Part object with value, mpn, manufacturer, etc.
             library_path: Path to the target library file
+            update_existing: If True, update existing symbol with new data
             
         Returns:
             "added" if symbol was added
+            "updated" if symbol was updated (when update_existing=True)
             "exists" if symbol already exists
             "error" if failed (e.g., polarized cap, inductor)
         """
@@ -667,7 +741,7 @@ class KiCadSymbolProcessor:
 		(embedded_fonts no)
 	)'''
         
-        return cls.add_symbol_to_library(library_path, symbol_content, symbol_name)
+        return cls.add_symbol_to_library(library_path, symbol_content, symbol_name, update_existing=update_existing)
 
 
 def process_uploaded_symbol(filepath: Path, part: Optional[Part] = None) -> dict:

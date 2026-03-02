@@ -249,9 +249,9 @@ def part_edit(dmtuid: str):
             lib_name = PASSIVE_LIBRARY_MAP[lib_key]
             lib_path = config.KICAD_SYMBOLS_DIR / f"{lib_name}.kicad_sym"
             
-            # Generate symbol - returns "added", "exists", or "error"
-            result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path)
-            if result in ("added", "exists"):
+            # Generate/update symbol - returns "added", "updated", "exists", or "error"
+            result = KiCadSymbolProcessor.generate_passive_symbol(part, lib_path, update_existing=True)
+            if result in ("added", "updated", "exists"):
                 # Build symbol reference: "LibName:Value MPN"
                 value = part.value or ""
                 mpn = part.mpn or ""

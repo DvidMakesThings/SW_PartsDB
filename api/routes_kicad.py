@@ -227,19 +227,142 @@ def kicad_http_part_detail(part_id):
         if not part:
             return jsonify({"error": "Part not found"}), 404
         
-        # Determine reference designator based on part type
-        # TT=01 is Passives: 01=Capacitors(C), 02=Resistors(R), 03=Inductors(L)
-        ref = "U"  # Default
+        # Determine reference designator based on part type (DMTUID format: DMT-TTFFCCSSXXX)
+        # TT = Domain, FF = Family
+        ref = "IC"  # Default for ICs
         if part.dmtuid and len(part.dmtuid) >= 8:
             tt = part.dmtuid[4:6]
             ff = part.dmtuid[6:8]
+            
+            # 01 - Passive Components
             if tt == "01":
                 if ff == "01":
-                    ref = "C"
+                    ref = "C"   # Capacitors
                 elif ff == "02":
-                    ref = "R"
+                    ref = "R"   # Resistors
                 elif ff == "03":
-                    ref = "L"
+                    ref = "L"   # Inductors
+                elif ff == "04":
+                    ref = "FL"  # EMI and Filters
+                else:
+                    ref = "R"   # Default for passives
+            
+            # 02 - Discrete Semiconductors
+            elif tt == "02":
+                if ff == "01":
+                    ref = "D"   # Diodes
+                elif ff == "02":
+                    ref = "Q"   # BJTs
+                elif ff == "03":
+                    ref = "Q"   # MOSFETs
+                elif ff == "04":
+                    ref = "Q"   # IGBTs
+                elif ff == "05":
+                    ref = "Q"   # Thyristors
+                elif ff == "06":
+                    ref = "D"   # Bridge Rectifiers
+                else:
+                    ref = "Q"   # Default for discretes
+            
+            # 03 - Integrated Circuits
+            elif tt == "03":
+                ref = "IC"
+            
+            # 04 - RF and Wireless
+            elif tt == "04":
+                if ff == "04":
+                    ref = "ANT"  # Antennas
+                else:
+                    ref = "IC"   # RF ICs and modules
+            
+            # 05 - Optoelectronics and Displays
+            elif tt == "05":
+                if ff in ("01", "02", "03", "04"):
+                    ref = "LED"  # LEDs and related
+                elif ff == "05":
+                    ref = "LD"   # Laser Diodes
+                elif ff in ("07", "08"):
+                    ref = "DS"   # Displays
+                else:
+                    ref = "LED"
+            
+            # 06 - Sensors and Transducers
+            elif tt == "06":
+                ref = "SEN"  # Sensors
+            
+            # 07 - Power Supplies and Magnetics
+            elif tt == "07":
+                if ff == "06":
+                    ref = "T"   # Transformers
+                elif ff == "07":
+                    ref = "L"   # Magnetics/inductors
+                else:
+                    ref = "PS"  # Power supplies
+            
+            # 08 - Circuit Protection
+            elif tt == "08":
+                if ff == "01":
+                    ref = "F"   # Fuses
+                elif ff == "02":
+                    ref = "CB"  # Circuit Breakers
+                elif ff in ("03", "04"):
+                    ref = "TVS" # TVS/MOV
+                elif ff == "05":
+                    ref = "PTC" # PTC/Resettable
+                else:
+                    ref = "F"
+            
+            # 09 - Connectors and Interconnects
+            elif tt == "09":
+                ref = "J"  # Connectors
+            
+            # 10 - Cables and Wiring
+            elif tt == "10":
+                ref = "W"  # Wires/Cables
+            
+            # 11 - Switches and HMI
+            elif tt == "11":
+                ref = "SW"  # Switches
+            
+            # 12 - Relays and Contactors
+            elif tt == "12":
+                ref = "K"  # Relays
+            
+            # 13 - Mechanical and Hardware
+            elif tt == "13":
+                ref = "H"  # Hardware
+            
+            # 14 - Thermal Management
+            elif tt == "14":
+                ref = "HS"  # Heat sinks/thermal
+            
+            # 15 - Enclosures and Racks
+            elif tt == "15":
+                ref = "ENC"  # Enclosures
+            
+            # 16 - Industrial Automation
+            elif tt == "16":
+                ref = "PLC"  # PLCs and industrial
+            
+            # 17 - Test and Measurement
+            elif tt == "17":
+                ref = "TM"  # Test and measurement
+            
+            # 18 - Prototyping and Fabrication
+            elif tt == "18":
+                ref = "PCB"  # Prototyping
+            
+            # 19 - Development and Programming
+            elif tt == "19":
+                ref = "BRD"  # Development boards
+            
+            # 20+ - Computing, Networking, etc.
+            elif tt in ("20", "21", "22", "23", "24", "25", "26", "27", "28"):
+                ref = "MOD"  # Modules
+            
+            # 29 - Project PCBs and Assemblies
+            elif tt == "29":
+                ref = "BRD"  # Boards/Assemblies
         
         # Build KiCad fields - all values must be strings
         # Field names should be lowercase per KiCad spec
@@ -259,9 +382,9 @@ def kicad_http_part_detail(part_id):
             }
         }
         
-        # Add LCSC if available
+        # Add LCSC_PART if available
         if part.kicad_libref:
-            fields["fields"]["LCSC"] = {"value": str(part.kicad_libref), "visible": "false"}
+            fields["fields"]["LCSC_PART"] = {"value": str(part.kicad_libref), "visible": "false"}
         
         # Add distributor fields as DIST1, DIST2, etc.
         if part.distributor:

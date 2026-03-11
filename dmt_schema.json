@@ -206,6 +206,10 @@
           "name": "VFD and Display Drivers"
         },
         {
+          "ff": "09",
+          "name": "Optocouplers and Optoisolators"
+        },
+        {
           "ff": "99",
           "name": "Opto Accessories"
         }
@@ -1124,13 +1128,13 @@
       "cc": {
         "01": "NPN",
         "02": "PNP",
-        "03": "Array dual",
+        "03": "Array",
         "10": "Power BJT",
         "99": "Special"
       },
       "ss": {
-        "01": "SMD small signal",
-        "02": "THT small signal",
+        "01": "SMD",
+        "02": "THT",
         "10": "Power package DPAK TO220",
         "99": "Other"
       }
@@ -1638,6 +1642,24 @@
       "ss": {
         "01": "LCD",
         "02": "OLED",
+        "99": "Other"
+      }
+    },
+    "0509_Optocouplers_Optoisolators": {
+      "cc": {
+        "01": "Transistor output",
+        "02": "Darlington output",
+        "03": "Triac output",
+        "04": "Logic gate output",
+        "05": "MOSFET output",
+        "06": "SCR output",
+        "10": "Multi-channel",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "SMD",
+        "02": "THT DIP",
+        "03": "Wide body",
         "99": "Other"
       }
     },

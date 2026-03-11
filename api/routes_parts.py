@@ -132,3 +132,47 @@ def delete_part(dmtuid: str):
         return jsonify({"error": str(exc)}), 400
     finally:
         session.close()
+
+
+@api_bp.route("/parts/suggestions")
+def part_suggestions():
+    """
+    GET /api/v1/parts/suggestions
+
+    Returns distinct values for distributor names and locations,
+    useful for auto-complete / datalist dropdowns in the add/edit form.
+    """
+    import json as _json
+    from sqlalchemy import distinct
+    from db.models import Part
+
+    session = get_session()
+    try:
+        # Distinct non-empty locations
+        locations = sorted({
+            row[0].strip()
+            for row in session.query(distinct(Part.location)).all()
+            if row[0] and row[0].strip()
+        })
+
+        # Distinct non-empty distributor names (stored as JSON arrays)
+        dist_names: set[str] = set()
+        for (raw,) in session.query(distinct(Part.distributor)).all():
+            if not raw or not raw.strip():
+                continue
+            try:
+                entries = _json.loads(raw)
+                if isinstance(entries, list):
+                    for entry in entries:
+                        name = (entry.get("name") or "").strip()
+                        if name:
+                            dist_names.add(name)
+            except (_json.JSONDecodeError, TypeError):
+                pass
+
+        return jsonify({
+            "locations": locations,
+            "distributor_names": sorted(dist_names),
+        })
+    finally:
+        session.close()

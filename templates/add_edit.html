@@ -58,39 +58,46 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
   <div class="detail-card" style="margin-bottom:1rem;">
     <h2>Core Fields</h2>
     <div class="form-grid">
+      {% set p = part or template_part %}
       <div class="form-group">
         <label>MPN</label>
-        <input type="text" name="MPN" value="{{ part.mpn if part else '' }}">
+        <input type="text" name="MPN" value="{{ p.mpn if p else '' }}">
       </div>
       <div class="form-group">
         <label>Value</label>
-        <input type="text" name="Value" value="{{ part.value if part else '' }}">
+        <input type="text" name="Value" value="{{ p.value if p else '' }}">
       </div>
       <div class="form-group">
         <label>Manufacturer</label>
-        <input type="text" name="Manufacturer" value="{{ part.manufacturer if part else '' }}">
+        <input type="text" name="Manufacturer" value="{{ p.manufacturer if p else '' }}">
       </div>
       <div class="form-group">
         <label>Quantity</label>
-        <input type="text" name="Quantity" value="{{ part.quantity if part else '' }}">
+        <input type="text" name="Quantity" value="{{ p.quantity if p else '' }}">
       </div>
       <div class="form-group">
         <label>Location</label>
-        <input type="text" name="Location" value="{{ part.location if part else '' }}">
+        <div class="combobox" data-combobox="location">
+          <div class="combobox-inner">
+            <input type="text" name="Location" value="{{ p.location if p else '' }}">
+            <button type="button" class="combobox-toggle" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+          </div>
+          <ul class="combobox-list"></ul>
+        </div>
       </div>
       <div class="form-group">
         <label>Datasheet (URL or local filename)</label>
-        <input type="text" name="Datasheet" value="{{ part.datasheet if part else '' }}">
+        <input type="text" name="Datasheet" value="{{ p.datasheet if p else '' }}">
       </div>
       <div class="form-group full">
         <label>Description</label>
-        <textarea name="Description" rows="2">{{ part.description if part else '' }}</textarea>
+        <textarea name="Description" rows="2">{{ p.description if p else '' }}</textarea>
       </div>
       <div class="form-group">
         <label>RoHS</label>
         {% set rohs_val = '' %}
-        {% if part and part.fields %}
-        {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_val = f.field_value %}{% endfor %}
+        {% if p and p.fields %}
+        {% set rohs_val = p.fields | selectattr('field_name', 'equalto', 'RoHS') | map(attribute='field_value') | first | default('') %}
         {% endif %}
         <select name="RoHS">
           <option value="">—</option>
@@ -106,14 +113,20 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
   <div class="detail-card" style="margin-bottom:1rem;">
     <h2>Distributors</h2>
     <div id="distributorsContainer">
-      {% set distributors = parse_distributors(part.distributor if part else '') %}
+      {% set distributors = parse_distributors((part or template_part).distributor if (part or template_part) else '') %}
       {% if distributors %}
         {% for dist in distributors %}
         <div class="distributor-row" data-index="{{ loop.index0 }}">
           <div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">
             <div class="form-group">
               <label>Name</label>
-              <input type="text" name="dist_name_{{ loop.index0 }}" value="{{ dist.name }}" placeholder="DigiKey, Mouser, etc.">
+              <div class="combobox" data-combobox="distributor">
+                <div class="combobox-inner">
+                  <input type="text" name="dist_name_{{ loop.index0 }}" value="{{ dist.name }}" placeholder="DigiKey, Mouser, etc.">
+                  <button type="button" class="combobox-toggle" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                </div>
+                <ul class="combobox-list"></ul>
+              </div>
             </div>
             <div class="form-group">
               <label>URL</label>
@@ -123,17 +136,23 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
           </div>
         </div>
         {% endfor %}
-      {% elif part and part.distributor %}
+      {% elif (part or template_part) and (part or template_part).distributor %}
         <!-- Legacy single URL -->
         <div class="distributor-row" data-index="0">
           <div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">
             <div class="form-group">
               <label>Name</label>
-              <input type="text" name="dist_name_0" value="" placeholder="DigiKey, Mouser, etc.">
+              <div class="combobox" data-combobox="distributor">
+                <div class="combobox-inner">
+                  <input type="text" name="dist_name_0" value="" placeholder="DigiKey, Mouser, etc.">
+                  <button type="button" class="combobox-toggle" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+                </div>
+                <ul class="combobox-list"></ul>
+              </div>
             </div>
             <div class="form-group">
               <label>URL</label>
-              <input type="text" name="dist_url_0" value="{{ part.distributor }}" placeholder="https://...">
+              <input type="text" name="dist_url_0" value="{{ (part or template_part).distributor }}" placeholder="https://...">
             </div>
             <button type="button" class="btn btn-danger btn-sm remove-distributor" title="Remove distributor">🗑</button>
           </div>
@@ -144,7 +163,8 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
       + Add Distributor
     </button>
     <!-- Hidden field to track distributor count -->
-    <input type="hidden" name="distributor_count" id="distributorCount" value="{{ distributors|length if distributors else (1 if part and part.distributor else 0) }}">
+    {% set src = part or template_part %}
+    <input type="hidden" name="distributor_count" id="distributorCount" value="{{ distributors|length if distributors else (1 if src and src.distributor else 0) }}">
   </div>
 
   <!-- Template Fields -->
@@ -233,7 +253,7 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
   <div class="detail-card" style="margin-bottom:1rem;">
     <h2>Notes</h2>
     <div class="form-group full">
-      <textarea name="notes" rows="3">{{ part.notes if part else '' }}</textarea>
+      <textarea name="notes" rows="3">{{ (part or template_part).notes if (part or template_part) else '' }}</textarea>
     </div>
   </div>
 
@@ -276,7 +296,8 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
     tt: "{{ template_part.tt }}",
     ff: "{{ template_part.ff }}",
     cc: "{{ template_part.cc }}",
-    ss: "{{ template_part.ss }}"
+    ss: "{{ template_part.ss }}",
+    fields: {{ template_part.to_dict() | tojson | safe }}
   };</script>
 {% else %}
 <script>var templatePartData = null;</script>

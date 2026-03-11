@@ -22,6 +22,7 @@
     <a href="/part/{{ part.dmtuid }}/edit" class="btn btn-secondary">✏ Edit</a>
     <a href="/part/add?template={{ part.dmtuid }}" class="btn btn-secondary"
       title="Create new part using this as template">📋 Use as Template</a>
+    <button type="button" class="btn btn-secondary" onclick="printLabel75x50()" title="Print 75×50mm label">🏷 Print Label</button>
     <form method="post" action="/part/{{ part.dmtuid }}/delete" onsubmit="return confirm('Delete {{ part.dmtuid }}?');"
       style="display:inline;">
       <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
@@ -599,5 +600,11 @@
       if (e.target === modal) hideSymbolEditor();
     });
   })();
+
+  function printLabel75x50() {
+    var url = '/labels/preview?dmtuid={{ part.dmtuid }}&size=75x50&print=1';
+    var w = window.open(url, '_blank', 'width=600,height=400');
+    w.onload = function () { w.print(); };
+  }
 </script>
 {% endblock %}

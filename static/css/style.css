@@ -852,6 +852,103 @@ th.ds-header {
   padding: 0.5rem;
 }
 
+/* ── Combobox (dropdown + free-text) ────────────────────────── */
+.combobox {
+  position: relative;
+}
+
+.combobox-inner {
+  display: flex;
+  align-items: stretch;
+}
+
+.combobox-inner input {
+  flex: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  min-width: 0;
+}
+
+.combobox-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.combobox-toggle:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.combobox-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform .15s;
+}
+
+.combobox.open .combobox-toggle svg {
+  transform: rotate(180deg);
+}
+
+.combobox-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+.combobox.open .combobox-list {
+  display: block;
+}
+
+.combobox-list li {
+  padding: .45rem .75rem;
+  font-size: .9rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s;
+}
+
+.combobox-list li:hover,
+.combobox-list li.highlighted {
+  background: var(--accent);
+  color: #fff;
+}
+
+.combobox-list li.no-match {
+  color: var(--text-dim);
+  font-style: italic;
+  cursor: default;
+}
+
+.combobox-list li.no-match:hover {
+  background: transparent;
+  color: var(--text-dim);
+}
+
 .form-actions {
   display: flex;
   gap: .75rem;

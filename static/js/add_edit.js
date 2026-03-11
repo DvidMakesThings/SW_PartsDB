@@ -137,6 +137,16 @@
         });
         container.innerHTML = html
           || '<p style="color:var(--text-dim);">No additional template fields.</p>';
+
+        // Pre-fill template field values when using "Use as Template"
+        if (window.templatePartData && window.templatePartData.fields) {
+          var tplFields = window.templatePartData.fields;
+          data.fields.forEach(function (f) {
+            if (SKIP.has(f) || !tplFields[f]) return;
+            var input = container.querySelector('input[name="' + f + '"]');
+            if (input) input.value = tplFields[f];
+          });
+        }
       });
   }
 
@@ -215,6 +225,7 @@
   function getPartData() {
     var rohsSelect = document.querySelector('select[name="RoHS"]');
     var rohsVal = rohsSelect ? (rohsSelect.value === 'No' ? 'NO' : 'YES') : 'YES';
+    var dist1Input = document.querySelector('input[name="dist_url_0"]');
     return {
       Value: document.querySelector('input[name="Value"]')?.value ||
         document.querySelector('input[name="MPN"]')?.value || '',
@@ -223,7 +234,9 @@
       Description: document.querySelector('textarea[name="Description"]')?.value || '',
       MFR: document.querySelector('input[name="Manufacturer"]')?.value || '',
       MPN: document.querySelector('input[name="MPN"]')?.value || '',
-      ROHS: rohsVal
+      ROHS: rohsVal,
+      LCSC_PART: lcscInput?.value || '',
+      DIST1: dist1Input?.value || ''
     };
   }
 
@@ -614,6 +627,7 @@
   function getPartData() {
     var rohsSelect = document.querySelector('select[name="RoHS"]');
     var rohsVal = rohsSelect ? (rohsSelect.value === 'No' ? 'NO' : 'YES') : 'YES';
+    var dist1Input = document.querySelector('input[name="dist_url_0"]');
     return {
       Value: document.querySelector('input[name="Value"]')?.value ||
         document.querySelector('input[name="MPN"]')?.value || '',
@@ -622,7 +636,9 @@
       Description: document.querySelector('textarea[name="Description"]')?.value || '',
       MFR: document.querySelector('input[name="Manufacturer"]')?.value || '',
       MPN: document.querySelector('input[name="MPN"]')?.value || '',
-      ROHS: rohsVal
+      ROHS: rohsVal,
+      LCSC_PART: lcscInput?.value || '',
+      DIST1: dist1Input?.value || ''
     };
   }
 
@@ -954,7 +970,13 @@
       '<div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: end;">' +
       '  <div class="form-group">' +
       '    <label>Name</label>' +
-      '    <input type="text" name="dist_name_' + index + '" placeholder="DigiKey, Mouser, etc.">' +
+      '    <div class="combobox" data-combobox="distributor">' +
+      '      <div class="combobox-inner">' +
+      '        <input type="text" name="dist_name_' + index + '" placeholder="DigiKey, Mouser, etc.">' +
+      '        <button type="button" class="combobox-toggle" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>' +
+      '      </div>' +
+      '      <ul class="combobox-list"></ul>' +
+      '    </div>' +
       '  </div>' +
       '  <div class="form-group">' +
       '    <label>URL</label>' +
@@ -962,6 +984,11 @@
       '  </div>' +
       '  <button type="button" class="btn btn-danger btn-sm remove-distributor" title="Remove distributor">🗑</button>' +
       '</div>';
+    // Initialize combobox on the newly created row
+    if (window.DMTDB_Combobox) {
+      var cb = row.querySelector('.combobox[data-combobox="distributor"]');
+      if (cb) window.DMTDB_Combobox.init(cb);
+    }
     return row;
   }
 
@@ -980,4 +1007,139 @@
       }
     }
   });
+})();
+
+/**
+ * Combobox – dropdown with free-text input.
+ *
+ * Each .combobox element has data-combobox="location" or "distributor".
+ * Suggestions are loaded once from /api/v1/parts/suggestions and stored
+ * globally so dynamically-added rows can share them.
+ */
+var DMTDB_Combobox = (function () {
+  "use strict";
+
+  var suggestions = { location: [], distributor: [] };
+
+  /* ── Render the <li> items matching the current filter ────────── */
+  function renderList(combo) {
+    var input = combo.querySelector("input");
+    var list  = combo.querySelector(".combobox-list");
+    var kind  = combo.dataset.combobox;           // "location" | "distributor"
+    var items = suggestions[kind] || [];
+    var filter = (input.value || "").trim().toLowerCase();
+
+    list.innerHTML = "";
+    var matches = items.filter(function (v) {
+      return v.toLowerCase().indexOf(filter) !== -1;
+    });
+
+    if (matches.length === 0) {
+      var li = document.createElement("li");
+      li.className = "no-match";
+      li.textContent = items.length ? "No matches" : "No saved values yet";
+      list.appendChild(li);
+      return;
+    }
+
+    matches.forEach(function (v) {
+      var li = document.createElement("li");
+      li.textContent = v;
+      li.addEventListener("mousedown", function (e) {
+        e.preventDefault();                       // keep focus on input
+        input.value = v;
+        close(combo);
+        input.dispatchEvent(new Event("change"));
+      });
+      list.appendChild(li);
+    });
+  }
+
+  /* ── Open / close helpers ─────────────────────────────────── */
+  function open(combo) {
+    renderList(combo);
+    combo.classList.add("open");
+  }
+
+  function close(combo) {
+    combo.classList.remove("open");
+  }
+
+  function toggle(combo) {
+    if (combo.classList.contains("open")) close(combo);
+    else open(combo);
+  }
+
+  /* ── Keyboard nav ────────────────────────────────────────── */
+  function handleKey(combo, e) {
+    var list = combo.querySelector(".combobox-list");
+    var items = list.querySelectorAll("li:not(.no-match)");
+    if (!items.length) return;
+
+    var cur = list.querySelector(".highlighted");
+    var idx = -1;
+    items.forEach(function (li, i) { if (li === cur) idx = i; });
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!combo.classList.contains("open")) { open(combo); return; }
+      if (cur) cur.classList.remove("highlighted");
+      idx = (idx + 1) % items.length;
+      items[idx].classList.add("highlighted");
+      items[idx].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (cur) cur.classList.remove("highlighted");
+      idx = (idx - 1 + items.length) % items.length;
+      items[idx].classList.add("highlighted");
+      items[idx].scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" && cur) {
+      e.preventDefault();
+      combo.querySelector("input").value = cur.textContent;
+      close(combo);
+    } else if (e.key === "Escape") {
+      close(combo);
+    }
+  }
+
+  /* ── Bind events on a single .combobox element ───────────── */
+  function init(combo) {
+    var input = combo.querySelector("input");
+    var btn   = combo.querySelector(".combobox-toggle");
+
+    btn.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      toggle(combo);
+      input.focus();
+    });
+
+    input.addEventListener("focus", function () { open(combo); });
+    input.addEventListener("input", function () { renderList(combo); });
+    input.addEventListener("blur",  function () {
+      // Small delay so mousedown on <li> can fire first
+      setTimeout(function () { close(combo); }, 150);
+    });
+    input.addEventListener("keydown", function (e) { handleKey(combo, e); });
+  }
+
+  /* ── Bootstrap: fetch suggestions then init all combos ────── */
+  function bootstrap() {
+    fetch("/api/v1/parts/suggestions")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        suggestions.location    = data.locations         || [];
+        suggestions.distributor = data.distributor_names  || [];
+
+        document.querySelectorAll(".combobox").forEach(init);
+      })
+      .catch(function (err) {
+        console.warn("Could not load field suggestions:", err);
+        // Still init combos so the toggle works (they'll just be empty)
+        document.querySelectorAll(".combobox").forEach(init);
+      });
+  }
+
+  bootstrap();
+
+  return { init: init, suggestions: suggestions };
 })();

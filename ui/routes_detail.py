@@ -8,6 +8,7 @@ from flask import render_template, abort
 from ui import ui_bp
 from db import get_session
 from services.parts_service import PartsService
+from services.supply_chain_service import get_pricing
 from schema.loader import domain_name, family_name
 from schema.templates import get_fields
 
@@ -39,6 +40,7 @@ def part_detail(dmtuid: str):
         if not part:
             abort(404)
         template = get_fields(part.tt, part.ff)
+        pricing_data = get_pricing(session, dmtuid)
         return render_template(
             "detail.html",
             part=part,
@@ -46,6 +48,7 @@ def part_detail(dmtuid: str):
             domain_name=domain_name,
             family_name=family_name,
             parse_distributors=parse_distributors,
+            pricing_data=pricing_data,
         )
     finally:
         session.close()

@@ -128,6 +128,93 @@
   </div>
   {% endif %}
 
+  <!-- Supply Chain / Pricing -->
+  <div class="detail-card" id="supplyChainCard" style="grid-column: 1 / -1;">
+    <h2>Supply Chain
+      <button id="btnRefreshPricing" class="btn-refresh" title="Refresh pricing from distributors" onclick="refreshPricing('{{ part.dmtuid }}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Refresh
+      </button>
+    </h2>
+    <div id="pricingContent">
+      {% if pricing_data %}
+        {% for p in pricing_data %}
+        <div class="pricing-source">
+          <div class="field-row">
+            <span class="field-label">Source</span>
+            <span class="field-value">
+              {{ p.source }}
+              {% if p.part_code %}
+                — <a href="{{ p.url }}" target="_blank" rel="noopener" class="distributor-link">{{ p.part_code }}</a>
+              {% endif %}
+            </span>
+          </div>
+          {% if p.error %}
+          <div class="field-row">
+            <span class="field-label">Error</span>
+            <span class="field-value" style="color: #ef4444;">{{ p.error }}</span>
+          </div>
+          {% else %}
+          <div class="field-row">
+            <span class="field-label">Stock</span>
+            <span class="field-value">
+              {% if p.stock is not none %}
+                <span class="badge {% if p.stock > 100 %}badge-green{% elif p.stock > 0 %}badge-yellow{% else %}badge-red{% endif %}">
+                  {{ "{:,}".format(p.stock) }}
+                </span>
+              {% else %}
+                <span class="badge badge-dim">Unknown</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Lifecycle</span>
+            <span class="field-value">
+              {% if p.lifecycle %}
+                <span class="badge {% if p.lifecycle == 'Active' %}badge-green{% elif p.lifecycle in ['NRND', 'Not Recommended'] %}badge-yellow{% elif p.lifecycle in ['Discontinued', 'EOL', 'Obsolete'] %}badge-red{% else %}badge-dim{% endif %}">
+                  {{ p.lifecycle }}
+                </span>
+              {% else %}
+                <span class="badge badge-dim">Unknown</span>
+              {% endif %}
+            </span>
+          </div>
+          {% if p.price_1 or p.price_10 or p.price_100 or p.price_1000 %}
+          <div class="field-row">
+            <span class="field-label">Pricing ({{ p.currency or 'USD' }})</span>
+            <span class="field-value pricing-breaks">
+              {% if p.price_1 %}<span class="price-break">1+: ${{ p.price_1 }}</span>{% endif %}
+              {% if p.price_10 %}<span class="price-break">10+: ${{ p.price_10 }}</span>{% endif %}
+              {% if p.price_100 %}<span class="price-break">100+: ${{ p.price_100 }}</span>{% endif %}
+              {% if p.price_1000 %}<span class="price-break">1000+: ${{ p.price_1000 }}</span>{% endif %}
+            </span>
+          </div>
+          {% endif %}
+          {% endif %}
+          {% if p.last_fetched %}
+          <div class="field-row">
+            <span class="field-label">Last Updated</span>
+            <span class="field-value" style="color: var(--text-dim); font-size: 0.8rem;">{{ p.last_fetched }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color: var(--text-dim); font-size: .85rem;">
+          {% if part.kicad_libref %}
+            No pricing data yet — click <strong>Refresh</strong> to fetch from LCSC.
+          {% else %}
+            No LCSC Part number set. Add one in the Classification section to enable pricing lookup.
+          {% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
   {% if part.fields %}
   <div class="detail-card" style="grid-column: 1 / -1;">
     <h2>Technical Parameters
@@ -329,6 +416,56 @@
   .distributor-link:hover {
     color: var(--accent-light, #818cf8);
     text-decoration: underline;
+  }
+
+  /* Supply Chain / Pricing */
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    transition: opacity 0.2s;
+  }
+  .btn-refresh:hover { opacity: 0.85; }
+  .btn-refresh:disabled { opacity: 0.5; cursor: wait; }
+  .btn-refresh svg.spinning {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pricing-source { margin-bottom: 0.75rem; }
+  .pricing-source + .pricing-source {
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.15em 0.55em;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .badge-green  { background: #16a34a22; color: #16a34a; }
+  .badge-yellow { background: #eab30822; color: #eab308; }
+  .badge-red    { background: #ef444422; color: #ef4444; }
+  .badge-dim    { background: var(--border); color: var(--text-dim); }
+  .pricing-breaks {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .price-break {
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
   }
 </style>
 {% endblock %}
@@ -605,6 +742,83 @@
     var url = '/labels/preview?dmtuid={{ part.dmtuid }}&size=75x50&print=1';
     var w = window.open(url, '_blank', 'width=600,height=400');
     w.onload = function () { w.print(); };
+  }
+
+  function refreshPricing(dmtuid) {
+    var btn = document.getElementById('btnRefreshPricing');
+    var svg = btn.querySelector('svg');
+    var content = document.getElementById('pricingContent');
+
+    btn.disabled = true;
+    svg.classList.add('spinning');
+
+    fetch('/api/v1/parts/' + encodeURIComponent(dmtuid) + '/pricing/refresh', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        // Re-render the pricing section with the fetch results
+        var html = '';
+        if (!data || data.length === 0) {
+          html = '<p style="color: var(--text-dim); font-size: .85rem;">No pricing data returned.</p>';
+        } else {
+          data.forEach(function (p) {
+            html += '<div class="pricing-source">';
+            html += '<div class="field-row"><span class="field-label">Source</span><span class="field-value">' + esc(p.source || '');
+            if (p.part_code) {
+              html += ' — <a href="' + esc(p.url || '') + '" target="_blank" rel="noopener" class="distributor-link">' + esc(p.part_code) + '</a>';
+            }
+            html += '</span></div>';
+
+            if (p.error) {
+              html += '<div class="field-row"><span class="field-label">Error</span><span class="field-value" style="color:#ef4444;">' + esc(p.error) + '</span></div>';
+            } else {
+              // Stock
+              var stockVal = p.stock;
+              var stockClass = 'badge-dim';
+              var stockText = 'Unknown';
+              if (stockVal !== null && stockVal !== undefined) {
+                stockText = Number(stockVal).toLocaleString();
+                stockClass = stockVal > 100 ? 'badge-green' : (stockVal > 0 ? 'badge-yellow' : 'badge-red');
+              }
+              html += '<div class="field-row"><span class="field-label">Stock</span><span class="field-value"><span class="badge ' + stockClass + '">' + stockText + '</span></span></div>';
+
+              // Lifecycle
+              var lc = p.lifecycle || '';
+              var lcClass = 'badge-dim';
+              if (lc === 'Active') lcClass = 'badge-green';
+              else if (lc === 'NRND' || lc === 'Not Recommended') lcClass = 'badge-yellow';
+              else if (lc === 'Discontinued' || lc === 'EOL' || lc === 'Obsolete') lcClass = 'badge-red';
+              html += '<div class="field-row"><span class="field-label">Lifecycle</span><span class="field-value"><span class="badge ' + lcClass + '">' + esc(lc || 'Unknown') + '</span></span></div>';
+
+              // Prices
+              var prices = [];
+              if (p.price_1) prices.push('1+: $' + p.price_1);
+              if (p.price_10) prices.push('10+: $' + p.price_10);
+              if (p.price_100) prices.push('100+: $' + p.price_100);
+              if (p.price_1000) prices.push('1000+: $' + p.price_1000);
+              if (prices.length) {
+                html += '<div class="field-row"><span class="field-label">Pricing (' + esc(p.currency || 'USD') + ')</span><span class="field-value pricing-breaks">';
+                prices.forEach(function (pb) { html += '<span class="price-break">' + pb + '</span>'; });
+                html += '</span></div>';
+              }
+            }
+            html += '</div>';
+          });
+        }
+        content.innerHTML = html;
+      })
+      .catch(function (err) {
+        content.innerHTML = '<p style="color:#ef4444; font-size:.85rem;">Fetch failed: ' + esc(String(err)) + '</p>';
+      })
+      .finally(function () {
+        btn.disabled = false;
+        svg.classList.remove('spinning');
+      });
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
   }
 </script>
 {% endblock %}

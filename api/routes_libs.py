@@ -964,7 +964,11 @@ def list_libs():
                     "size": f.stat().st_size,
                     "url": f"/kicad_libs/3dmodels/{f.name}",
                 })
-    
+
+    # Sort all lists alphabetically by name (case-insensitive)
+    for key in result:
+        result[key].sort(key=lambda x: x["name"].lower())
+
     return jsonify(result)
 
 

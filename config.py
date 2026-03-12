@@ -39,3 +39,10 @@ API_MAX_LIMIT     = 1000
 API_DEFAULT_LIMIT = 100
 SEARCH_DROPDOWN_LIMIT = 20
 KICAD_SEARCH_LIMIT    = 200
+
+# ── Supply Chain ───────────────────────────────────────────────────────
+# How many seconds before cached pricing is considered stale (default 24h)
+SUPPLY_CHAIN_CACHE_TTL = int(os.environ.get("DMTDB_SUPPLY_CACHE_TTL", "86400"))
+
+# USD → EUR conversion rate for display (update periodically or set via env)
+USD_TO_EUR_RATE = float(os.environ.get("DMTDB_USD_TO_EUR", "0.92"))

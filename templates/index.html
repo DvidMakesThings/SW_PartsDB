@@ -7,7 +7,16 @@
     <h1>Parts Library</h1>
     <span class="subtitle">{{ total }} part{{ 's' if total != 1 }} found</span>
   </div>
-  <a href="/part/add" class="btn btn-primary">+ Add Part</a>
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <button type="button" id="btnRefreshAll" class="btn btn-secondary" onclick="refreshAllPricing()" title="Refresh LCSC pricing for all parts with an LCSC code">
+      <svg id="refreshAllSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Refresh All Pricing
+    </button>
+    <a href="/part/add" class="btn btn-primary">+ Add Part</a>
+  </div>
 </div>
 
 <form method="get" action="/" id="searchForm">
@@ -117,6 +126,7 @@
         {{ sort_header('Location', 'location') }}
         <th>Domain / Family</th>
         {{ sort_header('Manufacturer', 'manufacturer') }}
+        <th title="Price per unit (EUR)">Price</th>
         <th class="truncate">Description</th>
         {{ sort_header('Added', 'created_at') }}
         <th title="KiCad Assets">KiCad</th>
@@ -126,7 +136,8 @@
     <tbody>
       {% for p in parts %}
       <tr>
-        <td class="uid-cell"><a href="/part/{{ p.dmtuid }}">{{ p.dmtuid }}</a></td>
+        {% set pl = pricing_lookup.get(p.dmtuid, {}) %}
+        <td class="uid-cell"><a href="/part/{{ p.dmtuid }}" {% if pl.lifecycle == 'Active' %}style="color:var(--green);"{% elif pl.lifecycle in ['EOL', 'Discontinued', 'Obsolete'] %}style="color:var(--red);"{% elif pl.lifecycle in ['NRND', 'Not Recommended'] %}style="color:#eab308;"{% endif %}>{{ p.dmtuid }}</a></td>
         <td>{{ p.mpn or '' }}</td>
         <td>{{ p.value or '' }}</td>
         <td>{{ p.quantity or '' }}</td>
@@ -137,6 +148,7 @@
           <span style="font-size:.8rem; color:var(--text-dim)">{{ family_name(p.tt, p.ff) }}</span>
         </td>
         <td>{{ p.manufacturer or '' }}</td>
+        <td style="font-size:.85rem; white-space:nowrap;">{% if pl.price_eur %}€{{ pl.price_eur }}{% endif %}</td>
         <td class="truncate" title="{{ p.description or '' }}">{{ p.description or '' }}</td>
         <td style="font-size:.8rem;color:var(--text-dim);white-space:nowrap;">{{ p.created_at.strftime('%Y-%m-%d') if
           p.created_at else '' }}</td>
@@ -226,4 +238,45 @@
 {% block scripts %}
 <script src="/static/js/search.js"></script>
 <script src="/static/js/adv_search.js"></script>
+<script>
+function refreshAllPricing() {
+  var btn = document.getElementById('btnRefreshAll');
+  var svg = document.getElementById('refreshAllSvg');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  svg.style.animation = 'spin 1s linear infinite';
+  btn.innerHTML = svg.outerHTML + ' Refreshing…';
+
+  fetch('/api/v1/supply/refresh', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.style.opacity = '';
+      svg = document.getElementById('refreshAllSvg') || btn.querySelector('svg');
+      if (svg) svg.style.animation = '';
+      var msg = 'Done: ' + (data.ok || 0) + ' updated, ' + (data.errors || 0) + ' errors (' + (data.total || 0) + ' total)';
+      btn.innerHTML = '<svg id="refreshAllSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh All Pricing';
+      showToast(msg, data.errors > 0 ? 'warn' : 'ok');
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.innerHTML = '<svg id="refreshAllSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh All Pricing';
+      showToast('Refresh failed: ' + err, 'err');
+    });
+}
+
+function showToast(msg, type) {
+  var el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;padding:.75rem 1.25rem;border-radius:8px;font-size:.9rem;z-index:9999;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:opacity .4s;';
+  el.style.background = type === 'ok' ? '#22c55e' : type === 'warn' ? '#eab308' : '#ef4444';
+  if (type === 'warn') el.style.color = '#000';
+  document.body.appendChild(el);
+  setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 500); }, 4000);
+}
+</script>
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
 {% endblock %}

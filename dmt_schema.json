@@ -3005,6 +3005,76 @@
         "99": "Other"
       }
     },
+    "2001_SBCs_and_Embedded_PCs": {
+      "cc": {
+        "01": "Single Board Computer (SBC)",
+        "02": "Compute Module (SoM)",
+        "03": "Embedded PC",
+        "04": "Industrial SBC",
+        "05": "AI / ML Edge SBC",
+        "06": "Thin Client",
+        "90": "Accessory (case, PSU, cable)",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "ARM Cortex-A (Broadcom, Allwinner, Amlogic)",
+        "02": "ARM Cortex-A (Rockchip, Qualcomm)",
+        "03": "ARM Cortex-M / R",
+        "04": "x86 / x64 (Intel)",
+        "05": "x86 / x64 (AMD)",
+        "06": "RISC-V",
+        "07": "MIPS",
+        "99": "Other"
+      }
+    },
+    "2002_Interface_Boards_HATs_Carrier_Boards": {
+      "cc": {
+        "01": "HAT (Raspberry Pi form-factor)",
+        "02": "pHAT (Raspberry Pi Zero form-factor)",
+        "03": "Cape (BeagleBone form-factor)",
+        "04": "Shield (Arduino form-factor)",
+        "05": "Click Board (MikroBUS)",
+        "06": "FeatherWing (Adafruit Feather)",
+        "07": "Carrier / Breakout Board",
+        "90": "Adapter",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "GPIO / Digital I/O",
+        "02": "Motor / Servo / Stepper",
+        "03": "Communication (CAN, RS-485, LoRa)",
+        "04": "ADC / DAC / Analog",
+        "05": "Display / LED",
+        "06": "Audio",
+        "07": "Power Management / UPS",
+        "08": "Storage (NVMe, SATA)",
+        "09": "PoE",
+        "10": "Sensor",
+        "99": "Other"
+      }
+    },
+    "2099_Embedded_Accessories": {
+      "cc": {
+        "01": "Case / Enclosure",
+        "02": "Power Supply",
+        "03": "Cable / Adapter",
+        "04": "Heatsink / Fan / Cooling",
+        "05": "Camera Module",
+        "06": "Display Module",
+        "07": "Storage Media",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "For Raspberry Pi",
+        "02": "For BeagleBone",
+        "03": "For NVIDIA Jetson",
+        "04": "For Arduino",
+        "05": "For ROCK / Radxa",
+        "06": "For Orange Pi",
+        "07": "Universal",
+        "99": "Other"
+      }
+    },
     "2901_Development_and_Evaluation_Boards": {
       "cc": {
         "01": "MCU evaluation board",

@@ -63,6 +63,12 @@ class Part(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
+    # ── Supply chain relationship ──────────────────────────────────────
+    pricing = relationship(
+        "PartPricing", back_populates="part",
+        cascade="all, delete-orphan", lazy="selectin",
+    )
+
     # ── EAV relationship ───────────────────────────────────────────────
     fields = relationship(
         "PartField", back_populates="part",
@@ -160,4 +166,63 @@ class ClientConfig(Base):
             "server_url": self.server_url or "",
             "last_sync": self.last_sync.isoformat() if self.last_sync else None,
             "last_sync_hash": self.last_sync_hash or "",
+        }
+
+
+class PartPricing(Base):
+    """
+    Supply-chain snapshot for a part from a specific source.
+
+    Each row captures price breaks, stock, lifecycle status, and the URL
+    from a single distributor or aggregator query (LCSC, DigiKey, Mouser, …).
+    Rows are replaced on each refresh so the table stays compact.
+    """
+    __tablename__ = "part_pricing"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    dmtuid     = Column(String(20),
+                        ForeignKey("parts.dmtuid", ondelete="CASCADE"),
+                        nullable=False, index=True)
+    source     = Column(String(50), nullable=False)          # "LCSC", "DigiKey", …
+    part_code  = Column(String(200), default="")             # e.g. C6467859
+    url        = Column(Text, default="")                    # product page link
+    stock      = Column(Integer, nullable=True)              # units in stock
+    lifecycle  = Column(String(50), default="")              # Active, NRND, EOL, …
+    currency   = Column(String(10), default="USD")
+    price_1    = Column(String(30), default="")              # price for qty 1
+    price_10   = Column(String(30), default="")
+    price_100  = Column(String(30), default="")
+    price_1000 = Column(String(30), default="")
+    price_json = Column(Text, default="[]")                  # full break list
+    last_fetched = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    error      = Column(Text, default="")                    # last error message if any
+
+    part = relationship("Part", back_populates="pricing")
+
+    __table_args__ = (
+        Index("ix_pricing_lookup", "dmtuid", "source"),
+    )
+
+    def to_dict(self) -> dict:
+        import json as _json
+        breaks = []
+        if self.price_json:
+            try:
+                breaks = _json.loads(self.price_json)
+            except Exception:
+                pass
+        return {
+            "source": self.source,
+            "part_code": self.part_code or "",
+            "url": self.url or "",
+            "stock": self.stock,
+            "lifecycle": self.lifecycle or "",
+            "currency": self.currency or "USD",
+            "price_1": self.price_1 or "",
+            "price_10": self.price_10 or "",
+            "price_100": self.price_100 or "",
+            "price_1000": self.price_1000 or "",
+            "price_breaks": breaks,
+            "last_fetched": self.last_fetched.isoformat() if self.last_fetched else "",
+            "error": self.error or "",
         }

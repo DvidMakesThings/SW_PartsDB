@@ -2546,6 +2546,128 @@
         "99": "Other"
       }
     },
+    "1301_Standoffs_Spacers_Screws_Nuts_Washers": {
+      "cc": {
+        "01": "Screw terminal",
+        "02": "Standoff male-female",
+        "03": "Standoff female-female",
+        "04": "Machine screw",
+        "05": "Self-tapping screw",
+        "06": "Nut hex",
+        "07": "Nut lock or nylon insert",
+        "08": "Flat washer",
+        "09": "Lock washer split or star",
+        "10": "Spacer or bushing",
+        "11": "Rivet or insert",
+        "12": "Captive screw or PEM insert",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "M2",
+        "02": "M2.5",
+        "03": "M3",
+        "04": "M4",
+        "05": "M5",
+        "06": "M6",
+        "07": "4-40",
+        "08": "6-32",
+        "09": "8-32",
+        "10": "10-32",
+        "20": "Metric other",
+        "21": "Imperial other",
+        "99": "Other"
+      }
+    },
+    "1302_Knobs_Handles_Hinges_Latches_Locks": {
+      "cc": {
+        "01": "Knob",
+        "02": "Handle or grip",
+        "03": "Hinge",
+        "04": "Latch",
+        "05": "Lock or cam lock",
+        "06": "Drawer slide",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Plastic",
+        "02": "Metal",
+        "03": "Stainless steel",
+        "04": "Zinc alloy",
+        "99": "Other"
+      }
+    },
+    "1303_Bumpers_Grommets_Seals": {
+      "cc": {
+        "01": "Bumper or foot",
+        "02": "Grommet",
+        "03": "Seal or gasket",
+        "04": "O-ring",
+        "05": "Strain relief",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Rubber",
+        "02": "Silicone",
+        "03": "Neoprene",
+        "04": "EPDM",
+        "05": "Nylon",
+        "99": "Other"
+      }
+    },
+    "1304_Springs": {
+      "cc": {
+        "01": "Compression spring",
+        "02": "Extension spring",
+        "03": "Torsion spring",
+        "04": "Constant force spring",
+        "05": "Wave spring",
+        "06": "Battery contact spring",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Stainless steel",
+        "02": "Music wire",
+        "03": "Phosphor bronze",
+        "04": "Beryllium copper",
+        "99": "Other"
+      }
+    },
+    "1305_DIN_Rail_Brackets_Panels": {
+      "cc": {
+        "01": "DIN rail 35mm",
+        "02": "DIN rail 15mm",
+        "03": "DIN rail bracket or clip",
+        "04": "Panel mount bracket",
+        "05": "End stop or terminal",
+        "06": "Bus bar",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "Steel",
+        "02": "Aluminum",
+        "03": "Plastic",
+        "99": "Other"
+      }
+    },
+    "1399_Misc_Hardware": {
+      "cc": {
+        "01": "Miscellaneous fastener",
+        "02": "Clip or retainer",
+        "03": "Adhesive mount",
+        "04": "Label or marker",
+        "90": "Accessories",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "General purpose",
+        "99": "Other"
+      }
+    },
     "1901_Development_and_Evaluation_Boards": {
       "cc": {
         "01": "MCU evaluation board",

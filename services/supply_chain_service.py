@@ -3,7 +3,7 @@ services.supply_chain_service - Fetch pricing, stock, and lifecycle data
 from external distributor APIs.
 
 Currently supported:
-  - LCSC / JLCPCB  (no API key required)
+  - JLCPCB  (scraped from partdetail page, no API key required)
 
 Future:
   - DigiKey  (requires API key)
@@ -29,23 +29,22 @@ from db.models import Part, PartPricing
 
 log = logging.getLogger(__name__)
 
-# ── LCSC / JLCPCB ─────────────────────────────────────────────────────
+# ── JLCPCB ─────────────────────────────────────────────────────────────
 
-_LCSC_DETAIL_API = "https://wmsc.lcsc.com/ftps/wm/product/detail"
-_LCSC_PRODUCT_URL = "https://www.lcsc.com/product-detail/{code}.html"
-_JLCPCB_URL = "https://jlcpcb.com/parts/componentSearch?searchTxt={code}"
+_JLCPCB_DETAIL_URL = "https://jlcpcb.com/partdetail/{code}"
 
 # Reusable SSL context (system default CAs)
 _ssl_ctx = ssl.create_default_context()
 
 
-def _http_get_json(url: str, timeout: int = 15) -> dict | None:
-    """Simple GET → JSON using only stdlib. Returns None on error."""
+def _http_get_html(url: str, timeout: int = 20) -> str | None:
+    """Simple GET → HTML string using only stdlib. Returns None on error."""
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "DMTDB-PartsDB/1.0",
-            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml",
         },
     )
     try:
@@ -53,93 +52,141 @@ def _http_get_json(url: str, timeout: int = 15) -> dict | None:
             if resp.status != 200:
                 log.warning("HTTP %s from %s", resp.status, url)
                 return None
-            return json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError,
+            return resp.read().decode("utf-8")
+    except (urllib.error.URLError, urllib.error.HTTPError,
             OSError, TimeoutError) as exc:
-        log.warning("LCSC fetch error for %s: %s", url, exc)
+        log.warning("JLCPCB fetch error for %s: %s", url, exc)
         return None
 
 
 def _normalise_lcsc_code(raw: str) -> str | None:
-    """Extract a bare LCSC part code like C6467859 from various inputs."""
+    """Extract a bare LCSC/JLCPCB part code like C6467859 from various inputs."""
     raw = raw.strip()
     m = re.search(r"(C\d{4,})", raw, re.IGNORECASE)
     return m.group(1).upper() if m else None
 
 
-def fetch_lcsc(lcsc_code: str) -> dict:
+def _parse_jlcpcb_page(html: str) -> dict:
     """
-    Query the LCSC product-detail API for a single part code.
+    Parse the JLCPCB SSR partdetail page for stock and pricing data.
 
-    Returns a normalised dict or an error dict:
+    The page is a Nuxt.js SSR page with data in both the rendered HTML
+    and the window.__NUXT__ closure.
+    """
+    result = {"stock": None, "prices": [], "lifecycle": ""}
+
+    # ── Stock from rendered HTML: "In Stock: 1,366" or "In Stock: 1366"
+    m = re.search(r"In Stock[:\s]*([\d,]+)", html)
+    if m:
+        try:
+            result["stock"] = int(m.group(1).replace(",", ""))
+        except ValueError:
+            pass
+
+    # If stock is 0 or not found, check for "out of stock" text
+    if result["stock"] is None:
+        if re.search(r"out of stock|discontinued|obsolete", html, re.IGNORECASE):
+            result["stock"] = 0
+
+    # ── Price breaks from rendered "In-stock Item Pricing" section
+    #    Format: <span>QTY+</span> <span>$PRICE</span>
+    pricing_section = re.search(
+        r"In-stock Item Pricing.*?</div>\s*</div>", html, re.DOTALL
+    )
+    if pricing_section:
+        section = pricing_section.group(0)
+        # Find all qty+ / $price pairs
+        breaks = re.findall(
+            r"(\d+)\+</span>\s*<span[^>]*>\s*\$?([\d.]+)\s*</span>",
+            section,
+        )
+        for qty_str, price_str in breaks:
+            try:
+                result["prices"].append({
+                    "qty": int(qty_str),
+                    "price": price_str,
+                })
+            except ValueError:
+                continue
+
+    # ── Lifecycle: JLCPCB doesn't show lifecycle status prominently.
+    #    If part exists on the page and has stock, it's Active.
+    if result["stock"] is not None and result["stock"] > 0:
+        result["lifecycle"] = "Active"
+    elif result["stock"] == 0:
+        # Check for specific status text
+        if re.search(r"discontinued", html, re.IGNORECASE):
+            result["lifecycle"] = "Discontinued"
+        else:
+            result["lifecycle"] = "Out of Stock"
+
+    return result
+
+
+def fetch_jlcpcb(lcsc_code: str) -> dict:
+    """
+    Scrape the JLCPCB partdetail page for stock and pricing.
+
+    Uses the same C-codes as LCSC (shared catalog between LCSC and JLCPCB).
+
+    Returns a normalised dict:
         {source, part_code, url, stock, lifecycle, currency, prices: [...], error}
     """
     code = _normalise_lcsc_code(lcsc_code)
     if not code:
-        return {"source": "LCSC", "error": f"Invalid LCSC code: {lcsc_code!r}"}
+        return {"source": "JLCPCB", "error": f"Invalid part code: {lcsc_code!r}"}
 
     sanitized_code = quote(code, safe="")
-    url = f"{_LCSC_DETAIL_API}?productCode={sanitized_code}"
-    data = _http_get_json(url)
+    page_url = _JLCPCB_DETAIL_URL.format(code=sanitized_code)
+    html = _http_get_html(page_url)
 
-    if not data or data.get("code") != 200:
-        msg = "No data returned"
-        if data:
-            msg = data.get("msg", str(data.get("code", "unknown error")))
-        return {"source": "LCSC", "part_code": code, "error": msg}
+    if not html:
+        return {"source": "JLCPCB", "part_code": code, "url": page_url,
+                "error": "Failed to fetch JLCPCB page"}
 
-    result = data.get("result")
-    if not result:
-        return {"source": "LCSC", "part_code": code, "error": "Part not found in LCSC"}
+    # Check if part actually exists (page might be a generic 404/empty)
+    if code not in html:
+        return {"source": "JLCPCB", "part_code": code, "url": page_url,
+                "error": "Part not found on JLCPCB"}
 
-    # Price breaks
-    prices = []
-    for tier in result.get("productPriceList", []) or []:
-        qty = tier.get("ladder")
-        price = tier.get("productPrice")
-        if qty is not None and price is not None:
-            prices.append({"qty": int(qty), "price": str(price)})
+    parsed = _parse_jlcpcb_page(html)
+    prices = parsed["prices"]
 
-    # Map to standard price columns
+    # Map to standard price columns using closest available break
     price_map = {p["qty"]: p["price"] for p in prices}
+
+    # price_1: exact match or first/lowest break
     price_1 = price_map.get(1, "")
-    price_10 = price_map.get(10, "")
-    price_100 = price_map.get(100, "")
-    price_1000 = price_map.get(1000, "")
-    # Fall back to nearest break
     if not price_1 and prices:
         price_1 = prices[0]["price"]
+
+    # price_10: exact or closest ≤10
+    price_10 = price_map.get(10, "")
     if not price_10:
         for p in prices:
             if p["qty"] <= 10:
                 price_10 = p["price"]
 
-    stock_val = result.get("stockNumber")
-    if stock_val is not None:
-        try:
-            stock_val = int(stock_val)
-        except (ValueError, TypeError):
-            stock_val = None
+    # price_100: exact or closest ≤100
+    price_100 = price_map.get(100, "")
+    if not price_100:
+        for p in prices:
+            if p["qty"] <= 100:
+                price_100 = p["price"]
 
-    lifecycle = result.get("productCycle", "")
-    # LCSC uses "normal" = Active, "nrfnd" = NRND, "discontinued" or "eol" etc.
-    lifecycle_map = {
-        "normal": "Active",
-        "nrfnd": "NRND",
-        "discontinued": "Discontinued",
-        "eol": "EOL",
-    }
-    if isinstance(lifecycle, str):
-        lifecycle = lifecycle_map.get(lifecycle.lower(), lifecycle.title() if lifecycle else "")
-
-    product_url = _LCSC_PRODUCT_URL.format(code=quote(code, safe=""))
+    # price_1000: exact or closest ≤1000
+    price_1000 = price_map.get(1000, "")
+    if not price_1000:
+        for p in prices:
+            if p["qty"] <= 1000:
+                price_1000 = p["price"]
 
     return {
-        "source": "LCSC",
+        "source": "JLCPCB",
         "part_code": code,
-        "url": product_url,
-        "stock": stock_val,
-        "lifecycle": lifecycle,
+        "url": page_url,
+        "stock": parsed["stock"],
+        "lifecycle": parsed["lifecycle"],
         "currency": "USD",
         "price_1": price_1,
         "price_10": price_10,
@@ -190,12 +237,17 @@ def refresh_part(session: Session, dmtuid: str) -> list[dict]:
 
     results = []
 
-    # LCSC: use kicad_libref (LCSC Part code)
+    # JLCPCB: use kicad_libref (LCSC/JLCPCB Part code, shared catalog)
     lcsc_code = (part.kicad_libref or "").strip()
     if lcsc_code:
-        info = fetch_lcsc(lcsc_code)
+        info = fetch_jlcpcb(lcsc_code)
         _upsert_pricing(session, dmtuid, info)
         results.append(info)
+
+        # Clean up legacy LCSC rows (source was renamed LCSC → JLCPCB)
+        session.query(PartPricing).filter_by(
+            dmtuid=dmtuid, source="LCSC"
+        ).delete()
 
     session.flush()
     return results
@@ -203,7 +255,7 @@ def refresh_part(session: Session, dmtuid: str) -> list[dict]:
 
 def refresh_all(session: Session, *, limit: int = 0) -> dict:
     """
-    Refresh pricing for all parts that have an LCSC code.
+    Refresh pricing for all parts that have a JLCPCB/LCSC code.
     Returns summary stats.
     """
     query = session.query(Part).filter(Part.kicad_libref != "", Part.kicad_libref.isnot(None))

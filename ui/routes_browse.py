@@ -68,7 +68,7 @@ def index():
         if dmtuids:
             rows = (
                 session.query(PartPricing)
-                .filter(PartPricing.dmtuid.in_(dmtuids), PartPricing.source == "LCSC")
+                .filter(PartPricing.dmtuid.in_(dmtuids), PartPricing.source.in_(["JLCPCB", "LCSC"]))
                 .all()
             )
             rate = config.USD_TO_EUR_RATE

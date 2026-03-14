@@ -3,7 +3,7 @@ api.routes_supply - Supply-chain / pricing endpoints.
 
 GET  /api/v1/parts/<dmtuid>/pricing          → cached pricing data
 POST /api/v1/parts/<dmtuid>/pricing/refresh   → fetch fresh data from sources
-POST /api/v1/supply/refresh                   → bulk-refresh all parts with LCSC codes
+POST /api/v1/supply/refresh                   → bulk-refresh all parts with JLCPCB codes
 """
 
 from flask import jsonify, request

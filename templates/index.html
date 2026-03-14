@@ -8,7 +8,7 @@
     <span class="subtitle">{{ total }} part{{ 's' if total != 1 }} found</span>
   </div>
   <div style="display:flex; gap:.5rem; align-items:center;">
-    <button type="button" id="btnRefreshAll" class="btn btn-secondary" onclick="refreshAllPricing()" title="Refresh LCSC pricing for all parts with an LCSC code">
+    <button type="button" id="btnRefreshAll" class="btn btn-secondary" onclick="refreshAllPricing()" title="Refresh JLCPCB pricing for all parts with an LCSC code">
       <svg id="refreshAllSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;">
         <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
@@ -149,7 +149,7 @@
           <span style="font-size:.8rem; color:var(--text-dim)">{{ family_name(p.tt, p.ff) }}</span>
         </td>
         <td style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ p.manufacturer or '' }}">{{ p.manufacturer or '' }}</td>
-        <td style="font-size:.85rem; white-space:nowrap; {% if pl.stock is not none and pl.stock == 0 %}color:var(--red);{% endif %}">{% if pl.price_eur %}€{{ pl.price_eur }}{% endif %}</td>
+        <td style="font-size:.85rem; white-space:nowrap; {% if pl.get('stock') is not none and pl.get('stock') == 0 %}color:var(--red);{% elif pl.get('stock') is not none and pl.get('stock') <= 200 %}color:#eab308;{% endif %}">{% if pl.price_eur %}€{{ pl.price_eur }}{% endif %}</td>
         <td style="font-size:.75rem; white-space:nowrap; max-width:70px;"
           >{% if p.kicad_libref %}<span style="color:var(--text-dim); display:block; overflow:hidden; text-overflow:ellipsis;" title="{{ p.kicad_libref }}">{{ p.kicad_libref }}</span>{% else %}<input type="text" class="lcsc-inline" data-dmtuid="{{ p.dmtuid }}" placeholder="LCSC"
               onkeydown="if(event.key==='Enter'){saveLcscInline(this);this.blur();}">{% endif %}</td>

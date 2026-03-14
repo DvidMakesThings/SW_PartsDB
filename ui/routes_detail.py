@@ -7,6 +7,7 @@ from flask import render_template, abort
 
 from ui import ui_bp
 from db import get_session
+from db.models import Part, PartImage
 from services.parts_service import PartsService
 from services.supply_chain_service import get_pricing
 from schema.loader import domain_name, family_name
@@ -41,6 +42,9 @@ def part_detail(dmtuid: str):
             abort(404)
         template = get_fields(part.tt, part.ff)
         pricing_data = get_pricing(session, dmtuid)
+        images = session.query(PartImage).filter(
+            PartImage.dmtuid == dmtuid
+        ).order_by(PartImage.position).all()
         return render_template(
             "detail.html",
             part=part,
@@ -49,6 +53,7 @@ def part_detail(dmtuid: str):
             family_name=family_name,
             parse_distributors=parse_distributors,
             pricing_data=pricing_data,
+            images=images,
         )
     finally:
         session.close()

@@ -448,6 +448,297 @@ def generate_sync_script():
     )
 
 
+@api_bp.route("/libs/local-setup-script")
+def generate_local_setup_script():
+    """
+    GET /api/v1/libs/local-setup-script?platform=windows|unix
+
+    Generate a script that registers the server's local kicad_libs
+    directory in KiCad. No files are downloaded or copied.
+    """
+    platform = request.args.get("platform", "windows").lower()
+
+    sym_source = str(config.KICAD_SYMBOLS_DIR).replace("\\", "/")
+    fp_source = str(config.KICAD_FOOTPRINT_DIR).replace("\\", "/")
+    m3d_source = str(config.KICAD_3DMODELS_DIR).replace("\\", "/")
+
+    if platform == "windows":
+        script = _generate_windows_local_script(sym_source, fp_source, m3d_source)
+        filename = "setup-dmtdb-local.ps1"
+        mimetype = "text/plain"
+    else:
+        script = _generate_unix_local_script(sym_source, fp_source, m3d_source)
+        filename = "setup-dmtdb-local.sh"
+        mimetype = "text/x-shellscript"
+
+    return Response(
+        script,
+        mimetype=mimetype,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+def _generate_windows_local_script(sym_source: str, fp_source: str, m3d_source: str) -> str:
+    """Generate PowerShell script that registers local kicad_libs in KiCad (no download)."""
+    return f'''#Requires -Version 5.1
+<#
+.SYNOPSIS
+    DMTDB KiCad Local Setup Script
+    Points KiCad directly at the server's kicad_libs directory.
+
+.DESCRIPTION
+    Configures KiCad path variables and symbol libraries to use
+    the DMTDB kicad_libs folder on this machine. No files are copied.
+
+.EXAMPLE
+    .\\setup-dmtdb-local.ps1
+#>
+
+$ErrorActionPreference = "Stop"
+
+# ============================================================================
+# Local library paths (where DMTDB stores them on this machine)
+# ============================================================================
+$SymbolsPath = "{sym_source}"
+$FootprintsPath = "{fp_source}"
+$ModelsPath = "{m3d_source}"
+# ============================================================================
+
+function Write-Info {{ param([string]$m) Write-Host "[INFO] $m" -ForegroundColor Cyan }}
+function Write-OK {{ param([string]$m) Write-Host "[OK] $m" -ForegroundColor Green }}
+function Write-Warn {{ param([string]$m) Write-Host "[WARN] $m" -ForegroundColor Yellow }}
+
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "  DMTDB KiCad Local Setup" -ForegroundColor Cyan
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Verify paths exist
+foreach ($entry in @(@("Symbols", $SymbolsPath), @("Footprints", $FootprintsPath), @("3D Models", $ModelsPath))) {{
+    if (-not (Test-Path $entry[1])) {{
+        Write-Host "[ERROR] $($entry[0]) path not found: $($entry[1])" -ForegroundColor Red
+        exit 1
+    }}
+    Write-OK "$($entry[0]) path exists: $($entry[1])"
+}}
+
+# ── Configure KiCad ────────────────────────────────────────────────────────
+
+$kicadBase = Join-Path $env:APPDATA "kicad"
+$kicadConfig = $null
+
+if (Test-Path $kicadBase) {{
+    $versions = Get-ChildItem -Path $kicadBase -Directory |
+        Where-Object {{ $_.Name -match '^\\d+\\.\\d+$' }} |
+        Sort-Object {{ [version]$_.Name }} -Descending
+
+    if ($versions.Count -gt 0) {{
+        $kicadConfig = $versions[0].FullName
+    }}
+}}
+
+if ($kicadConfig) {{
+    Write-Info "Configuring KiCad at: $kicadConfig"
+
+    # Update path variables in kicad_common.json
+    $commonFile = Join-Path $kicadConfig "kicad_common.json"
+    if (Test-Path $commonFile) {{
+        $json = Get-Content $commonFile -Raw | ConvertFrom-Json
+
+        if (-not $json.environment) {{
+            $json | Add-Member -NotePropertyName "environment" -NotePropertyValue @{{}} -Force
+        }}
+        if (-not $json.environment.vars) {{
+            $json.environment | Add-Member -NotePropertyName "vars" -NotePropertyValue @{{}} -Force
+        }}
+
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_SYM" -NotePropertyValue ($SymbolsPath -replace '\\\\', '/') -Force
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_FOOTPRINT" -NotePropertyValue ($FootprintsPath -replace '\\\\', '/') -Force
+        $json.environment.vars | Add-Member -NotePropertyName "DMTDB_3D" -NotePropertyValue ($ModelsPath -replace '\\\\', '/') -Force
+
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($commonFile, ($json | ConvertTo-Json -Depth 10), $utf8NoBom)
+        Write-OK "Updated KiCad path variables"
+    }}
+
+    # Update sym-lib-table
+    $symTable = Join-Path $kicadConfig "sym-lib-table"
+
+    $existing = @()
+    if (Test-Path $symTable) {{
+        $content = Get-Content $symTable -Raw
+        $matches = [regex]::Matches($content, '\\(name\\s+"([^"]+)"\\)')
+        $existing = $matches | ForEach-Object {{ $_.Groups[1].Value }}
+    }}
+
+    $newLibs = 0
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    $symFiles = Get-ChildItem -Path $SymbolsPath -Filter "*.kicad_sym" -ErrorAction SilentlyContinue
+
+    foreach ($file in $symFiles) {{
+        $libName = $file.BaseName
+
+        if ($libName -notin $existing) {{
+            Write-Info "Adding symbol library: $libName"
+
+            if (-not (Test-Path $symTable)) {{
+                [System.IO.File]::WriteAllText($symTable, "(sym_lib_table`n  (version 7)`n)", $utf8NoBom)
+            }}
+
+            $lines = Get-Content $symTable
+            $lines = $lines[0..($lines.Count - 2)]
+            $lines += "  (lib (name `"$libName`")(type `"KiCad`")(uri `"`${{DMTDB_SYM}}/$($file.Name)`")(options `"`")(descr `"`")(hidden))"
+            $lines += ")"
+            [System.IO.File]::WriteAllLines($symTable, $lines, $utf8NoBom)
+
+            $newLibs++
+        }}
+    }}
+
+    if ($newLibs -gt 0) {{
+        Write-OK "Added $newLibs new symbol libraries (hidden by default)"
+    }}
+}} else {{
+    Write-Warn "KiCad config not found. Please set paths manually:"
+    Write-Host "  DMTDB_SYM       = $($SymbolsPath -replace '\\\\', '/')"
+    Write-Host "  DMTDB_FOOTPRINT = $($FootprintsPath -replace '\\\\', '/')"
+    Write-Host "  DMTDB_3D        = $($ModelsPath -replace '\\\\', '/')"
+}}
+
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Green
+Write-Host "  Local Setup Complete!" -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "KiCad path variables now point to the local DMTDB libraries."
+Write-Host "Restart KiCad to see the new libraries." -ForegroundColor Yellow
+Write-Host ""
+'''
+
+
+def _generate_unix_local_script(sym_source: str, fp_source: str, m3d_source: str) -> str:
+    """Generate Bash script that registers local kicad_libs in KiCad (no download)."""
+    return f'''#!/bin/bash
+# ============================================================================
+# DMTDB KiCad Local Setup Script
+# Points KiCad directly at the server's kicad_libs directory.
+#
+# No files are copied — KiCad will read from the DMTDB directory.
+# Usage: chmod +x setup-dmtdb-local.sh && ./setup-dmtdb-local.sh
+# ============================================================================
+
+set -e
+
+# Local library paths (where DMTDB stores them on this machine)
+SYMBOLS_PATH="{sym_source}"
+FOOTPRINTS_PATH="{fp_source}"
+MODELS_PATH="{m3d_source}"
+
+# Colors
+GREEN='\\033[0;32m'
+CYAN='\\033[0;36m'
+YELLOW='\\033[1;33m'
+RED='\\033[0;31m'
+NC='\\033[0m'
+
+info() {{ echo -e "${{CYAN}}[INFO]${{NC}} $1"; }}
+ok() {{ echo -e "${{GREEN}}[OK]${{NC}} $1"; }}
+warn() {{ echo -e "${{YELLOW}}[WARN]${{NC}} $1"; }}
+
+echo ""
+echo "======================================"
+echo "  DMTDB KiCad Local Setup"
+echo "======================================"
+echo ""
+
+# Verify paths exist
+for dir in "$SYMBOLS_PATH" "$FOOTPRINTS_PATH" "$MODELS_PATH"; do
+    if [[ ! -d "$dir" ]]; then
+        echo -e "${{RED}}[ERROR]${{NC}} Path not found: $dir"
+        exit 1
+    fi
+    ok "Path exists: $dir"
+done
+
+# ── Configure KiCad ────────────────────────────────────────────────────────
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    KICAD_CONFIG=$(ls -d "$HOME/Library/Preferences/kicad"/*/ 2>/dev/null | tail -1)
+else
+    KICAD_CONFIG=$(ls -d "$HOME/.config/kicad"/*/ 2>/dev/null | tail -1)
+fi
+
+if [[ -n "$KICAD_CONFIG" ]]; then
+    info "Configuring KiCad at: $KICAD_CONFIG"
+
+    # Update path variables
+    COMMON_FILE="${{KICAD_CONFIG}}kicad_common.json"
+    if [[ -f "$COMMON_FILE" ]] && command -v jq &>/dev/null; then
+        cp "$COMMON_FILE" "$COMMON_FILE.bak"
+        jq --arg sym "$SYMBOLS_PATH" --arg fp "$FOOTPRINTS_PATH" --arg m3d "$MODELS_PATH" '
+           .environment.vars.DMTDB_SYM = $sym |
+           .environment.vars.DMTDB_FOOTPRINT = $fp |
+           .environment.vars.DMTDB_3D = $m3d
+        ' "$COMMON_FILE.bak" > "$COMMON_FILE"
+        ok "Updated KiCad path variables"
+    else
+        warn "Install jq for automatic path variable setup, or set manually:"
+        echo "  DMTDB_SYM       = $SYMBOLS_PATH"
+        echo "  DMTDB_FOOTPRINT = $FOOTPRINTS_PATH"
+        echo "  DMTDB_3D        = $MODELS_PATH"
+    fi
+
+    # Update sym-lib-table
+    SYM_TABLE="${{KICAD_CONFIG}}sym-lib-table"
+
+    EXISTING=""
+    if [[ -f "$SYM_TABLE" ]]; then
+        EXISTING=$(grep -oE '\\(name "[^"]+' "$SYM_TABLE" | sed 's/(name "//' || true)
+    fi
+
+    NEW_LIBS=0
+    for symfile in "$SYMBOLS_PATH"/*.kicad_sym; do
+        [[ -f "$symfile" ]] || continue
+
+        libname=$(basename "$symfile" .kicad_sym)
+
+        if ! echo "$EXISTING" | grep -q "^${{libname}}$"; then
+            info "Adding symbol library: $libname"
+
+            if [[ ! -f "$SYM_TABLE" ]]; then
+                echo "(sym_lib_table" > "$SYM_TABLE"
+                echo "  (version 7)" >> "$SYM_TABLE"
+                echo ")" >> "$SYM_TABLE"
+            fi
+
+            sed -i.bak '$ d' "$SYM_TABLE"
+            echo "  (lib (name \\"$libname\\")(type \\"KiCad\\")(uri \\"\\${{DMTDB_SYM}}/$libname.kicad_sym\\")(options \\"\\")(descr \\"\\")(hidden))" >> "$SYM_TABLE"
+            echo ")" >> "$SYM_TABLE"
+            rm -f "$SYM_TABLE.bak"
+
+            ((NEW_LIBS++)) || true
+        fi
+    done
+
+    if [[ $NEW_LIBS -gt 0 ]]; then
+        ok "Added $NEW_LIBS new symbol libraries (hidden by default)"
+    fi
+else
+    warn "KiCad config not found. Please set paths manually."
+fi
+
+echo ""
+echo "======================================"
+echo -e "${{GREEN}}  Local Setup Complete!${{NC}}"
+echo "======================================"
+echo ""
+echo "KiCad path variables now point to the local DMTDB libraries."
+echo -e "${{YELLOW}}Restart KiCad to see the new libraries.${{NC}}"
+echo ""
+'''
+
+
 def _generate_windows_sync_script(server_url: str, sym_path: str, fp_path: str, m3d_path: str) -> str:
     """Generate PowerShell sync script."""
     

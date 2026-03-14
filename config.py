@@ -16,6 +16,7 @@ SCHEMA_PATH     = Path(os.environ.get("DMTDB_SCHEMA",    BASE_DIR / "dmt_schema.
 TEMPLATES_PATH  = Path(os.environ.get("DMTDB_TEMPLATES",  BASE_DIR / "dmt_templates.json"))
 CSV_SEED_PATH   = Path(os.environ.get("DMTDB_CSV_SEED",   BASE_DIR / "DMT_Partslib.csv"))
 DATASHEETS_DIR  = (BASE_DIR / "datasheets").resolve()
+PART_IMAGES_DIR = (BASE_DIR / "part_images").resolve()
 
 # ── KiCad Library Paths ────────────────────────────────────────────────
 # Where DMTDB stores KiCad library files locally

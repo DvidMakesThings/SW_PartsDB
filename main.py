@@ -60,6 +60,16 @@ def create_app() -> Flask:
         """Serve KiCad library files (symbols, footprints, 3D models)."""
         return send_from_directory(kicad_libs_dir, filepath)
 
+    # ── Part image file server ──────────────────────────────────────
+    @app.route("/part_images/<path:filepath>")
+    def serve_part_image(filepath):
+        """Serve part images from part_images directory."""
+        safe = (config.PART_IMAGES_DIR / filepath).resolve()
+        if not str(safe).startswith(str(config.PART_IMAGES_DIR)):
+            from flask import abort
+            abort(403)
+        return send_from_directory(config.PART_IMAGES_DIR, filepath)
+
     # ── Error handlers ──────────────────────────────────────────────
     @app.errorhandler(404)
     def _404(e):

@@ -78,6 +78,14 @@
                 </svg>
                 Download Sync Script
             </button>
+            <button id="localScriptBtn" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+                Local Setup Script
+            </button>
             <button id="downloadBtn" class="btn btn-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -89,9 +97,8 @@
         </div>
     </div>
     <p class="sync-note">
-        <strong>Recommended:</strong> Click "Download Sync Script" to get a script customized for your paths.
-        Run it to automatically download libraries, configure KiCad path variables, and register symbol libraries.
-        The script will automatically mark your client as synced.
+        <strong>Recommended:</strong> Click "Download Sync Script" to get a script that downloads libraries to your configured paths and registers them in KiCad.
+        If the database runs on this machine, use "Local Setup Script" instead — it points KiCad directly at the existing kicad_libs folder without copying files.
     </p>
 </div>
 
@@ -483,6 +490,12 @@
             const isWindows = navigator.platform.indexOf('Win') > -1;
             const ext = isWindows ? 'ps1' : 'sh';
             window.location.href = `/api/v1/libs/sync-script?platform=${isWindows ? 'windows' : 'unix'}`;
+        });
+
+        // Local setup script button (registers existing kicad_libs in KiCad, no download)
+        document.getElementById('localScriptBtn').addEventListener('click', () => {
+            const isWindows = navigator.platform.indexOf('Win') > -1;
+            window.location.href = `/api/v1/libs/local-setup-script?platform=${isWindows ? 'windows' : 'unix'}`;
         });
 
         // Download button

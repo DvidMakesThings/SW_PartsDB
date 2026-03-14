@@ -32,31 +32,77 @@
 
 <div class="detail-grid">
 
-  <div class="detail-card">
+  <div class="detail-card" style="grid-column: 1 / -1;">
     <h2>Core Information</h2>
-    <div class="field-row"><span class="field-label">DMTUID</span><span class="field-value"
-        style="font-family:var(--mono)">{{ part.dmtuid }}</span></div>
-    <div class="field-row"><span class="field-label">MPN</span><span class="field-value">{{ part.mpn or '—' }}</span>
+    <div class="core-split">
+      <div class="core-fields">
+        <div class="field-row"><span class="field-label">DMTUID</span><span class="field-value"
+            style="font-family:var(--mono)">{{ part.dmtuid }}</span></div>
+        <div class="field-row"><span class="field-label">MPN</span><span class="field-value">{{ part.mpn or '—' }}</span>
+        </div>
+        <div class="field-row"><span class="field-label">Value</span><span class="field-value">{{ part.value or '—'
+            }}</span></div>
+        <div class="field-row"><span class="field-label">Manufacturer</span><span class="field-value">{{ part.manufacturer
+            or '—' }}</span></div>
+        <div class="field-row"><span class="field-label">Description</span><span class="field-value">{{ part.description or
+            '—' }}</span></div>
+        {% set rohs_val = namespace(value='—') %}
+        {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_val.value = f.field_value %}{% endfor %}
+        <div class="field-row"><span class="field-label">RoHS</span><span class="field-value"
+            style="{% if rohs_val.value in ['Yes', 'YES', 'Compliant', 'COMPLIANT'] %}color:var(--green);{% elif rohs_val.value in ['No', 'NO', 'Non-Compliant'] %}color:var(--red);{% endif %}">{{
+            rohs_val.value }}</span></div>
+        <div class="field-row"><span class="field-label">Quantity</span><span class="field-value"
+            style="color:var(--green);">{{ part.quantity or '—' }}</span></div>
+        <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ part.location or '—'
+            }}</span></div>
+        {% if part.notes %}
+        <div class="field-row"><span class="field-label">Notes</span><span class="field-value">{{ part.notes }}</span></div>
+        {% endif %}
+      </div>
+      <div class="core-gallery">
+        <div class="gallery-thumbs" id="galleryThumbs">
+          {% for img in images %}
+          <div class="gallery-thumb" data-id="{{ img.id }}">
+            <img src="/part_images/{{ part.dmtuid }}/{{ img.filename }}" alt="Part image" loading="lazy"
+              onclick="openLightbox(this.src)">
+            <button class="gallery-thumb-delete" onclick="deleteImage({{ img.id }})" title="Remove">&times;</button>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="gallery-drop" id="imageDropzone" {% if images|length >= 5 %}style="display:none"{% endif %}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span>Drop images or <a href="#" id="imageUrlToggle">paste URL</a></span>
+          <span class="gallery-hint">{{ images|length }}/5</span>
+        </div>
+        <div class="gallery-url-input" id="imageUrlInput" style="display:none">
+          <input type="text" id="imageUrlField" placeholder="https://..." />
+          <button class="btn btn-primary btn-sm" onclick="uploadFromUrl()">Add</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleUrlInput()">Cancel</button>
+        </div>
+      </div>
     </div>
-    <div class="field-row"><span class="field-label">Value</span><span class="field-value">{{ part.value or '—'
-        }}</span></div>
-    <div class="field-row"><span class="field-label">Manufacturer</span><span class="field-value">{{ part.manufacturer
-        or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">Description</span><span class="field-value">{{ part.description or
-        '—' }}</span></div>
-    {% set rohs_val = namespace(value='—') %}
-    {% for f in part.fields if f.field_name == 'RoHS' %}{% set rohs_val.value = f.field_value %}{% endfor %}
-    <div class="field-row"><span class="field-label">RoHS</span><span class="field-value"
-        style="{% if rohs_val.value in ['Yes', 'YES', 'Compliant', 'COMPLIANT'] %}color:var(--green);{% elif rohs_val.value in ['No', 'NO', 'Non-Compliant'] %}color:var(--red);{% endif %}">{{
-        rohs_val.value }}</span></div>
-    <div class="field-row"><span class="field-label">Quantity</span><span class="field-value"
-        style="color:var(--green);">{{ part.quantity or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ part.location or '—'
-        }}</span></div>
-    {% if part.notes %}
-    <div class="field-row"><span class="field-label">Notes</span><span class="field-value">{{ part.notes }}</span></div>
-    {% endif %}
   </div>
+
+  {% if part.fields %}
+  <div class="detail-card" style="grid-column: 1 / -1;">
+    <h2>Technical Parameters
+      {% if template %}
+      <span style="font-weight:400; font-size:.75rem; color:var(--text-dim); text-transform:none;"> (template {{ part.tt
+        }}{{ part.ff }})</span>
+      {% endif %}
+    </h2>
+    {% for f in part.fields %}
+    <div class="field-row">
+      <span class="field-label">{{ f.field_name }}</span>
+      <span class="field-value">{{ f.field_value }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <div class="detail-card">
     <h2>Classification & KiCad</h2>
@@ -79,9 +125,18 @@
     <div class="field-row"><span class="field-label">KiCad 3D Model</span><span class="field-value"
         id="kicad-3dmodel">{{
         part.kicad_3dmodel or '—' }}</span></div>
-    <div class="field-row"><span class="field-label">LCSC Part</span><span class="field-value" id="kicad-lcsc">{{
-        part.kicad_libref
-        or '—' }}</span></div>
+    <div class="field-row"><span class="field-label">LCSC Part</span><span class="field-value" id="kicad-lcsc">
+        {% if part.kicad_libref %}
+          {{ part.kicad_libref }}
+          <button class="inline-edit-btn" onclick="editLcsc()" title="Edit">✏</button>
+        {% else %}
+          <span class="lcsc-empty">
+            <input type="text" id="lcscInput" placeholder="e.g. C144778" class="inline-input" 
+              onkeydown="if(event.key==='Enter')saveLcsc()">
+            <button class="btn btn-primary btn-sm" onclick="saveLcsc()">Save</button>
+          </span>
+        {% endif %}
+      </span></div>
 
     <!-- KiCad File Drop Zone -->
     {% set rohs_data = 'YES' %}
@@ -100,137 +155,121 @@
     <div id="kicadUploadStatus" class="kicad-upload-status"></div>
   </div>
 
-  {% if part.distributor %}
-  <div class="detail-card">
-    <h2>Distributors</h2>
-    {% set distributors = parse_distributors(part.distributor) %}
-    {% if distributors %}
-    {% for dist in distributors %}
-    <div class="field-row">
-      <span class="field-label">{{ dist.name or 'Distributor ' ~ loop.index }}</span>
-      <span class="field-value">
-        <a href="{{ dist.url }}" target="_blank" rel="noopener" class="distributor-link">
-          🔗 {{ dist.url | truncate(50) }}
-        </a>
-      </span>
-    </div>
-    {% endfor %}
-    {% else %}
-    <div class="field-row">
-      <span class="field-label">Link</span>
-      <span class="field-value">
-        <a href="{{ part.distributor }}" target="_blank" rel="noopener" class="distributor-link">
-          🔗 {{ part.distributor | truncate(50) }}
-        </a>
-      </span>
+  <div class="detail-right-stack">
+    {% if part.distributor %}
+    <div class="detail-card">
+      <h2>Distributors</h2>
+      {% set distributors = parse_distributors(part.distributor) %}
+      {% if distributors %}
+      {% for dist in distributors %}
+      <div class="field-row">
+        <span class="field-label">{{ dist.name or 'Distributor ' ~ loop.index }}</span>
+        <span class="field-value">
+          <a href="{{ dist.url }}" target="_blank" rel="noopener" class="distributor-link">
+            🔗 {{ dist.url | truncate(50) }}
+          </a>
+        </span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="field-row">
+        <span class="field-label">Link</span>
+        <span class="field-value">
+          <a href="{{ part.distributor }}" target="_blank" rel="noopener" class="distributor-link">
+            🔗 {{ part.distributor | truncate(50) }}
+          </a>
+        </span>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
-  </div>
-  {% endif %}
 
-  <!-- Supply Chain / Pricing -->
-  <div class="detail-card" id="supplyChainCard" style="grid-column: 1 / -1;">
-    <h2>Supply Chain
-      <button id="btnRefreshPricing" class="btn-refresh" title="Refresh pricing from distributors" onclick="refreshPricing('{{ part.dmtuid }}')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <polyline points="1 20 1 14 7 14"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-        </svg>
-        Refresh
-      </button>
-    </h2>
-    <div id="pricingContent">
-      {% if pricing_data %}
-        {% for p in pricing_data %}
-        <div class="pricing-source">
-          <div class="field-row">
-            <span class="field-label">Source</span>
-            <span class="field-value">
-              {{ p.source }}
-              {% if p.part_code %}
-                — <a href="{{ p.url }}" target="_blank" rel="noopener" class="distributor-link">{{ p.part_code }}</a>
-              {% endif %}
-            </span>
+    <div class="detail-card" id="supplyChainCard">
+      <h2>Supply Chain
+        <button id="btnRefreshPricing" class="btn-refresh" title="Refresh pricing from distributors" onclick="refreshPricing('{{ part.dmtuid }}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          Refresh
+        </button>
+      </h2>
+      <div id="pricingContent">
+        {% if pricing_data %}
+          {% for p in pricing_data %}
+          <div class="pricing-source">
+            <div class="field-row">
+              <span class="field-label">Source</span>
+              <span class="field-value">
+                {{ p.source }}
+                {% if p.part_code %}
+                  — <a href="{{ p.url }}" target="_blank" rel="noopener" class="distributor-link">{{ p.part_code }}</a>
+                {% endif %}
+              </span>
+            </div>
+            {% if p.error %}
+            <div class="field-row">
+              <span class="field-label">Error</span>
+              <span class="field-value" style="color: #ef4444;">{{ p.error }}</span>
+            </div>
+            {% else %}
+            <div class="field-row">
+              <span class="field-label">Stock</span>
+              <span class="field-value">
+                {% if p.stock is not none %}
+                  <span class="badge {% if p.stock > 100 %}badge-green{% elif p.stock > 0 %}badge-yellow{% else %}badge-red{% endif %}">
+                    {{ "{:,}".format(p.stock) }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-dim">Unknown</span>
+                {% endif %}
+              </span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Lifecycle</span>
+              <span class="field-value">
+                {% if p.lifecycle %}
+                  <span class="badge {% if p.lifecycle == 'Active' %}badge-green{% elif p.lifecycle in ['NRND', 'Not Recommended'] %}badge-yellow{% elif p.lifecycle in ['Discontinued', 'EOL', 'Obsolete'] %}badge-red{% else %}badge-dim{% endif %}">
+                    {{ p.lifecycle }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-dim">Unknown</span>
+                {% endif %}
+              </span>
+            </div>
+            {% if p.price_1 or p.price_10 or p.price_100 or p.price_1000 %}
+            <div class="field-row">
+              <span class="field-label">Pricing ({{ p.currency or 'USD' }})</span>
+              <span class="field-value pricing-breaks">
+                {% if p.price_1 %}<span class="price-break">1+: ${{ p.price_1 }}</span>{% endif %}
+                {% if p.price_10 %}<span class="price-break">10+: ${{ p.price_10 }}</span>{% endif %}
+                {% if p.price_100 %}<span class="price-break">100+: ${{ p.price_100 }}</span>{% endif %}
+                {% if p.price_1000 %}<span class="price-break">1000+: ${{ p.price_1000 }}</span>{% endif %}
+              </span>
+            </div>
+            {% endif %}
+            {% endif %}
+            {% if p.last_fetched %}
+            <div class="field-row">
+              <span class="field-label">Last Updated</span>
+              <span class="field-value" style="color: var(--text-dim); font-size: 0.8rem;">{{ p.last_fetched }}</span>
+            </div>
+            {% endif %}
           </div>
-          {% if p.error %}
-          <div class="field-row">
-            <span class="field-label">Error</span>
-            <span class="field-value" style="color: #ef4444;">{{ p.error }}</span>
-          </div>
-          {% else %}
-          <div class="field-row">
-            <span class="field-label">Stock</span>
-            <span class="field-value">
-              {% if p.stock is not none %}
-                <span class="badge {% if p.stock > 100 %}badge-green{% elif p.stock > 0 %}badge-yellow{% else %}badge-red{% endif %}">
-                  {{ "{:,}".format(p.stock) }}
-                </span>
-              {% else %}
-                <span class="badge badge-dim">Unknown</span>
-              {% endif %}
-            </span>
-          </div>
-          <div class="field-row">
-            <span class="field-label">Lifecycle</span>
-            <span class="field-value">
-              {% if p.lifecycle %}
-                <span class="badge {% if p.lifecycle == 'Active' %}badge-green{% elif p.lifecycle in ['NRND', 'Not Recommended'] %}badge-yellow{% elif p.lifecycle in ['Discontinued', 'EOL', 'Obsolete'] %}badge-red{% else %}badge-dim{% endif %}">
-                  {{ p.lifecycle }}
-                </span>
-              {% else %}
-                <span class="badge badge-dim">Unknown</span>
-              {% endif %}
-            </span>
-          </div>
-          {% if p.price_1 or p.price_10 or p.price_100 or p.price_1000 %}
-          <div class="field-row">
-            <span class="field-label">Pricing ({{ p.currency or 'USD' }})</span>
-            <span class="field-value pricing-breaks">
-              {% if p.price_1 %}<span class="price-break">1+: ${{ p.price_1 }}</span>{% endif %}
-              {% if p.price_10 %}<span class="price-break">10+: ${{ p.price_10 }}</span>{% endif %}
-              {% if p.price_100 %}<span class="price-break">100+: ${{ p.price_100 }}</span>{% endif %}
-              {% if p.price_1000 %}<span class="price-break">1000+: ${{ p.price_1000 }}</span>{% endif %}
-            </span>
-          </div>
-          {% endif %}
-          {% endif %}
-          {% if p.last_fetched %}
-          <div class="field-row">
-            <span class="field-label">Last Updated</span>
-            <span class="field-value" style="color: var(--text-dim); font-size: 0.8rem;">{{ p.last_fetched }}</span>
-          </div>
-          {% endif %}
-        </div>
-        {% endfor %}
-      {% else %}
-        <p style="color: var(--text-dim); font-size: .85rem;">
-          {% if part.kicad_libref %}
-            No pricing data yet — click <strong>Refresh</strong> to fetch from LCSC.
-          {% else %}
-            No LCSC Part number set. Add one in the Classification section to enable pricing lookup.
-          {% endif %}
-        </p>
-      {% endif %}
+          {% endfor %}
+        {% else %}
+          <p style="color: var(--text-dim); font-size: .85rem;">
+            {% if part.kicad_libref %}
+              No pricing data yet — click <strong>Refresh</strong> to fetch from LCSC.
+            {% else %}
+              No LCSC Part number set. Add one in the Classification section to enable pricing lookup.
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
     </div>
   </div>
-
-  {% if part.fields %}
-  <div class="detail-card" style="grid-column: 1 / -1;">
-    <h2>Technical Parameters
-      {% if template %}
-      <span style="font-weight:400; font-size:.75rem; color:var(--text-dim); text-transform:none;"> (template {{ part.tt
-        }}{{ part.ff }})</span>
-      {% endif %}
-    </h2>
-    {% for f in part.fields %}
-    <div class="field-row">
-      <span class="field-label">{{ f.field_name }}</span>
-      <span class="field-value">{{ f.field_value }}</span>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
   {% if part.extra_json and part.extra_json != '{}' %}
   <div class="detail-card" style="grid-column: 1 / -1;">
@@ -466,6 +505,159 @@
   .price-break {
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Core split layout */
+  .core-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .core-split { grid-template-columns: 1fr; }
+  }
+
+  /* Right-side stacked cards (Distributors + Supply Chain beside KiCad) */
+  .detail-right-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .detail-right-stack .detail-card {
+    margin: 0;
+  }
+
+  /* Gallery */
+  .core-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .gallery-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+  .gallery-thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .gallery-thumb img:hover { transform: scale(1.05); }
+  .gallery-thumb-delete {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .gallery-thumb:hover .gallery-thumb-delete { display: flex; }
+
+  .gallery-drop {
+    padding: 1rem;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .gallery-drop:hover,
+  .gallery-drop.dragover {
+    border-color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+  }
+  .gallery-drop a { color: var(--accent); }
+  .gallery-hint {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  .gallery-url-input {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .gallery-url-input input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+  .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* Inline edit for LCSC */
+  .inline-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    opacity: 0.4;
+    padding: 0 0.25rem;
+    vertical-align: middle;
+  }
+  .inline-edit-btn:hover { opacity: 1; }
+  .inline-input {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+    width: 120px;
+  }
+  .lcsc-empty { display: inline-flex; gap: 0.4rem; align-items: center; }
+  .lcsc-editing { display: inline-flex; gap: 0.4rem; align-items: center; }
+
+  /* Lightbox */
+  .lightbox-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    cursor: pointer;
+  }
+  .lightbox-overlay img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
   }
 </style>
 {% endblock %}
@@ -819,6 +1011,174 @@
     var d = document.createElement('div');
     d.appendChild(document.createTextNode(s));
     return d.innerHTML;
+  }
+
+  // ── Part Image Gallery ────────────────────────────────────────────
+  var DMTUID = '{{ part.dmtuid }}';
+  var MAX_IMGS = 5;
+
+  function openLightbox(src) {
+    var overlay = document.createElement('div');
+    overlay.className = 'lightbox-overlay';
+    overlay.onclick = function() { document.body.removeChild(overlay); };
+    var img = document.createElement('img');
+    img.src = src;
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+  }
+
+  function updateGalleryCount() {
+    var count = document.querySelectorAll('#galleryThumbs .gallery-thumb').length;
+    var dropzone = document.getElementById('imageDropzone');
+    var hint = dropzone.querySelector('.gallery-hint');
+    if (count >= MAX_IMGS) {
+      dropzone.style.display = 'none';
+    } else {
+      dropzone.style.display = '';
+    }
+    if (hint) hint.textContent = count + '/' + MAX_IMGS;
+  }
+
+  function addThumbToGallery(data) {
+    var thumbs = document.getElementById('galleryThumbs');
+    var div = document.createElement('div');
+    div.className = 'gallery-thumb';
+    div.dataset.id = data.id;
+    div.innerHTML = '<img src="' + esc(data.url) + '" alt="Part image" loading="lazy" onclick="openLightbox(this.src)">'
+      + '<button class="gallery-thumb-delete" onclick="deleteImage(' + data.id + ')" title="Remove">&times;</button>';
+    thumbs.appendChild(div);
+    updateGalleryCount();
+  }
+
+  function deleteImage(imageId) {
+    if (!confirm('Remove this image?')) return;
+    fetch('/api/v1/parts/' + encodeURIComponent(DMTUID) + '/images/' + imageId, { method: 'DELETE' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          var el = document.querySelector('.gallery-thumb[data-id="' + imageId + '"]');
+          if (el) el.remove();
+          updateGalleryCount();
+        }
+      });
+  }
+
+  function uploadImageFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/v1/parts/' + encodeURIComponent(DMTUID) + '/images', {
+      method: 'POST',
+      body: formData
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          addThumbToGallery(data);
+        }
+      })
+      .catch(function(err) { alert('Upload failed: ' + err); });
+  }
+
+  function uploadFromUrl() {
+    var input = document.getElementById('imageUrlField');
+    var url = input.value.trim();
+    if (!url) return;
+    fetch('/api/v1/parts/' + encodeURIComponent(DMTUID) + '/images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: url })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          addThumbToGallery(data);
+          input.value = '';
+          toggleUrlInput();
+        }
+      })
+      .catch(function(err) { alert('URL fetch failed: ' + err); });
+  }
+
+  function toggleUrlInput() {
+    var el = document.getElementById('imageUrlInput');
+    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  // Image dropzone events
+  (function() {
+    var dz = document.getElementById('imageDropzone');
+    if (!dz) return;
+
+    document.getElementById('imageUrlToggle').addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleUrlInput();
+    });
+
+    ['dragenter','dragover','dragleave','drop'].forEach(function(evt) {
+      dz.addEventListener(evt, function(e) { e.preventDefault(); e.stopPropagation(); });
+    });
+    dz.addEventListener('dragenter', function() { dz.classList.add('dragover'); });
+    dz.addEventListener('dragover', function() { dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', function() { dz.classList.remove('dragover'); });
+    dz.addEventListener('drop', function(e) {
+      dz.classList.remove('dragover');
+      Array.from(e.dataTransfer.files).forEach(function(f) {
+        if (/\.(jpe?g|png|gif|webp)$/i.test(f.name)) {
+          uploadImageFile(f);
+        }
+      });
+    });
+
+    // Click to select
+    dz.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') return;
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.onchange = function(ev) {
+        Array.from(ev.target.files).forEach(uploadImageFile);
+      };
+      input.click();
+    });
+  })();
+
+  // ── Inline LCSC Part editing ──────────────────────────────────────
+  function editLcsc() {
+    var el = document.getElementById('kicad-lcsc');
+    var current = el.textContent.trim();
+    el.innerHTML = '<span class="lcsc-editing">'
+      + '<input type="text" id="lcscInput" value="' + esc(current) + '" class="inline-input" onkeydown="if(event.key===\'Enter\')saveLcsc()">'
+      + '<button class="btn btn-primary btn-sm" onclick="saveLcsc()">Save</button>'
+      + '</span>';
+    document.getElementById('lcscInput').focus();
+  }
+
+  function saveLcsc() {
+    var input = document.getElementById('lcscInput');
+    var val = input.value.trim();
+    if (!val) return;
+
+    fetch('/api/v1/parts/' + encodeURIComponent(DMTUID), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kicad_libref: val })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          var el = document.getElementById('kicad-lcsc');
+          el.innerHTML = esc(val) + ' <button class="inline-edit-btn" onclick="editLcsc()" title="Edit">✏</button>';
+        }
+      })
+      .catch(function(err) { alert('Save failed: ' + err); });
   }
 </script>
 {% endblock %}

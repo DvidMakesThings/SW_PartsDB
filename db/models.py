@@ -69,6 +69,13 @@ class Part(Base):
         cascade="all, delete-orphan", lazy="selectin",
     )
 
+    # ── Image relationship ─────────────────────────────────────────────
+    images = relationship(
+        "PartImage", back_populates="part",
+        cascade="all, delete-orphan", lazy="selectin",
+        order_by="PartImage.position",
+    )
+
     # ── EAV relationship ───────────────────────────────────────────────
     fields = relationship(
         "PartField", back_populates="part",
@@ -226,3 +233,21 @@ class PartPricing(Base):
             "last_fetched": self.last_fetched.isoformat() if self.last_fetched else "",
             "error": self.error or "",
         }
+
+
+class PartImage(Base):
+    """
+    Images attached to a part. Max 5 per part.
+    Files stored under part_images/<dmtuid>/.
+    """
+    __tablename__ = "part_images"
+
+    id       = Column(Integer, primary_key=True, autoincrement=True)
+    dmtuid   = Column(String(20),
+                      ForeignKey("parts.dmtuid", ondelete="CASCADE"),
+                      nullable=False, index=True)
+    filename = Column(String(300), nullable=False)
+    position = Column(Integer, nullable=False, default=0)  # 0-4
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    part = relationship("Part", back_populates="images")

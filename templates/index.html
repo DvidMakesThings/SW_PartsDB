@@ -127,6 +127,7 @@
         <th>Domain / Family</th>
         {{ sort_header('Manufacturer', 'manufacturer') }}
         <th title="Price per unit (EUR)">Price</th>
+        <th title="LCSC Part Number">LCSC</th>
         <th class="truncate">Description</th>
         {{ sort_header('Added', 'created_at') }}
         <th title="KiCad Assets">KiCad</th>
@@ -147,8 +148,11 @@
           <span class="badge badge-family">{{ p.ff }}</span>
           <span style="font-size:.8rem; color:var(--text-dim)">{{ family_name(p.tt, p.ff) }}</span>
         </td>
-        <td>{{ p.manufacturer or '' }}</td>
-        <td style="font-size:.85rem; white-space:nowrap;">{% if pl.price_eur %}€{{ pl.price_eur }}{% endif %}</td>
+        <td style="max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ p.manufacturer or '' }}">{{ p.manufacturer or '' }}</td>
+        <td style="font-size:.85rem; white-space:nowrap; {% if pl.stock is not none and pl.stock == 0 %}color:var(--red);{% endif %}">{% if pl.price_eur %}€{{ pl.price_eur }}{% endif %}</td>
+        <td style="font-size:.75rem; white-space:nowrap; max-width:70px;"
+          >{% if p.kicad_libref %}<span style="color:var(--text-dim); display:block; overflow:hidden; text-overflow:ellipsis;" title="{{ p.kicad_libref }}">{{ p.kicad_libref }}</span>{% else %}<input type="text" class="lcsc-inline" data-dmtuid="{{ p.dmtuid }}" placeholder="LCSC"
+              onkeydown="if(event.key==='Enter'){saveLcscInline(this);this.blur();}">{% endif %}</td>
         <td class="truncate" title="{{ p.description or '' }}">{{ p.description or '' }}</td>
         <td style="font-size:.8rem;color:var(--text-dim);white-space:nowrap;">{{ p.created_at.strftime('%Y-%m-%d') if
           p.created_at else '' }}</td>
@@ -275,8 +279,43 @@ function showToast(msg, type) {
   document.body.appendChild(el);
   setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 500); }, 4000);
 }
+
+function saveLcscInline(input) {
+  var val = input.value.trim();
+  if (!val) return;
+  var dmtuid = input.dataset.dmtuid;
+  fetch('/api/v1/parts/' + encodeURIComponent(dmtuid), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kicad_libref: val })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        showToast('Error: ' + data.error, 'err');
+      } else {
+        var td = input.parentElement;
+        td.innerHTML = '<span style="color:var(--text-dim);" title="' + val + '">' + val + '</span>';
+        showToast(dmtuid + ': LCSC set to ' + val, 'ok');
+      }
+    })
+    .catch(function(err) { showToast('Save failed: ' + err, 'err'); });
+}
 </script>
 <style>
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.lcsc-inline {
+  width: 65px;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+.lcsc-inline:focus {
+  border-color: var(--accent);
+  outline: none;
+}
 </style>
 {% endblock %}

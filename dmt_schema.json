@@ -2081,7 +2081,7 @@
         "01": "0.30 mm pitch",
         "02": "0.50 mm pitch",
         "03": "1.00 mm pitch",
-        "04": "≤10 pos",
+        "04": "\u226410 pos",
         "05": "11-30 pos",
         "06": "31-60 pos",
         "07": ">60 pos",
@@ -2130,7 +2130,7 @@
         "20": "Shielded",
         "21": "Unshielded",
         "30": "High-current/PD E-Marker",
-        "40": "Short ≤0.5 m",
+        "40": "Short \u22640.5 m",
         "41": "1-2 m",
         "42": ">2 m",
         "99": "Other"
@@ -2138,9 +2138,9 @@
     },
     "1002_RF Coax Assemblies": {
       "cc": {
-        "01": "50 Ω",
-        "02": "75 Ω",
-        "03": "93 Ω",
+        "01": "50 \u03a9",
+        "02": "75 \u03a9",
+        "03": "93 \u03a9",
         "10": "Antenna Pigtails",
         "20": "Low-loss Test",
         "30": "Phase-stable",
@@ -2214,7 +2214,7 @@
         "99": "Special"
       },
       "ss": {
-        "01": "≤50 mm",
+        "01": "\u226450 mm",
         "02": "51-150 mm",
         "03": "151-300 mm",
         "04": ">300 mm",
@@ -2251,10 +2251,10 @@
         "02": "1.5-2 m",
         "03": "3-5 m",
         "04": ">5 m",
-        "10": "0.75 mm²",
-        "11": "1.0 mm²",
-        "12": "1.5 mm²",
-        "13": "2.5 mm²",
+        "10": "0.75 mm\u00b2",
+        "11": "1.0 mm\u00b2",
+        "12": "1.5 mm\u00b2",
+        "13": "2.5 mm\u00b2",
         "20": "Angled Plug",
         "21": "Right-angle IEC",
         "30": "With Fuse",
@@ -2398,9 +2398,9 @@
         "21": "Panel-mount",
         "30": "IP67/IP68",
         "31": "Heavy-duty Strain Relief",
-        "40": "Ferrule 0.25-1.0 mm²",
-        "41": "Ferrule 1.5-2.5 mm²",
-        "42": "Ferrule 4-10 mm²",
+        "40": "Ferrule 0.25-1.0 mm\u00b2",
+        "41": "Ferrule 1.5-2.5 mm\u00b2",
+        "42": "Ferrule 4-10 mm\u00b2",
         "99": "Other"
       }
     },
@@ -2701,7 +2701,8 @@
         "07": "Isolated interface board",
         "08": "Wireless transceiver (BT/WiFi/LoRa)",
         "90": "Adapter or dongle",
-        "99": "Other"
+        "99": "Other",
+        "09": "Multi-interface converter (USB to multi-protocol)"
       },
       "ss": {
         "01": "Board mount",

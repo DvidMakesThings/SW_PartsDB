@@ -82,6 +82,7 @@ def index():
                 pricing_lookup[r.dmtuid] = {
                     "lifecycle": r.lifecycle or "",
                     "price_eur": eur_price,
+                    "stock": r.stock,
                 }
 
         return render_template(

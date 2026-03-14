@@ -138,7 +138,7 @@
       {% for p in parts %}
       <tr>
         {% set pl = pricing_lookup.get(p.dmtuid, {}) %}
-        <td class="uid-cell"><a href="/part/{{ p.dmtuid }}" {% if pl.lifecycle == 'Active' %}style="color:var(--green);"{% elif pl.lifecycle in ['EOL', 'Discontinued', 'Obsolete'] %}style="color:var(--red);"{% elif pl.lifecycle in ['NRND', 'Not Recommended'] %}style="color:#eab308;"{% endif %}>{{ p.dmtuid }}</a></td>
+        <td class="uid-cell"><a href="/part/{{ p.dmtuid }}" {% if pl.lifecycle == 'Active' %}style="color:var(--green);"{% elif pl.lifecycle in ['EOL', 'Discontinued', 'Obsolete'] %}style="color:var(--red);"{% elif pl.lifecycle in ['NRND', 'Not Recommended'] %}style="color:#eab308;"{% endif %}>{{ p.dmtuid }}</a>{% if p.eol %} <span style="background:var(--red); color:#fff; padding:0 4px; border-radius:3px; font-size:.65em; vertical-align:middle;">EOL</span>{% endif %}</td>
         <td>{{ p.mpn or '' }}</td>
         <td>{{ p.value or '' }}</td>
         <td>{{ p.quantity or '' }}</td>

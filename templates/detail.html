@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 style="font-family:var(--mono); letter-spacing:1px;">{{ part.dmtuid }}</h1>
+    <h1 style="font-family:var(--mono); letter-spacing:1px;">{{ part.dmtuid }}{% if part.eol %} <span style="font-size:.55em; background:var(--red); color:#fff; padding:2px 8px; border-radius:4px; vertical-align:middle; letter-spacing:0;">EOL</span>{% endif %}</h1>
     <span class="subtitle">
       <span class="badge badge-domain">{{ part.tt }} {{ domain_name(part.tt) }}</span>
       <span class="badge badge-family">{{ part.ff }} {{ family_name(part.tt, part.ff) }}</span>
@@ -37,7 +37,7 @@
     <div class="core-split">
       <div class="core-fields">
         <div class="field-row"><span class="field-label">DMTUID</span><span class="field-value"
-            style="font-family:var(--mono)">{{ part.dmtuid }}</span></div>
+            style="font-family:var(--mono)">{{ part.dmtuid }}{% if part.eol %} <span style="background:var(--red); color:#fff; padding:1px 6px; border-radius:3px; font-size:.75em; font-family:var(--font); letter-spacing:0;">EOL</span>{% endif %}</span></div>
         <div class="field-row"><span class="field-label">MPN</span><span class="field-value">{{ part.mpn or '—' }}</span>
         </div>
         <div class="field-row"><span class="field-label">Value</span><span class="field-value">{{ part.value or '—'

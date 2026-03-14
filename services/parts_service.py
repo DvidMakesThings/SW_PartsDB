@@ -84,10 +84,15 @@ class PartsService:
         # Notes
         part.notes = str(data.get("notes", "")).strip()
 
+        # EOL flag
+        if "eol" in data:
+            val = data["eol"]
+            part.eol = val in (True, "true", "on", "1", 1)
+
         # Template EAV fields + extra_json for non-template fields
         template = get_fields(tt, ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
-                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
+                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes", "eol",
                                 "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
         # Also skip distributor form fields
         skip_patterns = {'dist_name_', 'dist_url_'}
@@ -161,10 +166,15 @@ class PartsService:
         if "notes" in data:
             part.notes = str(data["notes"]).strip()
 
+        # EOL flag
+        if "eol" in data:
+            val = data["eol"]
+            part.eol = val in (True, "true", "on", "1", 1)
+
         # EAV fields + extra_json for non-template fields
         template = get_fields(part.tt, part.ff)
         skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
-                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes",
+                                "kicad_libref", "kicad_3dmodel", "dmtuid", "notes", "eol",
                                 "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
         # Also skip distributor form fields
         skip_patterns = {'dist_name_', 'dist_url_'}

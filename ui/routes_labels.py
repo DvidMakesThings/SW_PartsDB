@@ -70,10 +70,10 @@ def _generate_label_50x30(part: Part, for_print: bool = False) -> str:
   
   <text x="15" y="77" font-size="20" font-family="Arial, sans-serif"><tspan font-weight="bold">MPN:</tspan> {mpn}</text>
   <text x="15" y="105" font-size="20" font-family="Arial, sans-serif"><tspan font-weight="bold">MFR:</tspan> {mfr}</text>
-  <text x="50" y="143" font-size="23" font-family="Arial, sans-serif"><tspan font-weight="bold">Value:</tspan> {value}</text>
-  <text x="260" y="143" font-size="23" font-family="Arial, sans-serif"><tspan font-weight="bold">Package:</tspan> {package}</text>
-  <line x1="15" y1="155" x2="485" y2="155" stroke="#999" stroke-width="1"/>  
-  <text x="15" y="180" font-size="17" font-family="Arial, sans-serif"><tspan font-weight="bold">Desc:</tspan> {desc}</text>
+  <text x="80" y="130" font-size="20" font-family="Arial, sans-serif"><tspan font-weight="bold">Value:</tspan> {value}</text>
+  <text x="80" y="155" font-size="20" font-family="Arial, sans-serif"><tspan font-weight="bold">Package:</tspan> {package}</text>
+  <line x1="15" y1="165" x2="485" y2="165" stroke="#999" stroke-width="1"/>  
+  <text x="15" y="185" font-size="17" font-family="Arial, sans-serif"><tspan font-weight="bold">Desc:</tspan> {desc}</text>
   
   {barcode}
   <text x="250" y="285" font-size="20" font-family="monospace" text-anchor="middle" fill="#333">{part.dmtuid}</text>

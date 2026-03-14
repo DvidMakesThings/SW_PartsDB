@@ -1421,6 +1421,8 @@
         "02": "SPI",
         "03": "QSPI",
         "04": "Parallel",
+        "05": "1-Wire",
+        "06": "Microwire",
         "10": "eMMC UFS",
         "20": "Automotive",
         "99": "Other"
@@ -1675,6 +1677,25 @@
       "ss": {
         "01": "Industrial",
         "02": "Automotive",
+        "99": "Other"
+      }
+    },
+    "0605_Optical_Sensors": {
+      "cc": {
+        "01": "Ambient light (ALS)",
+        "02": "IR proximity / gesture",
+        "03": "UV sensor",
+        "04": "Photodiode",
+        "05": "Phototransistor",
+        "06": "Color sensor (RGB)",
+        "07": "Optical interrupter / reflective",
+        "99": "Other"
+      },
+      "ss": {
+        "01": "I2C",
+        "02": "SPI",
+        "03": "Analog output",
+        "04": "Digital output",
         "99": "Other"
       }
     },

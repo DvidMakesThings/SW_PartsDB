@@ -165,6 +165,9 @@ class NiimbotTransport:
         if not self._char_uuid:
             raise ConnectionError("Could not find Niimbot BLE characteristic")
         
+        # Start notifications once and keep them active for the session
+        await self._client.start_notify(self._char_uuid, self._notification_handler)
+        
         self._connected = True
         logger.info(f"BLE connected, characteristic: {self._char_uuid}")
     
@@ -182,7 +185,6 @@ class NiimbotTransport:
         packet = NiimbotPacket(code, data)
         self._notification_event = asyncio.Event()
         
-        await self._client.start_notify(self._char_uuid, self._notification_handler)
         await self._client.write_gatt_char(self._char_uuid, packet.to_bytes())
         
         try:
@@ -192,7 +194,6 @@ class NiimbotTransport:
             logger.warning(f"Timeout waiting for response to command 0x{code:02x}")
             response = None
         finally:
-            await self._client.stop_notify(self._char_uuid)
             self._notification_event = None
         
         return response

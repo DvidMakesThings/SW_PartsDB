@@ -107,6 +107,12 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
         </select>
       </div>
     </div>
+    <div style="margin-top:.75rem; display:flex; align-items:center; gap:.5rem;">
+      <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer; font-size:.9rem;">
+        <input type="checkbox" name="eol" value="on" {% if (part or template_part) and (part or template_part).eol %}checked{% endif %} style="width:16px; height:16px; accent-color:var(--red);">
+        <span style="color:var(--red); font-weight:600;">End of Life (EOL)</span>
+      </label>
+    </div>
   </div>
 
   <!-- Distributors -->

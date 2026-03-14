@@ -16,7 +16,7 @@ import json
 from datetime import datetime, timezone
 
 from sqlalchemy import (
-    Column, String, Integer, DateTime, Text, ForeignKey, Index,
+    Boolean, Column, String, Integer, DateTime, Text, ForeignKey, Index,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -53,6 +53,9 @@ class Part(Base):
     kicad_footprint = Column(String(300), default="")
     kicad_libref    = Column(String(300), default="")
     kicad_3dmodel   = Column(String(300), default="")
+
+    # ── Status flags ──────────────────────────────────────────────────
+    eol = Column(Boolean, default=False)
 
     # ── Fallback for parts with no matching template ───────────────────
     extra_json = Column(Text, default="{}")
@@ -104,7 +107,8 @@ class Part(Base):
             "kicad_footprint": self.kicad_footprint or "",
             "kicad_libref": self.kicad_libref or "",
             "kicad_3dmodel": self.kicad_3dmodel or "",
-            "notes": self.notes or "",            "created_at": self.created_at.isoformat() if self.created_at else "",        }
+            "notes": self.notes or "",
+            "eol": bool(self.eol),            "created_at": self.created_at.isoformat() if self.created_at else "",        }
         for f in self.fields:
             d[f.field_name] = f.field_value
         if self.extra_json:

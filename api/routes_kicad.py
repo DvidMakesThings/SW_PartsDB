@@ -243,7 +243,7 @@ def kicad_http_part_detail(part_id):
                 elif ff == "03":
                     ref = "L"   # Inductors
                 elif ff == "04":
-                    ref = "FL"  # EMI and Filters
+                    ref = "L"  # EMI and Filters
                 else:
                     ref = "R"   # Default for passives
             
@@ -252,17 +252,17 @@ def kicad_http_part_detail(part_id):
                 if ff == "01":
                     ref = "D"   # Diodes
                 elif ff == "02":
-                    ref = "Q"   # BJTs
+                    ref = "T"   # BJTs
                 elif ff == "03":
-                    ref = "Q"   # MOSFETs
+                    ref = "T"   # MOSFETs
                 elif ff == "04":
-                    ref = "Q"   # IGBTs
+                    ref = "T"   # IGBTs
                 elif ff == "05":
-                    ref = "Q"   # Thyristors
+                    ref = "T"   # Thyristors
                 elif ff == "06":
                     ref = "D"   # Bridge Rectifiers
                 else:
-                    ref = "Q"   # Default for discretes
+                    ref = "T"   # Default for discretes
             
             # 03 - Integrated Circuits
             elif tt == "03":
@@ -280,7 +280,7 @@ def kicad_http_part_detail(part_id):
                 if ff in ("01", "02", "03", "04"):
                     ref = "LED"  # LEDs and related
                 elif ff == "05":
-                    ref = "LD"   # Laser Diodes
+                    ref = "D"   # Laser Diodes
                 elif ff in ("07", "08"):
                     ref = "DS"   # Displays
                 else:
@@ -288,7 +288,7 @@ def kicad_http_part_detail(part_id):
             
             # 06 - Sensors and Transducers
             elif tt == "06":
-                ref = "SEN"  # Sensors
+                ref = "IC"  # Sensors
             
             # 07 - Power Supplies and Magnetics
             elif tt == "07":

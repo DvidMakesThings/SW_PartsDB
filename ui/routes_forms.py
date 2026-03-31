@@ -123,6 +123,7 @@ def part_add():
     # POST: collect form data into a dict and delegate to PartsService
     data = dict(request.form)
     staging_session_id = data.pop('staging_session_id', None)
+    data.setdefault("eol", "off")  # unchecked checkbox sends nothing
     
     session = get_session()
     try:
@@ -212,6 +213,7 @@ def part_edit(dmtuid: str):
         # POST
         data = dict(request.form)
         staging_session_id = data.pop('staging_session_id', None)
+        data.setdefault("eol", "off")  # unchecked checkbox sends nothing
         
         PartsService.update(session, part, data)
         

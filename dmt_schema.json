@@ -46,6 +46,10 @@
           "name": "EMI and Filters"
         },
         {
+          "ff": "05",
+          "name": "Crystals and Oscillators"
+        },
+        {
           "ff": "99",
           "name": "Specialized Passives"
         }
@@ -1107,6 +1111,35 @@
         "99": "Other"
       }
     },
+    "0105_CrystalsOscillators": {
+      "cc": {
+        "01": "Crystal (MHz)",
+        "02": "Crystal (kHz)",
+        "03": "TCXO",
+        "04": "OCXO",
+        "05": "VCXO",
+        "06": "Ceramic resonator",
+        "07": "Programmable oscillator",
+        "08": "MEMS oscillator",
+        "10": "Clock oscillator XO",
+        "90": "Accessories",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "SMD 2-pin",
+        "02": "SMD 4-pin",
+        "03": "THT",
+        "10": "1612 (1.6x1.2mm)",
+        "11": "2016 (2.0x1.6mm)",
+        "12": "2520 (2.5x2.0mm)",
+        "13": "3215 (3.2x1.5mm)",
+        "14": "3225 (3.2x2.5mm)",
+        "15": "5032 (5.0x3.2mm)",
+        "16": "7050 (7.0x5.0mm)",
+        "20": "HC49",
+        "99": "Other"
+      }
+    },
     "0201_Diodes": {
       "cc": {
         "01": "Signal General switching",
@@ -1509,6 +1542,7 @@
         "60": "Other RISC V vendor generic",
         "61": "TI TMS570 Hercules",
         "62": "TI RM4x Hercules",
+        "63": "Raspberry Pi RP235x",
         "99": "Other or Unknown"
       }
     },
@@ -1748,10 +1782,105 @@
         "99": "Other"
       }
     },
+    "0801_Fuses": {
+      "cc": {
+        "01": "Cartridge glass",
+        "02": "Cartridge ceramic",
+        "03": "Surface mount chip",
+        "04": "Blade automotive",
+        "05": "Axial leaded",
+        "06": "Radial leaded",
+        "10": "High voltage",
+        "20": "Holders and clips",
+        "90": "Accessories",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "Fast acting",
+        "02": "Slow blow time delay",
+        "03": "Very fast acting",
+        "10": "5x20mm",
+        "11": "6.3x32mm",
+        "12": "1206",
+        "13": "0603",
+        "14": "0402",
+        "20": "ATO standard blade",
+        "21": "Mini blade",
+        "22": "Micro blade",
+        "99": "Other"
+      }
+    },
+    "0802_CircuitBreakers": {
+      "cc": {
+        "01": "Thermal",
+        "02": "Magnetic",
+        "03": "Thermal-magnetic",
+        "04": "Hydraulic-magnetic",
+        "05": "Supplementary protector",
+        "10": "Miniature MCB",
+        "20": "Motor protector",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "Single pole",
+        "02": "Two pole",
+        "03": "Three pole",
+        "10": "Panel mount",
+        "11": "DIN rail",
+        "20": "Push to reset",
+        "21": "Toggle reset",
+        "99": "Other"
+      }
+    },
+    "0803_TVS_Suppressors": {
+      "cc": {
+        "01": "TVS diode unidirectional",
+        "02": "TVS diode bidirectional",
+        "03": "TVS array multi-channel",
+        "04": "Zener clamp",
+        "10": "ESD protection",
+        "20": "Automotive AEC-Q101",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "SOD-123",
+        "02": "SMA DO-214AC",
+        "03": "SMB DO-214AA",
+        "04": "SMC DO-214AB",
+        "05": "SOT-23",
+        "10": "DFN",
+        "11": "BGA",
+        "20": "Axial",
+        "99": "Other"
+      }
+    },
+    "0804_MOV_Varistor_GDT": {
+      "cc": {
+        "01": "MOV disc radial",
+        "02": "MOV SMD",
+        "03": "GDT gas discharge tube",
+        "04": "MLV multilayer varistor",
+        "10": "High energy MOV",
+        "99": "Special"
+      },
+      "ss": {
+        "01": "5mm disc",
+        "02": "7mm disc",
+        "03": "10mm disc",
+        "04": "14mm disc",
+        "05": "20mm disc",
+        "10": "SMD 0402",
+        "11": "SMD 0603",
+        "12": "SMD 0805",
+        "20": "2-electrode GDT",
+        "21": "3-electrode GDT",
+        "99": "Other"
+      }
+    },
     "0805_PTC_Resettable": {
       "cc": {
-        "01": "Surface Mount PTC (Polyfuse)",
-        "02": "Through-Hole PTC (Radial)",
+        "01": "Polymeric PTC SMD (Polyfuse)",
+        "02": "Polymeric PTC THT (Radial)",
         "03": "Inrush Current Limiter (ICL)",
         "04": "Thermal Cutoff (TCO one-shot)",
         "05": "Battery Strap PTC",

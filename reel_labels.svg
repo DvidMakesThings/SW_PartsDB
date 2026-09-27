@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm"
+     viewBox="0 0 210 297" font-family="Helvetica, Arial, sans-serif">
+
+  <!-- ============================================================= -->
+  <!-- Reel-holder labels: 65 x 22 mm, 3 columns.                    -->
+  <!-- Code format: RL00-NAMEn  (e.g. RL01-R1)                       -->
+  <!-- ASCII-only. Duplicate / renumber rows as your reel count      -->
+  <!-- grows. R = resistor reels, C = capacitor reels, L = inductor. -->
+  <!-- ============================================================= -->
+
+  <style>
+    .rcard  { fill:#ffffff; stroke:#000000; stroke-width:0.5; }
+    .rbar   { fill:#111111; }
+    .rcode  { fill:#ffffff; font-size:6.5px; font-weight:bold; letter-spacing:0.5px; }
+    .rname  { fill:#000000; font-size:9px; font-weight:bold; }
+  </style>
+
+  <!-- Row helper: each label is 65 wide + 3 gap; rows 22 high + 3 gap -->
+
+  <!-- ==================== RESISTOR REELS ===================== -->
+  <g transform="translate(5,5)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL01-R1</text>
+    <text class="rname" x="3" y="17">Resistors 1</text>
+  </g>
+  <g transform="translate(73,5)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL02-R2</text>
+    <text class="rname" x="3" y="17">Resistors 2</text>
+  </g>
+  <g transform="translate(141,5)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL03-R3</text>
+    <text class="rname" x="3" y="17">Resistors 3</text>
+  </g>
+
+  <!-- ==================== CAPACITOR REELS ==================== -->
+  <g transform="translate(5,30)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL04-C1</text>
+    <text class="rname" x="3" y="17">Capacitors 1</text>
+  </g>
+  <g transform="translate(73,30)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL05-C2</text>
+    <text class="rname" x="3" y="17">Capacitors 2</text>
+  </g>
+  <g transform="translate(141,30)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL06-C3</text>
+    <text class="rname" x="3" y="17">Capacitors 3</text>
+  </g>
+
+  <!-- ==================== INDUCTOR REELS ===================== -->
+  <g transform="translate(5,55)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL07-L1</text>
+    <text class="rname" x="3" y="17">Inductors 1</text>
+  </g>
+  <g transform="translate(73,55)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL08-L2</text>
+    <text class="rname" x="3" y="17">Inductors 2</text>
+  </g>
+  <g transform="translate(141,55)">
+    <rect class="rcard" x="0" y="0" width="65" height="22" rx="2.5"/>
+    <rect class="rbar"  x="0" y="0" width="65" height="8"  rx="2.5"/>
+    <rect class="rbar"  x="0" y="4" width="65" height="4"/>
+    <text class="rcode" x="3" y="5.6">RL09-L3</text>
+    <text class="rname" x="3" y="17">Inductors 3</text>
+  </g>
+
+</svg>

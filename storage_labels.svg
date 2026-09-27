@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm"
+     viewBox="0 0 210 297" font-family="Helvetica, Arial, sans-serif">
+
+  <!-- ============================================================= -->
+  <!-- Reusable label template via <defs> is avoided for print use; -->
+  <!-- each label is drawn explicitly so it can be cut individually. -->
+  <!-- Box labels: 100 x 50 mm, 2 columns.                          -->
+  <!-- ASCII-only text. Codes: BX00-NAME / RL00-NAME0               -->
+  <!-- ============================================================= -->
+
+  <style>
+    .card   { fill:#ffffff; stroke:#000000; stroke-width:0.6; }
+    .bar    { fill:#111111; }
+    .code   { fill:#ffffff; font-size:9px; font-weight:bold; letter-spacing:0.5px; }
+    .title  { fill:#000000; font-size:11px; font-weight:bold; }
+    .items  { fill:#222222; font-size:4.2px; }
+    .rcode  { fill:#ffffff; font-size:7px; font-weight:bold; letter-spacing:0.5px; }
+    .rtitle { fill:#000000; font-size:8px; font-weight:bold; }
+  </style>
+
+  <!-- ===================== BOX LABELS ============================ -->
+
+  <!-- BX01-R -->
+  <g transform="translate(5,5)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX01-R</text>
+    <text class="title" x="4"  y="26">Resistors</text>
+    <text class="items" x="4"  y="34">Resistors, resistor arrays / networks,</text>
+    <text class="items" x="4"  y="39">potentiometers, trimmers</text>
+  </g>
+
+  <!-- BX02-L -->
+  <g transform="translate(105,5)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX02-L</text>
+    <text class="title" x="4"  y="26">Inductors</text>
+    <text class="items" x="4"  y="34">Inductors, chokes, ferrites,</text>
+    <text class="items" x="4"  y="39">transformers</text>
+  </g>
+
+  <!-- BX03-C -->
+  <g transform="translate(5,57)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX03-C</text>
+    <text class="title" x="4"  y="26">Capacitors</text>
+    <text class="items" x="4"  y="34">Ceramic, electrolytic, polymer,</text>
+    <text class="items" x="4"  y="39">tantalum, film capacitors</text>
+  </g>
+
+  <!-- BX04-PASV -->
+  <g transform="translate(105,57)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX04-PASV</text>
+    <text class="title" x="4"  y="26">Other Passives</text>
+    <text class="items" x="4"  y="34">Crystals, oscillators, resonators,</text>
+    <text class="items" x="4"  y="39">thermistors, varistors</text>
+  </g>
+
+  <!-- BX05-EMB -->
+  <g transform="translate(5,109)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX05-EMB</text>
+    <text class="title" x="4"  y="26">Embedded</text>
+    <text class="items" x="4"  y="34">MCU, MPU, Flash, EEPROM, RAM,</text>
+    <text class="items" x="4"  y="39">PHY, interface / communication ICs</text>
+  </g>
+
+  <!-- BX06-ANA -->
+  <g transform="translate(105,109)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX06-ANA</text>
+    <text class="title" x="4"  y="26">Analog</text>
+    <text class="items" x="4"  y="34">Op-amps, comparators, ADC, DAC,</text>
+    <text class="items" x="4"  y="39">references, analog switches, muxes</text>
+  </g>
+
+  <!-- BX07-DISC -->
+  <g transform="translate(5,161)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX07-DISC</text>
+    <text class="title" x="4"  y="26">Discretes</text>
+    <text class="items" x="4"  y="34">MOSFETs, BJTs, diodes, TVS, LEDs,</text>
+    <text class="items" x="4"  y="39">optocouplers, TRIACs, thyristors</text>
+  </g>
+
+  <!-- BX08-PWR -->
+  <g transform="translate(105,161)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX08-PWR</text>
+    <text class="title" x="4"  y="26">Power</text>
+    <text class="items" x="4"  y="34">LDOs, DC-DC, AC-DC, PMICs,</text>
+    <text class="items" x="4"  y="39">gate drivers, load switches</text>
+  </g>
+
+  <!-- BX09-MECH -->
+  <g transform="translate(5,213)">
+    <rect class="card" x="0" y="0" width="100" height="50" rx="3"/>
+    <rect class="bar"  x="0" y="0" width="100" height="14" rx="3"/>
+    <rect class="bar"  x="0" y="7" width="100" height="7"/>
+    <text class="code"  x="4"  y="9.5">BX09-MECH</text>
+    <text class="title" x="4"  y="26">Mechanical</text>
+    <text class="items" x="4"  y="34">Connectors, switches, relays, sockets,</text>
+    <text class="items" x="4"  y="39">fuse holders, heatsinks, hardware</text>
+  </g>
+
+</svg>

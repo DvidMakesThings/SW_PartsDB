@@ -10,6 +10,7 @@ from db import get_session
 from services.parts_service import PartsService
 from services.search_service import SearchService
 import config
+from services.inventory_service import summary
 
 
 @api_bp.route("/parts")
@@ -52,6 +53,7 @@ def list_parts():
             session, q=q, tt=tt, ff=ff, cc=cc, ss=ss, props=props,
             sort_by=sort_by, sort_order=sort_order,
             limit=limit, offset=offset,
+            availability=request.args.get("availability", "all"),
         )
         return jsonify({
             "total": total,
@@ -71,7 +73,9 @@ def get_part(dmtuid: str):
         part = PartsService.get(session, dmtuid)
         if not part:
             return jsonify({"error": "not found"}), 404
-        return jsonify(part.to_dict())
+        result = part.to_dict()
+        result["inventory"] = summary(session, part.dmtuid)
+        return jsonify(result)
     finally:
         session.close()
 
@@ -84,6 +88,11 @@ def create_part():
     JSON body: {tt, ff, cc, ss, …fields}.  XXX is auto-assigned.
     """
     data = request.get_json(force=True)
+    if any(k in data for k in ("Quantity", "quantity", "Location", "location")):
+        key = request.headers.get("Idempotency-Key", "").strip()
+        if not key:
+            return jsonify({"error": "Stock writes require an Idempotency-Key header"}), 400
+        data["_inventory_key"] = key
     session = get_session()
     try:
         part = PartsService.create(session, data)
@@ -100,6 +109,11 @@ def create_part():
 def update_part(dmtuid: str):
     """PUT /api/v1/parts/{DMTUID}  (JSON body with fields to update)"""
     data = request.get_json(force=True)
+    if any(k in data for k in ("Quantity", "quantity", "Location", "location")):
+        key = request.headers.get("Idempotency-Key", "").strip()
+        if not key:
+            return jsonify({"error": "Stock writes require an Idempotency-Key header"}), 400
+        data["_inventory_key"] = key
     session = get_session()
     try:
         part = PartsService.get(session, dmtuid)

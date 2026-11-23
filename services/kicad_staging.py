@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import config
 
 # Staging directory - temp files stored here before final save
-STAGING_DIR = config.BASE_DIR / "_staging"
+STAGING_DIR = config.STAGING_DIR
 
 # Auto-cleanup: remove staged files older than this
 STAGING_MAX_AGE = timedelta(hours=2)

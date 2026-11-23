@@ -81,9 +81,15 @@ body {
 .nav-links {
   display: flex;
   gap: .5rem;
+  overflow-x: auto;
+  min-width: 0;
+  align-items: center;
+  scrollbar-width: thin;
 }
 
 .nav-links a {
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--text-dim);
   text-decoration: none;
   padding: .4rem .8rem;

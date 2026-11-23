@@ -59,7 +59,8 @@
     var q = input.value.trim();
     if (!q) { dropdown.classList.remove("show"); return; }
     debounce = setTimeout(function () {
-      fetch("/ui-api/search?q=" + encodeURIComponent(q))
+      var availability = document.getElementById("availabilitySelect");
+      fetch("/ui-api/search?q=" + encodeURIComponent(q) + "&availability=" + encodeURIComponent(availability ? availability.value : "all"))
         .then(function (r) { return r.json(); })
         .then(render);
     }, 120);

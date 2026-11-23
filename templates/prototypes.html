@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}Prototypes — DMTDB{% endblock %}{% block content %}<div class="engineering">
+<h1>Prototypes and product serials</h1><p class="eng-muted">Find individual products and boards by serial number and follow their firmware, modifications, tests and faults.</p>
+<p><a href="/settings/serials">Configure serial-enabled domains and prefixes</a> · Add product serials from their part detail page.</p>
+<form method="get" class="eng-form eng-panel">{{ e.field('q', 'Serial number', q) }}
+<label>Board<select name="board_id"><option value="">All boards</option>{% for b in boards %}<option value="{{ b.id }}" {% if request.args.get('board_id')==b.id|string %}selected{% endif %}>{{ b.project.code }}-{{ b.code }} · {{ b.name }}</option>{% endfor %}</select></label>
+<label>Stage<select name="stage"><option value="">All stages</option>{% for s in ['prototype','pre-production','production'] %}<option {% if request.args.get('stage')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+<label>Status<select name="status"><option value="">All statuses</option>{% for s in unit_statuses %}<option value="{{ s }}" {% if request.args.get('status')==s %}selected{% endif %}>{{ s|upper if s=='waste' else s }}</option>{% endfor %}</select></label>
+<label>Revision<select name="release_id"><option value="">All revisions</option>{% for r in releases %}<option value="{{ r.id }}" {% if request.args.get('release_id')==r.id|string %}selected{% endif %}>{{ r.board.project.code }}-{{ r.board.code }} / {{ r.revision }}</option>{% endfor %}</select></label>
+<label><input type="checkbox" name="unresolved" value="1" {% if request.args.get('unresolved')=='1' %}checked{% endif %}> Only unresolved revisions</label>
+<label><input type="checkbox" name="archived" value="1" {% if request.args.get('archived')=='1' %}checked{% endif %}> Include removed / archived serials</label>
+{% if request.args.get('part_id') %}<input type="hidden" name="part_id" value="{{ request.args.part_id }}">{% endif %}<button class="btn">Filter</button><a href="/prototypes">Clear filters</a></form>
+{{ e.unit_table(units) }}{{ e.pager(page, pages) }}<p><a href="/prototypes?{{ dict(request.args, format='csv')|urlencode }}">Download filtered serial list (CSV)</a></p>
+<section class="eng-panel"><h2>Register a physical board</h2><p>Register each actual unit separately. Existing aggregate inventory entries do not imply serial numbers. Registration does not consume components.</p>
+{% if not boards %}<p><a href="/designs">Create a project and board design first.</a></p>{% else %}
+<form method="post" class="eng-form">{{ e.token() }}
+<label>Board design<select name="board_id" required>{% for b in boards %}<option value="{{ b.id }}" {% if request.args.get('board_id')==b.id|string %}selected{% endif %}>{{ b.project.code }}-{{ b.code }} · {{ b.name }}</option>{% endfor %}</select></label>
+<label>Exact revision<select name="release_id"><option value="">Unresolved (historical units only)</option>{% for r in releases %}<option value="{{ r.id }}" {% if request.args.get('release_id')==r.id|string %}selected{% endif %}>{{ r.board.project.code }}-{{ r.board.code }} / {{ r.revision }} ({{ r.status }})</option>{% endfor %}</select></label>
+<label>Registration<select name="registration"><option value="historical">Existing / historical unit</option><option value="new">New unit (published revision required)</option></select></label>
+{{ e.field('serial', 'Actual serial number', placeholder='Enter the serial printed on this unit') }}
+<label><input type="checkbox" name="generate_serial" value="yes"> Generate serial for a new unit (PROJECT-BOARD-00001)</label>
+<label>Lifecycle stage<select name="stage"><option>prototype</option><option>pre-production</option><option>production</option></select></label>
+{{ e.field('part_id', 'Existing inventory DMTUID (optional; defaults to board link)') }}{{ e.field('location', 'Location') }}{{ e.area('notes', 'Registration notes / historical evidence') }}{{ e.submit('Register unit') }}</form>{% endif %}</section></div>{% endblock %}

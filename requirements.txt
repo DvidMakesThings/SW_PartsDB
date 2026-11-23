@@ -1,5 +1,6 @@
 flask>=3.0
 sqlalchemy>=2.0
+alembic>=1.13,<2
 kiutils>=1.4
 pillow>=10.0
 bleak>=0.21

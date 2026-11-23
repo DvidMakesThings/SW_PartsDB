@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}{{ board.name }} — Designs{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/designs">Designs</a> / <a href="/designs/{{ board.project_id }}">{{ board.project.code }}</a> / {{ board.code }}</p>
+<h1>{{ board.project.code }}-{{ board.code }} · {{ board.name }}</h1><p class="eng-text">{{ board.description }}</p>
+{% if board.part_id %}<p>Inventory: <a href="/part/{{ board.part_id }}">{{ board.part_id }}</a></p>{% endif %}
+<details class="eng-panel"><summary>Edit board information</summary><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="edit_board">{{ e.field('name','Board name',board.name,required=true) }}{{ e.field('part_id','Inventory DMTUID (set before registering units)',board.part_id or '') }}{{ e.area('description','Purpose',board.description) }}{{ e.submit('Save board') }}</form></details>
+<h2>Revisions</h2><div class="eng-table"><table><thead><tr><th>Revision</th><th>Status</th><th>Release notes</th></tr></thead><tbody>
+{% for r in board.releases %}<tr><td><a href="/designs/releases/{{ r.id }}">{{ r.revision }}</a></td><td>{{ r.status }}</td><td>{{ r.notes }}</td></tr>
+{% else %}<tr><td colspan="3">No revisions yet. Create a draft and upload its files.</td></tr>{% endfor %}</tbody></table></div>
+<h2>Physical units</h2>{{ e.unit_table(units) }}<a href="/prototypes?board_id={{ board.id }}">All serials / register a prototype</a>
+{% if not board.archived and not board.project.archived %}<section class="eng-panel"><h2>Create revision</h2><form method="post" class="eng-form">{{ e.token() }}
+{{ e.field('revision', 'Revision', required=true, placeholder='A1') }}{{ e.field('source_commit', 'Full source commit (optional)') }}
+{{ e.field('tool_versions', 'Tool versions', placeholder='KiCad …') }}{{ e.area('notes', 'Release notes') }}{{ e.area('dependency_notes', 'Libraries / dependencies and unresolved references') }}
+{{ e.submit('Create draft revision') }}</form></section>{% endif %}</div>{% endblock %}

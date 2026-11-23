@@ -1,0 +1,41 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}{{ unit.serial }} — Prototypes{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/prototypes">Prototypes</a> / {{ unit.serial }}</p><h1>{{ unit.serial }}</h1>
+{% if unit.build_id %}<p>Assembly trace: <a href="/builds/{{ unit.build_id }}">Build #{{ unit.build_id }}</a> — actual BOM and material posting</p>{% endif %}
+<div class="eng-panel">{% if unit.board %}<p>Design: <a href="/designs/boards/{{ unit.board_id }}">{{ unit.board.project.code }}-{{ unit.board.code }} · {{ unit.board.name }}</a></p>
+<p>Revision: {% if unit.release %}<a href="/designs/releases/{{ unit.release_id }}">{{ unit.release.revision }}</a>{% else %}<strong class="eng-warning">Unresolved historical revision</strong>{% endif %}</p>{% else %}<p>Product serial — no design archive linked.</p>{% endif %}
+<p>{{ unit.stage }} · <strong>{{ 'WASTE' if unit.status=='waste' else unit.status }}</strong>{% if unit.archived %} · Archived{% endif %} · Location: {{ unit.location or 'Not recorded' }}</p><p>Last recorded firmware: <strong>{{ unit.firmware_version or 'Not recorded' }}</strong></p>
+{% if unit.part_id %}<p>Inventory: <a href="/part/{{ unit.part_id }}">{{ unit.part_id }}</a></p>{% endif %}<p class="eng-text">{{ unit.notes }}</p>
+<p class="eng-muted">{{ 'Historical registration' if unit.historical else 'New unit' }} · Firmware is recorded history, not live device telemetry.</p></div>
+{% if not unit.release and available_releases %}<details class="eng-panel"><summary>Link the design revision</summary><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="reconcile">
+<label>Revision<select name="release_id" required>{% for r in available_releases %}<option value="{{ r.id }}">{{ r.board.name }} / {{ r.revision }}</option>{% endfor %}</select></label>{{ e.area('notes', 'Evidence for this identification', required=true) }}{{ e.submit('Link revision') }}</form></details>{% endif %}
+<details class="eng-panel"><summary>Edit this serial record</summary><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="edit">
+{{ e.field('serial', 'Serial number', unit.serial, required=true) }}<label>Stage<select name="stage">{% for s in ['prototype','pre-production','production'] %}<option {% if s==unit.stage %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+{{ e.field('location', 'Location', unit.location) }}{{ e.area('notes', 'Current unit notes', unit.notes) }}{{ e.area('reason', 'Reason for editing (old values remain in history)', required=true) }}{{ e.submit('Save serial record') }}</form></details>
+<section class="eng-panel"><h2>Unit status</h2><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="status">
+<label>Status<select name="status">{% for s in unit_statuses %}<option value="{{ s }}" {% if s==unit.status %}selected{% endif %}>{{ 'WASTE — destroyed / scrapped' if s=='waste' else s }}</option>{% endfor %}</select></label>
+{{ e.area('reason', 'Reason / condition', required=true) }}{{ e.submit('Record status') }}</form></section>
+<details class="eng-panel"><summary>{{ 'Restore serial to active list' if unit.archived else 'Remove from active serial list' }}</summary><p>Removal archives this record. Its modifications, files and history remain accessible. For destroyed hardware, use WASTE.</p>
+<form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="{{ 'restore' if unit.archived else 'archive' }}">{{ e.area('reason', 'Reason', required=true) }}{{ e.submit('Restore serial' if unit.archived else 'Archive serial') }}</form></details>
+<section class="eng-panel"><h2>Record an event</h2><p>History is append-only. Add a correction referencing an earlier event if an entry was wrong. All event times use UTC.</p>
+<form method="post" enctype="multipart/form-data" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="event">
+<label>Event type<select name="kind">{% for k in event_kinds %}<option {% if k=='note' %}selected{% endif %}>{{ k }}</option>{% endfor %}</select></label>
+{{ e.field('title', 'Title', required=true) }}{{ e.field('event_at', 'When it happened (UTC; blank = now)', type='datetime-local') }}
+{{ e.field('corrects_id', 'Corrects event ID (optional)', type='number') }}{{ e.area('notes', 'Notes / measurements / reason') }}
+<details class="eng-wide"><summary>Firmware installation</summary><div class="eng-form">{{ e.field('version', 'Firmware version (required for firmware events)') }}{{ e.field('repository', 'Source repository URL', type='url') }}{{ e.field('commit', 'Full firmware commit (optional)') }}</div><p>A version without a binary attachment is recorded as a version-only entry.</p></details>
+<details class="eng-wide"><summary>Hardware modification</summary><div class="eng-form">{{ e.field('references', 'Affected reference designators') }}{{ e.field('reason', 'Reason for modification') }}{{ e.area('before', 'Before') }}{{ e.area('after', 'After / replacement parts') }}</div></details>
+<details class="eng-wide"><summary>Test, status or location</summary><div class="eng-form">
+<label>Test outcome<select name="outcome"><option value="">Not applicable</option><option>pass</option><option>fail</option><option>inconclusive</option></select></label>{{ e.field('procedure', 'Test procedure / version') }}
+<label>New status<select name="status"><option value="">Not applicable</option>{% for s in unit_statuses %}<option value="{{ s }}">{{ s|upper if s=='waste' else s }}</option>{% endfor %}</select></label>{{ e.field('location', 'New location') }}</div></details>
+<label>Attachment (optional)<input type="file" name="file"></label><label>Attachment role<select name="role"><option value="test_report">Test report</option><option value="firmware_binary">Firmware binary</option><option value="board_preview">Photo / board image</option><option value="notes">Supporting document</option></select></label>
+{{ e.submit('Append event') }}</form></section>
+<h2>History</h2><p><a href="/prototypes/{{ unit.id }}/history.json">Download complete history (JSON)</a></p>
+{% for event in events %}<article class="eng-panel" id="event-{{ event.id }}"><h3>#{{ event.id }} · {{ event.title }}</h3>
+<p class="eng-muted">{{ event.kind }} · Happened {{ event.event_at }} UTC · Recorded {{ event.recorded_at }} UTC · {{ event.actor }}</p>
+{% if event.corrects_id %}<p>Correction to event #{{ event.corrects_id }}. Original retained in history.</p>{% endif %}<p class="eng-text">{{ event.notes }}</p>
+<dl class="eng-details">{% for key, value in decode_json(event.details_json).items() %}<dt>{{ key|replace('_',' ') }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>
+{% if event.kind=='firmware' and not event.artifacts|selectattr('role','equalto','firmware_binary')|list %}<p class="eng-warning">Version-only record — no firmware binary archived.</p>{% endif %}
+{{ e.artifacts(event.artifacts) }}</article>{% endfor %}{{ e.pager(page, pages) }}
+{{ e.issues(issues, 'Unit-specific') }}
+{% if release_issues %}<section class="eng-panel"><h2>Release-wide issues</h2><p>A repair to this unit does not close a release-wide defect.</p>{% for i in release_issues %}<p><a href="/designs/releases/{{ unit.release_id }}">#{{ i.id }} {{ i.title }}</a> · {{ i.status }} · {{ i.severity }}</p>{% endfor %}</section>{% endif %}
+</div>{% endblock %}

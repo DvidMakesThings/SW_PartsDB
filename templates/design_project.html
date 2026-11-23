@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}{{ project.name }} — Designs{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/designs">Designs</a> / {{ project.name }}</p><h1>{{ project.name }}</h1>{% if project.document_id %}<p class="eng-text"><strong>DOCUMENT_ID:</strong> {{ project.document_id }}</p>{% endif %}<p class="eng-text">{{ project.description }}</p>
+{% if project.repository_url %}<a href="{{ project.repository_url }}" target="_blank" rel="noopener">Source repository</a>{% endif %}
+{% if project.archived %}<p class="eng-warning">Archived project — existing files and histories remain accessible.</p>{% endif %}
+<h2>Boards</h2><div class="eng-table"><table><thead><tr><th>Board</th><th>Purpose</th><th>Inventory link</th></tr></thead><tbody>
+{% for b in project.boards %}<tr><td><a href="/designs/boards/{{ b.id }}">{{ project.name }}-{{ b.code }} · {{ b.name }}</a></td><td>{{ b.description }}</td><td>{% if b.part_id %}<a href="/part/{{ b.part_id }}">{{ b.part_id }}</a>{% else %}—{% endif %}</td></tr>
+{% else %}<tr><td colspan="3">No boards yet. Add the first board below.</td></tr>{% endfor %}</tbody></table></div>
+<details class="eng-panel"><summary>Edit project information</summary><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="edit">{{ e.field('document_id','DOCUMENT_ID',project.document_id or '',placeholder='DMT-HW-VCTR-PBOM-V100') }}{{ e.field('name','Project name',project.name,required=true) }}{{ e.field('repository_url','Repository URL',project.repository_url) }}{{ e.area('description','Description',project.description) }}{{ e.submit('Save project') }}</form></details>
+{% if not project.archived %}<section class="eng-panel"><h2>Add board design</h2><form method="post" class="eng-form">{{ e.token() }}
+{{ e.field('code', 'Board code (01–99)', required=true, placeholder='01') }}{{ e.field('name', 'Board name', required=true) }}
+{{ e.field('part_id', 'Existing inventory DMTUID (optional)', placeholder='DMT-…') }}{{ e.area('description', 'Purpose') }}{{ e.submit('Add board') }}</form></section>
+<details class="eng-panel"><summary>Archive project</summary><p>Preserves all releases and unit histories. Prevents adding new boards and releases.</p><form method="post">{{ e.token() }}<input type="hidden" name="action" value="archive">{{ e.submit('Archive project') }}</form></details>{% endif %}
+</div>{% endblock %}

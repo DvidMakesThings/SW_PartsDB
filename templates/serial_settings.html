@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}Serial tracking domains — DMTDB{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/prototypes">Prototypes and product serials</a> · <a href="/settings/backup">Download full data backup</a></p><h1>Serial tracking by domain</h1>
+<p>Enable individual serial records for finished products, boards and equipment. Component domains stay quantity-based unless you enable them here. Existing serial histories remain accessible when a domain is disabled.</p>
+<form method="post">{{ e.token() }}<div class="eng-table"><table><thead><tr><th>Enable SNs</th><th>Domain</th><th>Generated serial prefix (optional)</th></tr></thead><tbody>
+{% for d in domains %}{% set p=policies.get(d.tt) %}<tr><td><input type="checkbox" name="enabled" value="{{ d.tt }}" {% if p and p.enabled %}checked{% endif %} aria-label="Enable {{ d.name }}"></td><td>{{ d.tt }} · {{ d.name }}</td><td><input name="prefix_{{ d.tt }}" value="{{ p.serial_prefix if p else '' }}" maxlength="80" aria-label="Prefix for {{ d.name }}"></td></tr>{% endfor %}
+</tbody></table></div><p>SN uniqueness is per product, or per design when no inventory product is linked. Blank prefixes use the product DMTUID or project-board code; the sequence is collision-safe.</p>{{ e.submit('Save domain settings') }}</form></div>{% endblock %}

@@ -13,6 +13,9 @@ class ImportReport:
     imported: int = 0
     skipped: int = 0
     errors: list[dict] = field(default_factory=list)   # [{row, reason}]
+    preview: bool = False
+    inventory_fingerprint: str = ""
+    changes: list[dict] = field(default_factory=list)
 
     def add_error(self, row: int, reason: str):
         self.errors.append({"row": row, "reason": reason})
@@ -24,4 +27,7 @@ class ImportReport:
             "imported": self.imported,
             "skipped": self.skipped,
             "errors": self.errors,
+            "preview": self.preview,
+            "inventory_fingerprint": self.inventory_fingerprint,
+            "changes": self.changes,
         }

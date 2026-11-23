@@ -413,6 +413,16 @@ def kicad_http_part_detail(part_id):
             except (json_module.JSONDecodeError, TypeError):
                 pass
         
+        from services.inventory_service import summary
+        from datetime import datetime, timezone
+        inventory = summary(session, part.dmtuid)
+        overlay = {"Stock status": inventory["status"], "Known on hand": inventory["on_hand"],
+                   "Available": inventory["available"], "Reserved": inventory["reserved"],
+                   "Unknown holdings": inventory["unknown_holdings"],
+                   "Location": "Not stocked" if inventory["status"] == "Not stocked" else "; ".join(inventory["locations"]),
+                   "Inventory checked at": datetime.now(timezone.utc).isoformat()}
+        for name, value in overlay.items():
+            fields["fields"][name] = {"value": str(value), "visible": "false"}
         return jsonify(fields)
     finally:
         session.close()

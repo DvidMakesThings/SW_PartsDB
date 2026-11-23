@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}Designs — DMTDB{% endblock %}{% block content %}<div class="engineering">
+<h1>Designs</h1><p class="eng-muted">Archive projects, board revisions and the files needed to reproduce them.</p>
+<form method="get" class="eng-actions"><input name="q" value="{{ q }}" placeholder="Find a project by DOCUMENT_ID or name" aria-label="Find project"><button class="btn">Search</button></form>
+<div class="eng-table"><table><thead><tr><th>Project</th><th>Description</th><th>Status</th></tr></thead><tbody>
+{% for p in items %}<tr><td><a href="/designs/{{ p.id }}">{{ p.name }}</a>{% if p.document_id %}<div class="eng-muted">{{ p.document_id }}</div>{% endif %}</td><td>{{ p.description }}</td><td>{{ 'Archived' if p.archived else 'Active' }}</td></tr>
+{% else %}<tr><td colspan="3">Start by creating a project. Add its boards, then archive each revision.</td></tr>{% endfor %}</tbody></table></div>{{ e.pager(page, pages) }}
+<section class="eng-panel"><h2>Create project</h2><form method="post" class="eng-form">{{ e.token() }}
+{{ e.field('document_id', 'DOCUMENT_ID', required=true, placeholder='DMT-HW-VCTR-PBOM-V100') }}{{ e.field('name', 'Project name', required=true, placeholder='VECTRA-10P40') }}
+<p class="eng-muted eng-wide">Paste DOCUMENT_ID from the schematic or PCB. SCH/PCB is converted to PBOM; the project identifier, board number (if present) and revision are preserved.</p>
+{{ e.field('repository_url', 'Source repository URL (optional; HTTPS or GitHub SSH)') }}{{ e.area('description', 'Description') }}{{ e.submit('Create project') }}</form></section>
+</div>{% endblock %}

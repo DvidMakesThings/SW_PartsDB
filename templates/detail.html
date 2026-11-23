@@ -2,6 +2,7 @@
 {% block title %}{{ part.dmtuid }} - DMTDB{% endblock %}
 
 {% block content %}
+{% import 'engineering_macros.html' as e with context %}
 <div class="page-header">
   <div>
     <h1 style="font-family:var(--mono); letter-spacing:1px;">{{ part.dmtuid }}{% if part.eol %} <span style="font-size:.55em; background:var(--red); color:#fff; padding:2px 8px; border-radius:4px; vertical-align:middle; letter-spacing:0;">EOL</span>{% endif %}</h1>
@@ -12,6 +13,7 @@
     </span>
   </div>
   <div style="display:flex; gap:.5rem;">
+    <a href="{{ url_for('ui.stock_history', dmtuid=part.dmtuid) }}" class="btn btn-secondary">Stock history</a>
     {% if part.datasheet %}
     {% if part.datasheet.startswith('http') %}
     <a href="{{ part.datasheet }}" target="_blank" rel="noopener" class="btn btn-secondary">📄 Datasheet</a>
@@ -29,6 +31,32 @@
     </form>
   </div>
 </div>
+
+{% if serial_tracking or serial_units %}<section class="engineering eng-panel" id="serials">
+<h2>{{ part.mpn or part.value or part.dmtuid }} · Individual serial numbers</h2>
+<p>{{ serial_counts.active + serial_counts.repaired }} available · {{ serial_counts['in-test'] }} in test · {{ serial_counts.faulty }} faulty · {{ serial_counts.waste }} WASTE · {{ serial_counts.retired }} retired</p>
+{{ e.unit_table(serial_units) }}
+<p><a href="/prototypes?part_id={{ part.dmtuid }}">All serials for this product</a> · <a href="/prototypes?part_id={{ part.dmtuid }}&archived=1">Include removed serials</a> · <a href="/settings/serials">Domain settings</a></p>
+{% if serial_tracking %}<details><summary>Add serial number</summary><form method="post" action="/part/{{ part.dmtuid }}/serials" class="eng-form">{{ e.token() }}
+{{ e.field('serial', 'Serial number', placeholder='SN001') }}{{ e.field('location', 'Location', part.location or '') }}
+<label>Registration<select name="registration"><option value="historical">Existing unit (enter actual SN)</option><option value="new">Newly acquired / built unit</option></select></label>
+<label><input type="checkbox" name="generate_serial" value="yes"> Generate SN for a new unit</label>
+<label>Stage<select name="stage"><option {% if part.tt=='29' %}selected{% endif %}>prototype</option><option>pre-production</option><option {% if part.tt!='29' %}selected{% endif %}>production</option></select></label>
+{% if design_boards %}<label>Linked design (optional)<select name="board_id"><option value="">Product record only</option>{% for b in design_boards %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select></label>
+<label>Exact revision (required for a new designed unit)<select name="release_id"><option value="">Not yet identified</option>{% for b in design_boards %}{% for r in b.releases %}<option value="{{ r.id }}">{{ b.name }} / {{ r.revision }} ({{ r.status }})</option>{% endfor %}{% endfor %}</select></label>{% endif %}
+{{ e.area('notes', 'Unit notes') }}{{ e.submit('Add serial') }}</form><p class="eng-muted">Existing aggregate stock is not counted again. Serial status counts are shown separately; recording WASTE preserves history and does not post an additional component deduction.</p></details>{% endif %}
+</section>{% endif %}
+{% if library_entries %}<section class="engineering eng-panel"><h2>Library references</h2>
+{% for entry in library_entries %}<p><a href="/library-sync/entries/{{ entry.id }}">{{ entry.path }}:{{ entry.symbol }}</a>{% if entry.missing %} · Missing from latest source{% endif %}</p>{% endfor %}
+</section>{% endif %}
+{% if used_assemblies %}<section class="engineering eng-panel"><h2>Used in assembly BOMs</h2>{% for a in used_assemblies %}<p><a href="/designs/releases/{{ a.release_id }}">{{ a.release.board.name }} / {{ a.release.revision }}</a> · {{ a.release.status }}</p>{% endfor %}</section>{% endif %}
+{% if design_boards %}
+<section class="engineering eng-panel">
+  <h2>Linked designs</h2>
+  {% for board in design_boards %}<p><a href="/designs/boards/{{ board.id }}">{{ board.project.code }}-{{ board.code }} · {{ board.name }}</a></p>{% endfor %}
+  <a href="/prototypes?part_id={{ part.dmtuid }}">All linked serials</a>
+</section>
+{% endif %}
 
 <div class="detail-grid">
 
@@ -53,7 +81,7 @@
             rohs_val.value }}</span></div>
         <div class="field-row"><span class="field-label">Quantity</span><span class="field-value"
             style="color:var(--green);">{{ part.quantity or '—' }}</span></div>
-        <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ part.location or '—'
+        <div class="field-row"><span class="field-label">Location</span><span class="field-value">{{ 'Not stocked' if inventory.status == 'Not stocked' else part.location or '—'
             }}</span></div>
         {% if part.notes %}
         <div class="field-row"><span class="field-label">Notes</span><span class="field-value">{{ part.notes }}</span></div>

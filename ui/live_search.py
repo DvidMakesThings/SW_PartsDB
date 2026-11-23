@@ -32,6 +32,7 @@ def ui_search():
     try:
         parts = SearchService.quick_search(
             session, q, limit=config.SEARCH_DROPDOWN_LIMIT,
+            availability=request.args.get("availability", "all"),
         )
         results = [
             {

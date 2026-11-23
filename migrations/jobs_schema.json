@@ -1,0 +1,1437 @@
+{
+  "background_jobs": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "kind": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "dedupe_key": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "payload_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "status": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "attempts": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "lease_token": {
+        "type": "VARCHAR(40)",
+        "nullable": false
+      },
+      "lease_until": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "updated_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "result_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "error": {
+        "type": "TEXT",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "board_designs": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "project_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "code": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "name": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "description": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "part_id": {
+        "type": "VARCHAR(20)",
+        "nullable": true
+      },
+      "archived": {
+        "type": "BOOLEAN",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "part_id"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "project_id"
+        ],
+        "table": "design_projects",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "project_id",
+        "code"
+      ]
+    ],
+    "check_constraints": []
+  },
+  "client_configs": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "client_id": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "client_name": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "path_symbols": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "path_footprints": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "path_3dmodels": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "server_url": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "last_sync": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "last_sync_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": true
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "updated_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [
+      [
+        "client_id"
+      ]
+    ],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "design_artifacts": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "release_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "event_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "filename": {
+        "type": "VARCHAR(255)",
+        "nullable": false
+      },
+      "role": {
+        "type": "VARCHAR(40)",
+        "nullable": false
+      },
+      "sha256": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "size": {
+        "type": "BIGINT",
+        "nullable": false
+      },
+      "media_type": {
+        "type": "VARCHAR(100)",
+        "nullable": false
+      },
+      "provenance": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "archive_manifest": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "event_id"
+        ],
+        "table": "unit_events",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "release_id"
+        ],
+        "table": "design_releases",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": [
+      "(release_id IS NOT NULL AND event_id IS NULL) OR (event_id IS NOT NULL AND release_id IS NULL)"
+    ]
+  },
+  "design_projects": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "code": {
+        "type": "VARCHAR(6)",
+        "nullable": false
+      },
+      "name": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "description": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "repository_url": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "archived": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "code"
+      ]
+    ],
+    "check_constraints": []
+  },
+  "design_releases": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "board_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "revision": {
+        "type": "VARCHAR(40)",
+        "nullable": false
+      },
+      "status": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "notes": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "source_commit": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "tool_versions": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "dependency_notes": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "missing_artifacts_reason": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "manifest_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "released_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "board_id"
+        ],
+        "table": "board_designs",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "board_id",
+        "revision"
+      ]
+    ],
+    "check_constraints": [
+      "status IN ('draft','released','superseded')"
+    ]
+  },
+  "domain_serial_policies": {
+    "columns": {
+      "tt": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "enabled": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "serial_prefix": {
+        "type": "VARCHAR(80)",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "tt"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "engineering_issues": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "release_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "unit_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "title": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "description": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "severity": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "status": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "resolution": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "resolved_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "release_id"
+        ],
+        "table": "design_releases",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "unit_id"
+        ],
+        "table": "physical_units",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": [
+      "release_id IS NOT NULL OR unit_id IS NOT NULL"
+    ]
+  },
+  "inventory_lock": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "version": {
+        "type": "INTEGER",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "inventory_operations": {
+    "columns": {
+      "key": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "payload_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "actor": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "reason": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "result_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "key"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "library_entries": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "source_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "path": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "symbol": {
+        "type": "VARCHAR(500)",
+        "nullable": false
+      },
+      "properties_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "normalized_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "content_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "seen_commit": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "missing": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "part_id": {
+        "type": "VARCHAR(20)",
+        "nullable": true
+      },
+      "decision": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "reviewed_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "reviewed_identity_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "review_note": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "reviewed_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "part_id"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "source_id"
+        ],
+        "table": "library_sources",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "source_id",
+        "path",
+        "symbol"
+      ]
+    ],
+    "check_constraints": []
+  },
+  "library_review_events": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "entry_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "decision": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "part_id": {
+        "type": "VARCHAR(20)",
+        "nullable": true
+      },
+      "content_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "note": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "recorded_at": {
+        "type": "DATETIME",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "entry_id"
+        ],
+        "table": "library_entries",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "part_id"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "library_sources": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "name": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "repository_url": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "indexed_commit": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "state": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "last_attempt_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "last_success_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "last_error": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "interval_minutes": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "sync_mode": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "library_sync_runs": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "source_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "started_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "finished_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "commit_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": false
+      },
+      "status": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "report_json": {
+        "type": "TEXT",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "source_id"
+        ],
+        "table": "library_sources",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_fields": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "field_name": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "field_value": {
+        "type": "TEXT",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_images": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "filename": {
+        "type": "VARCHAR(300)",
+        "nullable": false
+      },
+      "position": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_pricing": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "source": {
+        "type": "VARCHAR(50)",
+        "nullable": false
+      },
+      "part_code": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "url": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "stock": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "lifecycle": {
+        "type": "VARCHAR(50)",
+        "nullable": true
+      },
+      "currency": {
+        "type": "VARCHAR(10)",
+        "nullable": true
+      },
+      "price_1": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_10": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_100": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_1000": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_json": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "last_fetched": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "error": {
+        "type": "TEXT",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "parts": {
+    "columns": {
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "tt": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "ff": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "cc": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "ss": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "xxx": {
+        "type": "VARCHAR(3)",
+        "nullable": false
+      },
+      "mpn": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "manufacturer": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "value": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "description": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "quantity": {
+        "type": "VARCHAR(50)",
+        "nullable": true
+      },
+      "location": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "datasheet": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "distributor": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "kicad_symbol": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_footprint": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_libref": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_3dmodel": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "eol": {
+        "type": "BOOLEAN",
+        "nullable": true
+      },
+      "extra_json": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "notes": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "updated_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "dmtuid"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "physical_units": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "serial": {
+        "type": "VARCHAR(120)",
+        "nullable": false
+      },
+      "serial_key": {
+        "type": "VARCHAR(120)",
+        "nullable": false
+      },
+      "board_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "release_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "part_id": {
+        "type": "VARCHAR(20)",
+        "nullable": true
+      },
+      "historical": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "stage": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "status": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "location": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "notes": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "firmware_version": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "serial_scope": {
+        "type": "VARCHAR(50)",
+        "nullable": false
+      },
+      "archived": {
+        "type": "BOOLEAN",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "board_id"
+        ],
+        "table": "board_designs",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "part_id"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "release_id"
+        ],
+        "table": "design_releases",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "serial_scope",
+        "serial_key"
+      ]
+    ],
+    "check_constraints": [
+      "board_id IS NOT NULL OR part_id IS NOT NULL",
+      "historical OR release_id IS NOT NULL OR board_id IS NULL",
+      "status IN ('active','in-test','faulty','repaired','retired','waste')"
+    ]
+  },
+  "stock_holdings": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "location": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "lot": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "count_known": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "on_hand": {
+        "type": "BIGINT",
+        "nullable": false
+      },
+      "reserved": {
+        "type": "BIGINT",
+        "nullable": false
+      },
+      "version": {
+        "type": "INTEGER",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "dmtuid",
+        "location",
+        "lot"
+      ]
+    ],
+    "check_constraints": [
+      "count_known OR (on_hand = 0 AND reserved = 0)",
+      "on_hand >= 0 AND reserved >= 0 AND reserved <= on_hand"
+    ]
+  },
+  "stock_movements": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "holding_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "operation_key": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "kind": {
+        "type": "VARCHAR(40)",
+        "nullable": false
+      },
+      "delta": {
+        "type": "BIGINT",
+        "nullable": false
+      },
+      "balance_after": {
+        "type": "BIGINT",
+        "nullable": false
+      },
+      "count_known_after": {
+        "type": "BOOLEAN",
+        "nullable": false
+      },
+      "reference": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "reverses_id": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "details_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "holding_id"
+        ],
+        "table": "stock_holdings",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "operation_key"
+        ],
+        "table": "inventory_operations",
+        "references": [
+          "key"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "reverses_id"
+        ],
+        "table": "stock_movements",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": [
+      "balance_after >= 0"
+    ]
+  },
+  "stock_reservations": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "holding_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "reference": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "quantity": {
+        "type": "BIGINT",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "holding_id"
+        ],
+        "table": "stock_holdings",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [
+      [
+        "holding_id",
+        "reference"
+      ]
+    ],
+    "check_constraints": [
+      "quantity >= 0"
+    ]
+  },
+  "unit_events": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "unit_id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "kind": {
+        "type": "VARCHAR(30)",
+        "nullable": false
+      },
+      "title": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "notes": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "details_json": {
+        "type": "TEXT",
+        "nullable": false
+      },
+      "actor": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "event_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "recorded_at": {
+        "type": "DATETIME",
+        "nullable": false
+      },
+      "corrects_id": {
+        "type": "INTEGER",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "corrects_id"
+        ],
+        "table": "unit_events",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      },
+      {
+        "columns": [
+          "unit_id"
+        ],
+        "table": "physical_units",
+        "references": [
+          "id"
+        ],
+        "ondelete": "RESTRICT"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  }
+}

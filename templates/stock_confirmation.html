@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Review Stock Change - DMTDB{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Review stock change</h1></div>
+<div class="detail-card">
+  <p>{{ part.dmtuid if part else 'New part' }} · {{ data.get('MPN', data.get('mpn', '')) }}</p>
+  <table><thead><tr><th></th><th>Current</th><th>After saving</th></tr></thead>
+  <tbody>
+    <tr><th>Count</th><td>{{ review.previous if review.previous is not none else 'Unknown / not stocked' }}</td><td>{{ review.proposed if review.proposed is not none else 'Unknown' }}</td></tr>
+    <tr><th>Location</th><td>{{ review.old_location }}</td><td>{{ review.location }}</td></tr>
+  </tbody></table>
+  {% if review.delta is not none %}<p>Ledger change: <strong>{{ '%+d'|format(review.delta) }}</strong> components.</p>{% endif %}
+  <p>This records a counted total. It does not represent a build consumption.</p>
+  <form method="post">
+    {% for name, value in data.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <input type="hidden" name="_stock_confirmation" value="{{ confirmation }}">
+    <button type="submit" class="btn btn-primary">Confirm and save</button>
+    <a class="btn btn-secondary" href="{{ url_for('ui.part_edit', dmtuid=part.dmtuid) if part else url_for('ui.part_add') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

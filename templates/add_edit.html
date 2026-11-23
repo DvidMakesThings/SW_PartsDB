@@ -10,6 +10,8 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
 </div>
 
 <form method="post" id="partForm">
+  <input type="hidden" name="_inventory_key" value="{{ new_operation_key() }}">
+  <input type="hidden" name="_stock_version" value="{{ stock_version if stock_version is defined else -1 }}">
   <!-- Staging session ID for KiCad file uploads -->
   <input type="hidden" name="staging_session_id" id="stagingSessionId" value="">
 
@@ -73,6 +75,7 @@ template_part.dmtuid }}){% else %}Add Part{% endif %} - DMTDB{% endblock %}
       </div>
       <div class="form-group">
         <label>Quantity</label>
+         <small>Enter the counted total. Changes are recorded in stock history; blank means unknown.</small>
         <input type="text" name="Quantity" value="{{ p.quantity if p else '' }}">
       </div>
       <div class="form-group">

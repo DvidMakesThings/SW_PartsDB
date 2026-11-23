@@ -17,3 +17,7 @@ from ui import routes_docs        # noqa: F401, E402
 from ui import routes_labels      # noqa: F401, E402
 from ui import datasheet_server   # noqa: F401, E402
 from ui import live_search        # noqa: F401, E402
+from ui import routes_inventory   # noqa: F401, E402
+from ui import routes_designs     # noqa: F401, E402
+from ui import routes_catalog     # noqa: F401, E402
+from ui import routes_builds      # noqa: F401, E402

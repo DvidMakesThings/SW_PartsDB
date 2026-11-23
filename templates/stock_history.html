@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Stock History - {{ part.dmtuid }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Stock history</h1><p><a href="{{ url_for('ui.part_detail', dmtuid=part.dmtuid) }}">{{ part.dmtuid }}</a> {{ part.mpn or '' }}</p></div>
+</div>
+<div class="detail-card">
+  <h2>{{ stock.status }}</h2>
+  <p>Known on hand: <strong>{{ stock.on_hand }}</strong> · Reserved: {{ stock.reserved }} · Available: <strong>{{ stock.available }}</strong></p>
+  {% if stock.unknown_holdings %}<p>{{ stock.unknown_holdings }} holding(s) still need counting. Unknown amounts are not included above.</p>{% endif %}
+  <p>History is permanent. Corrections are recorded as new movements.</p>
+</div>
+<h2 style="margin-top:1.5rem;">Holdings</h2>
+<div style="overflow-x:auto;"><table>
+  <thead><tr><th>Location</th><th>Lot</th><th>On hand</th><th>Reserved</th><th>Available</th></tr></thead>
+  <tbody>{% for h in holdings %}<tr>
+    <td>{{ h.location or 'Unassigned' }}</td><td>{{ h.lot or '—' }}</td>
+    <td>{{ h.on_hand if h.count_known else 'Unknown' }}</td><td>{{ h.reserved }}</td>
+    <td>{{ h.on_hand - h.reserved if h.count_known else 'Unknown' }}</td>
+  </tr>{% else %}<tr><td colspan="5">Not stocked. This catalogue part has no inventory holdings.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if reservations %}<h2 style="margin-top:1.5rem;">Active reservations</h2>
+<ul>{% for r in reservations %}<li>{{ r.reference }}: {{ r.quantity }} from holding {{ r.holding_id }}</li>{% endfor %}</ul>{% endif %}
+<h2 style="margin-top:1.5rem;">Movements</h2>
+<div style="overflow-x:auto;"><table>
+  <thead><tr><th>Recorded (UTC)</th><th>Action</th><th>Change</th><th>Balance after</th><th>Reference</th><th>Recorded by / reason</th></tr></thead>
+  <tbody>{% for movement, operation in history %}<tr>
+    <td>{{ movement.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    <td>{{ movement.kind.replace('_', ' ') }}</td><td>{{ '%+d'|format(movement.delta) }}</td>
+    <td>{{ movement.balance_after if movement.count_known_after else 'Unknown' }}</td>
+    <td>{{ movement.reference or '—' }}</td><td>{{ operation.actor }}<br>{{ operation.reason }}</td>
+  </tr>{% else %}<tr><td colspan="6">No stock movements.</td></tr>{% endfor %}</tbody>
+</table></div>
+<p>Page {{ page }} of {{ pages }}
+{% if page > 1 %}<a class="btn" href="{{ url_for('ui.stock_history', dmtuid=part.dmtuid, page=page-1) }}">Previous</a>{% endif %}
+{% if page < pages %}<a class="btn" href="{{ url_for('ui.stock_history', dmtuid=part.dmtuid, page=page+1) }}">Next</a>{% endif %}</p>
+{% endblock %}

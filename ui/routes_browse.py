@@ -11,6 +11,7 @@ from db.models import PartPricing
 from services.search_service import SearchService
 from schema.loader import get_domains, domain_name, family_name
 import config
+from services.inventory_service import summaries
 
 
 # Available page sizes
@@ -20,6 +21,9 @@ DEFAULT_PER_PAGE = 100
 
 @ui_bp.route("/")
 def index():
+    availability = request.args.get("availability", "all")
+    if availability not in {"all", "in_stock", "out_of_stock", "not_stocked", "unknown"}:
+        availability = "all"
     q     = request.args.get("q", "").strip()
     tt    = request.args.get("tt", "").strip()
     ff    = request.args.get("ff", "").strip()
@@ -59,6 +63,7 @@ def index():
             sort_by=sort_by, sort_order=sort_order,
             limit=per_page,
             offset=(page - 1) * per_page,
+            availability=availability,
         )
         total_pages = max((total + per_page - 1) // per_page, 1)
 
@@ -87,6 +92,7 @@ def index():
 
         return render_template(
             "index.html",
+            availability=availability, stock_lookup=summaries(session, [p.dmtuid for p in parts]),
             parts=parts, q=q, tt=tt, ff=ff, cc=cc, ss=ss,
             pricing_lookup=pricing_lookup,
             props=props, props_parsed=props_parsed,

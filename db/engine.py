@@ -10,17 +10,26 @@ from __future__ import annotations
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-from db.models import Base
+from db.migrations import ensure_schema
 
 _engine = None
 _SessionLocal: sessionmaker | None = None
 
 
 def init_db(db_url: str) -> None:
-    """Create the engine, apply SQLite pragmas, and emit CREATE TABLE."""
+    """Validate schema before opening application sessions."""
     global _engine, _SessionLocal
 
+    _SessionLocal = None
+    if _engine is not None:
+        _engine.dispose()
     _engine = create_engine(db_url, echo=False, future=True)
+
+    # Check before enabling WAL or applying any application schema changes.
+    ensure_schema(_engine)
+    # Discard the schema-check connection so connect listeners below apply
+    # to every connection used by application sessions.
+    _engine.dispose()
 
     if "sqlite" in db_url:
         @event.listens_for(_engine, "connect")
@@ -31,7 +40,7 @@ def init_db(db_url: str) -> None:
             cur.execute("PRAGMA synchronous=NORMAL")
             cur.close()
 
-    Base.metadata.create_all(_engine)
+    # ensure_schema already applied versioned migrations for a fresh database.
     _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
 
 

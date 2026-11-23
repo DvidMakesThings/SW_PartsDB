@@ -20,10 +20,10 @@ import config
 
 
 # Library directories
-LIBS_DIR = config.BASE_DIR / "kicad_libs"
-SYMBOLS_DIR = LIBS_DIR / "symbols"
-FOOTPRINTS_DIR = LIBS_DIR / "footprints"
-MODELS_DIR = LIBS_DIR / "3dmodels"
+LIBS_DIR = config.KICAD_LIBS_DIR
+SYMBOLS_DIR = config.KICAD_SYMBOLS_DIR
+FOOTPRINTS_DIR = config.KICAD_FOOTPRINT_DIR
+MODELS_DIR = config.KICAD_3DMODELS_DIR
 
 # File extension to type mapping
 EXT_MAP = {

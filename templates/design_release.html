@@ -1,0 +1,35 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}{{ release.board.name }} {{ release.revision }} — Designs{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/designs">Designs</a> / <a href="/designs/{{ release.board.project_id }}">{{ release.board.project.code }}</a> / <a href="/designs/boards/{{ release.board_id }}">{{ release.board.name }}</a></p>
+<h1>Revision {{ release.revision }} <span class="eng-muted">{{ release.status }}</span></h1>
+<p class="eng-text">{{ release.notes }}</p><p>Tools: {{ release.tool_versions or 'Not recorded' }}</p>
+<p>Source: {% if release.source_commit %}<code class="eng-hash">{{ release.source_commit }}</code>{% else %}Uploaded working copy — no source commit recorded{% endif %}</p>
+<p class="eng-text">Dependencies: {{ release.dependency_notes or 'Not recorded' }}</p>
+{% if missing %}<p class="eng-warning">Missing roles: {% for role in missing %}{{ artifact_roles[role] }}{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+{% if release.missing_artifacts_reason %}<p class="eng-text">Acknowledged omissions: {{ release.missing_artifacts_reason }}</p>{% endif %}
+{% if release.status != 'draft' %}<p>Frozen {{ release.released_at }} UTC · <a href="/designs/releases/{{ release.id }}/manifest">Download frozen manifest</a></p>{% endif %}
+<h2>Archived files</h2>{{ e.artifacts(release.artifacts) }}
+{% if release.status=='draft' and release.board.project.repository_url %}<details class="eng-panel"><summary>Import source from Git</summary><p>Fetches the project's repository into a separate cache and archives the selected branch, tag or commit as immutable bytes. The resolved full commit is recorded. Submodule and LFS pointers are reported as unresolved dependencies.</p><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="git_import">{{ e.field('git_revision', 'Branch, tag or full commit', 'HEAD', required=true) }}{{ e.submit('Queue source snapshot') }}</form></details>{% endif %}
+<p><a href="/jobs">Background jobs and import results</a></p>
+<details class="eng-panel" {% if not release.artifacts %}open{% endif %}><summary>{{ 'Upload files' if release.status == 'draft' else 'Append a supporting report' }}</summary>
+<p>Original bytes are retained. ZIP files are listed without extraction. Manufacturing exports, submitted packages and factory-returned files have separate roles.</p>
+<form method="post" enctype="multipart/form-data" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="upload">
+<label>Role<select name="role">{% for key, label in artifact_roles.items() %}{% if release.status == 'draft' or key in supporting_roles %}<option value="{{ key }}">{{ label }}</option>{% endif %}{% endfor %}</select></label>
+<label>File (up to configured limit, 100 MiB by default)<input type="file" name="file" required></label>{{ e.area('provenance', 'Origin / provenance') }}{{ e.submit('Archive file') }}</form></details>
+{% if release.status == 'draft' %}<details class="eng-panel"><summary>Edit draft metadata</summary><form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="edit">
+{{ e.field('source_commit', 'Full source commit', release.source_commit) }}{{ e.field('tool_versions', 'Tool versions', release.tool_versions) }}
+{{ e.area('notes', 'Release notes', release.notes) }}{{ e.area('dependency_notes', 'Dependencies / unresolved references', release.dependency_notes) }}{{ e.submit('Save draft') }}</form></details>
+<section class="eng-panel"><h2>Publish revision</h2><p>Freezes source and manufacturing files, metadata and checksums. Corrections then require a new revision. A source snapshot and release notes are required.</p>
+<form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="publish">{{ e.area('missing_reason', 'Reason for missing artifacts / incomplete dependencies (required if anything is missing)') }}{{ e.submit('Publish and freeze revision') }}</form></section>
+{% elif release.status == 'released' %}<details class="eng-panel"><summary>Mark as superseded</summary><form method="post">{{ e.token() }}<input type="hidden" name="action" value="supersede">{{ e.submit('Mark superseded; retain archive') }}</form></details>{% endif %}
+<h2>Physical units</h2>{{ e.unit_table(units) }}<a href="/prototypes?release_id={{ release.id }}&board_id={{ release.board_id }}">All serials / register a prototype</a>
+<section class="eng-panel"><h2>Assembly BOM</h2><p><a href="/builds/bom-example.csv">Download CSV example</a>. Reference/Designator, Quantity and DMTUID identify each line. DNP items are excluded; external/factory supply is traced without consuming personal stock.</p>
+{% if assembly %}<form method="post">{{ e.token() }}<input type="hidden" name="action" value="bom_map"><div class="eng-table"><table><thead><tr><th>References / quantity</th><th>Value / footprint</th><th>Canonical part</th><th>DNP</th><th>Supply</th></tr></thead><tbody>
+{% for line in decode_json(assembly.lines_json) %}{% set i=loop.index0 %}<tr><td>{{ line.refs|join(', ') }} · {{ line.quantity }}</td><td>{{ line.value }} / {{ line.footprint }}</td>
+<td>{% if release.status=='draft' %}<input name="part_{{ i }}" value="{{ line.part_id }}" aria-label="DMTUID for {{ line.refs|join(', ') }}">{% elif line.part_id %}<a href="/part/{{ line.part_id }}">{{ line.part_id }}</a>{% else %}Unresolved{% endif %}</td>
+<td>{% if release.status=='draft' %}<input type="checkbox" name="dnp_{{ i }}" value="yes" {% if line.dnp %}checked{% endif %} aria-label="DNP {{ line.refs|join(', ') }}">{% else %}{{ 'Yes' if line.dnp else 'No' }}{% endif %}</td>
+<td>{% if release.status=='draft' %}<select name="source_{{ i }}"><option value="personal" {% if line.source=='personal' %}selected{% endif %}>Personal stock</option><option value="external" {% if line.source=='external' %}selected{% endif %}>External / factory</option></select>{% else %}{{ line.source }}{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% if release.status=='draft' %}{{ e.submit('Save BOM mappings') }}{% endif %}</form>{% else %}<p>No parsed BOM yet. A BOM file uploaded only as an artifact is archived but not an assembly definition.</p>{% endif %}
+{% if release.status=='draft' %}<form method="post" enctype="multipart/form-data" class="eng-form">{{ e.token() }}<input type="hidden" name="action" value="bom_import"><label>Exported BOM CSV<input type="file" name="file" accept=".csv,.tsv" required></label>{{ e.submit('Import / replace draft assembly BOM') }}</form>{% elif assembly %}<p><a href="/builds?release_id={{ release.id }}">Plan a build from this frozen BOM</a></p>{% endif %}
+{% for b in builds %}<p><a href="/builds/{{ b.id }}">Build #{{ b.id }}</a> · {{ b.completed_quantity }}/{{ b.quantity }} assembled · {{ b.status }}</p>{% endfor %}</section>
+{{ e.issues(issues, 'Release-wide') }}</div>{% endblock %}

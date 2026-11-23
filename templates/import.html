@@ -9,6 +9,7 @@
 <div class="detail-card" style="margin-bottom:1.5rem;">
   <h2>Upload CSV File</h2>
   <form method="post" enctype="multipart/form-data" style="margin-top:.75rem;">
+    <input type="hidden" name="_inventory_key" value="{{ new_operation_key() }}">
     <div class="form-grid">
       <div class="form-group">
         <label>CSV File</label>
@@ -18,12 +19,12 @@
       <div class="form-group" style="justify-content:flex-end;">
         <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer;">
           <input type="checkbox" name="replace" value="1" style="width:16px; height:16px;">
-          Replace existing DMTUIDs
+          Update existing DMTUIDs (preserve history)
         </label>
       </div>
     </div>
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Import</button>
+      <button type="submit" class="btn btn-primary">Preview import</button>
     </div>
   </form>
 </div>
@@ -53,10 +54,10 @@
 
 {% if report %}
 <div class="report-box">
-  <h2 style="font-size:1.1rem; margin-bottom:.75rem;">Import Report</h2>
+  <h2 style="font-size:1.1rem; margin-bottom:.75rem;">{{ 'Import preview — no changes saved' if report.preview else 'Import report' }}</h2>
   <div>
     <span class="report-stat">Total rows: <strong>{{ report.total_rows }}</strong></span>
-    <span class="report-stat stat-ok">Imported: <strong>{{ report.imported }}</strong></span>
+    <span class="report-stat stat-ok">{{ 'Would import' if report.preview else 'Imported' }}: <strong>{{ report.imported }}</strong></span>
     <span class="report-stat stat-err">Skipped: <strong>{{ report.skipped }}</strong></span>
   </div>
   {% if report.errors %}
@@ -66,6 +67,15 @@
     <div class="error-item">Row {{ err.row }}: {{ err.reason }}</div>
     {% endfor %}
   </div>
+  {% endif %}
+  {% if report.changes %}
+  <div style="overflow-x:auto;"><table><thead><tr><th>Part</th><th>Previous count</th><th>Proposed count</th><th>Location</th></tr></thead><tbody>
+  {% for change in report.changes %}<tr><td>{{ change.dmtuid }}</td><td>{{ change.before if change.before not in [none, ''] else 'Unknown / new' }}</td><td>{{ change.after or 'Unknown' }}</td><td>{{ change.old_location or 'Unassigned' }} → {{ change.location or 'Unassigned' }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% endif %}
+  {% if review_token %}
+    <p>Only valid rows will be applied. Rows listed as errors will be skipped.</p>
+    <form method="post"><input type="hidden" name="review_token" value="{{ review_token }}"><button class="btn btn-primary">Confirm import of {{ report.imported }} rows</button></form>
   {% endif %}
 </div>
 {% endif %}

@@ -31,5 +31,8 @@ def api_import_csv():
     if not content:
         return jsonify({"error": "empty body"}), 400
 
-    report = run_import(content, replace_existing=replace)
+    report = run_import(content, replace_existing=replace,
+                        operation_key=request.headers.get("Idempotency-Key"),
+                        preview=request.args.get("preview") == "1",
+                        expected_inventory=request.headers.get("If-Inventory-Match"))
     return jsonify(report.to_dict())

@@ -1767,6 +1767,26 @@
         "99": "Other"
       }
     },
+    "0706_Transformers": {
+      "cc": {
+        "01": "Power / mains transformers",
+        "02": "Pulse / LAN / Ethernet transformers",
+        "03": "Current sense transformers",
+        "04": "SMPS / flyback transformers",
+        "05": "Audio transformers",
+        "06": "Gate drive transformers",
+        "07": "RF transformers / baluns",
+        "90": "Accessories",
+        "99": "Other / specialized"
+      },
+      "ss": {
+        "01": "Surface mount (SMT / SMD)",
+        "02": "Through hole (THT)",
+        "03": "Chassis / panel mount",
+        "04": "DIN rail mount",
+        "99": "Other"
+      }
+    },
     "080x_CircuitProtection_Generic": {
       "cc": {
         "01": "Fuse",

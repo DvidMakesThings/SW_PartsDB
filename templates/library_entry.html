@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}
+{% block title %}{{ entry.symbol }} — Library review{% endblock %}{% block content %}<div class="engineering">
+<p><a href="/library-sync">Library Sync</a> / Entry {{ entry.id }}</p><h1>{{ entry.symbol }}</h1><p>{{ entry.path }}</p>
+<p>Result: <strong>{{ result.state }}</strong> · {{ result.reason }}</p><p class="eng-hash">Source commit {{ entry.seen_commit }}</p>
+{% if entry.part_id %}<p>Linked part: <a href="/part/{{ entry.part_id }}">{{ entry.part_id }}</a> · {{ stock[entry.part_id].status }}</p>{% endif %}
+<h2>Original source properties</h2><div class="eng-table"><table><tbody>{% for key, value in properties.items() %}<tr><th>{{ key }}</th><td class="eng-text">{{ value or '(empty)' }}</td></tr>{% endfor %}</tbody></table></div>
+{% if candidates %}<h2>Existing part candidates</h2>{% for p in candidates %}<p><a href="/part/{{ p.dmtuid }}">{{ p.dmtuid }}</a> · {{ p.manufacturer }} {{ p.mpn }} · {{ p.value }} · {{ p.kicad_footprint }}</p>{% endfor %}{% endif %}
+{% if not entry.missing %}<section class="eng-panel"><h2>Review identity</h2><p>Existing part metadata and stock are preserved. New catalogue parts have no holdings and appear as Not stocked. Generic symbols without an orderable identity may remain unresolved.</p>
+<form method="post" class="eng-form">{{ e.token() }}<input type="hidden" name="expected_hash" value="{{ entry.content_hash }}">
+<label>Decision<select name="decision"><option value="link">Link existing part</option>{% if result.state=='create' %}<option value="create">Create catalogue part</option>{% endif %}<option value="unresolved">Leave unresolved / clear binding</option><option value="ignore">Ignore this representation</option></select></label>
+{{ e.field('part_id', 'Existing DMTUID (for linking)', result.part_id or entry.part_id or '') }}
+<label>Domain / family (for creation)<select name="family"><option value="">Choose classification</option>{% for d in domains %}<optgroup label="{{ d.tt }} {{ d.name }}">{% for f in d.families %}<option value="{{ d.tt }}{{ f.ff }}">{{ d.tt }} / {{ f.ff }} · {{ f.name }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+{{ e.field('cc', 'CC class (00–99; use classification guide)') }}{{ e.field('ss', 'SS subtype (00–99; use classification guide)') }}
+{{ e.area('note', 'Review evidence / reason (required for manual identity links)') }}{{ e.submit('Save review decision') }}</form></section>{% endif %}
+<details class="eng-panel"><summary>Classification guide</summary>{% for d in domains %}<h3>{{ d.tt }} {{ d.name }}</h3>{% for f in d.families %}<details><summary>{{ d.tt }} / {{ f.ff }} {{ f.name }}</summary><pre class="eng-text">{{ guidelines(d.tt,f.ff)|tojson(indent=2) }}</pre></details>{% endfor %}{% endfor %}</details>
+<h2>Review history</h2>{% for r in reviews %}<p>{{ r.recorded_at }} UTC · {{ r.decision }}{% if r.part_id %} · <a href="/part/{{ r.part_id }}">{{ r.part_id }}</a>{% endif %} · {{ r.note }}</p>{% else %}<p>No review decisions yet.</p>{% endfor %}
+</div>{% endblock %}

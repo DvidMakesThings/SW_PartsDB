@@ -1,0 +1,326 @@
+{
+  "client_configs": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "client_id": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "client_name": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "path_symbols": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "path_footprints": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "path_3dmodels": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "server_url": {
+        "type": "VARCHAR(500)",
+        "nullable": true
+      },
+      "last_sync": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "last_sync_hash": {
+        "type": "VARCHAR(64)",
+        "nullable": true
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "updated_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [
+      [
+        "client_id"
+      ]
+    ],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_fields": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "field_name": {
+        "type": "VARCHAR(200)",
+        "nullable": false
+      },
+      "field_value": {
+        "type": "TEXT",
+        "nullable": false
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_images": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "filename": {
+        "type": "VARCHAR(300)",
+        "nullable": false
+      },
+      "position": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "part_pricing": {
+    "columns": {
+      "id": {
+        "type": "INTEGER",
+        "nullable": false
+      },
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "source": {
+        "type": "VARCHAR(50)",
+        "nullable": false
+      },
+      "part_code": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "url": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "stock": {
+        "type": "INTEGER",
+        "nullable": true
+      },
+      "lifecycle": {
+        "type": "VARCHAR(50)",
+        "nullable": true
+      },
+      "currency": {
+        "type": "VARCHAR(10)",
+        "nullable": true
+      },
+      "price_1": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_10": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_100": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_1000": {
+        "type": "VARCHAR(30)",
+        "nullable": true
+      },
+      "price_json": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "last_fetched": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "error": {
+        "type": "TEXT",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "id"
+    ],
+    "foreign_keys": [
+      {
+        "columns": [
+          "dmtuid"
+        ],
+        "table": "parts",
+        "references": [
+          "dmtuid"
+        ],
+        "ondelete": "CASCADE"
+      }
+    ],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  },
+  "parts": {
+    "columns": {
+      "dmtuid": {
+        "type": "VARCHAR(20)",
+        "nullable": false
+      },
+      "tt": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "ff": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "cc": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "ss": {
+        "type": "VARCHAR(2)",
+        "nullable": false
+      },
+      "xxx": {
+        "type": "VARCHAR(3)",
+        "nullable": false
+      },
+      "mpn": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "manufacturer": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "value": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "description": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "quantity": {
+        "type": "VARCHAR(50)",
+        "nullable": true
+      },
+      "location": {
+        "type": "VARCHAR(200)",
+        "nullable": true
+      },
+      "datasheet": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "distributor": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "kicad_symbol": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_footprint": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_libref": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "kicad_3dmodel": {
+        "type": "VARCHAR(300)",
+        "nullable": true
+      },
+      "eol": {
+        "type": "BOOLEAN",
+        "nullable": true
+      },
+      "extra_json": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "notes": {
+        "type": "TEXT",
+        "nullable": true
+      },
+      "created_at": {
+        "type": "DATETIME",
+        "nullable": true
+      },
+      "updated_at": {
+        "type": "DATETIME",
+        "nullable": true
+      }
+    },
+    "primary_key": [
+      "dmtuid"
+    ],
+    "foreign_keys": [],
+    "unique_indexes": [],
+    "unique_constraints": [],
+    "check_constraints": []
+  }
+}

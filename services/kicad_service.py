@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from db.models import Part
+from db.models import Part, StockHolding
+from sqlalchemy import select
 from schema.loader import domain_name, family_name
 
 
@@ -48,11 +49,9 @@ class KiCadService:
     @staticmethod
     def in_stock(session: Session) -> list[dict]:
         """Return all parts with a non-zero Quantity."""
-        parts = session.query(Part).filter(
-            Part.quantity != "",
-            Part.quantity != "0",
-            Part.quantity.isnot(None),
-        ).all()
+        parts = session.query(Part).filter(Part.dmtuid.in_(
+            select(StockHolding.dmtuid).where(StockHolding.count_known == True, StockHolding.on_hand > 0)
+        )).all()
 
         results = []
         for p in parts:

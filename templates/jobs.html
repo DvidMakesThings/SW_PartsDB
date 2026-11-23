@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% import 'engineering_macros.html' as e with context %}{% block title %}Background jobs — DMTDB{% endblock %}
+{% block content %}<div class="engineering"><h1>Background jobs</h1><p><a href="/library-sync">Library Sync</a> · <a href="/designs">Designs</a></p><p>Queued work survives restarts. Interrupted jobs become eligible for recovery after their 15-minute lease expires.</p>
+{% for job in jobs %}<article class="eng-panel"><h2>#{{ job.id }} · {{ job.kind }} · {{ job.status }}</h2><p>Updated {{ job.updated_at }} UTC · Attempt {{ job.attempts }}</p>{% if job.error %}<p class="eng-warning">{{ job.error }}</p>{% endif %}<details><summary>Result</summary><pre class="eng-text">{{ decode_json(job.result_json)|tojson(indent=2) }}</pre></details>
+{% if job.status=='failed' %}<form method="post">{{ e.token() }}<input type="hidden" name="job_id" value="{{ job.id }}">{{ e.submit('Retry job') }}</form>{% endif %}</article>{% else %}<p>No background jobs yet.</p>{% endfor %}</div>{% endblock %}
+{% block scripts %}{% if running %}<script>setTimeout(() => location.reload(), 5000);</script>{% endif %}{% endblock %}

@@ -1,49 +1,46 @@
-"""
-DMTDB - Centralised configuration.
+"""Central configuration: environment > config.local.ini > portable defaults."""
 
-All tunables live here.  Every other module imports from config
-instead of reading os.environ directly.
-"""
-
-from __future__ import annotations
-import os
 from pathlib import Path
+from local_config import LocalConfig
 
+BASE_DIR = Path(__file__).resolve().parent
+_local = LocalConfig(BASE_DIR)
+LOCAL_CONFIG_PATH = _local.filename
 
-# ── Paths ──────────────────────────────────────────────────────────────
-BASE_DIR        = Path(__file__).resolve().parent
-SCHEMA_PATH     = Path(os.environ.get("DMTDB_SCHEMA",    BASE_DIR / "dmt_schema.json"))
-TEMPLATES_PATH  = Path(os.environ.get("DMTDB_TEMPLATES",  BASE_DIR / "dmt_templates.json"))
-CSV_SEED_PATH   = Path(os.environ.get("DMTDB_CSV_SEED",   BASE_DIR / "DMT_Partslib.csv"))
-DATASHEETS_DIR  = (BASE_DIR / "datasheets").resolve()
-PART_IMAGES_DIR = (BASE_DIR / "part_images").resolve()
+SCHEMA_PATH = _local.path("schema", BASE_DIR / "dmt_schema.json", "DMTDB_SCHEMA")
+TEMPLATES_PATH = _local.path("templates", BASE_DIR / "dmt_templates.json", "DMTDB_TEMPLATES")
+CSV_SEED_PATH = _local.path("csv_seed", BASE_DIR / "DMT_Partslib.csv", "DMTDB_CSV_SEED", optional=True)
+DATASHEETS_DIR = _local.path("datasheets", BASE_DIR / "datasheets", "DMTDB_DATASHEETS_DIR")
+PART_IMAGES_DIR = _local.path("part_images", BASE_DIR / "part_images", "DMTDB_PART_IMAGES_DIR")
+STAGING_DIR = _local.path("staging", BASE_DIR / "_staging", "DMTDB_STAGING_DIR")
+KICAD_LIBS_DIR = _local.path("kicad_libs", BASE_DIR / "kicad_libs", "DMTDB_KICAD_LIBS_DIR")
+KICAD_SYMBOLS_DIR = _local.path("kicad_symbols", KICAD_LIBS_DIR / "symbols", "DMTDB_KICAD_SYMBOLS_DIR")
+KICAD_FOOTPRINT_DIR = _local.path("kicad_footprints", KICAD_LIBS_DIR / "footprints", "DMTDB_KICAD_FOOTPRINTS_DIR")
+KICAD_3DMODELS_DIR = _local.path("kicad_3dmodels", KICAD_LIBS_DIR / "3dmodels", "DMTDB_KICAD_3DMODELS_DIR")
 
-# ── KiCad Library Paths ────────────────────────────────────────────────
-# Where DMTDB stores KiCad library files locally
-# In KiCad, configure paths: DMTDB_3D, DMTDB_FOOTPRINT, DMTDB_SYM pointing here
-KICAD_SYMBOLS_DIR   = Path(os.environ.get("DMTDB_KICAD_SYMBOLS_DIR", BASE_DIR / "kicad_libs" / "symbols"))
-KICAD_FOOTPRINT_DIR = Path(os.environ.get("DMTDB_KICAD_FOOTPRINTS_DIR", BASE_DIR / "kicad_libs" / "footprints"))
-KICAD_3DMODELS_DIR  = Path(os.environ.get("DMTDB_KICAD_3DMODELS_DIR", BASE_DIR / "kicad_libs" / "3dmodels"))
+# Read-only repository source, separate from app-managed library assets.
+LIBRARY_REPO_DIR = _local.path("library_repo", BASE_DIR.parent / "LIB_KiCad-Libraries", "DMTDB_LIBRARY_REPO_DIR")
+LIBRARY_CACHE_DIR = _local.path("library_cache", BASE_DIR / "instance" / "library-cache", "DMTDB_LIBRARY_CACHE_DIR")
+ARTIFACTS_DIR = _local.path("artifacts", BASE_DIR / "instance" / "artifacts", "DMTDB_ARTIFACTS_DIR")
+ARTIFACT_MAX_BYTES = int(_local.get("server", "artifact_max_bytes", str(100 * 1024 * 1024), "DMTDB_ARTIFACT_MAX_BYTES"))
+BACKUPS_DIR = _local.path("backups", BASE_DIR / "instance" / "backups", "DMTDB_BACKUPS_DIR")
+DATABASE_PATH = _local.path("database", BASE_DIR / "dmtdb.sqlite", "DMTDB_DATABASE_PATH")
+DB_URL = _local.get("database", "url", f"sqlite:///{DATABASE_PATH.as_posix()}", "DMTDB_DB")
 
-# ── Database ───────────────────────────────────────────────────────────
-DB_URL = os.environ.get("DMTDB_DB", f"sqlite:///{BASE_DIR / 'dmtdb.sqlite'}")
+HOST = _local.get("server", "host", "0.0.0.0", "DMTDB_HOST")
+PORT = int(_local.get("server", "port", "5000", "DMTDB_PORT"))
+if not 1 <= PORT <= 65535:
+    raise ValueError("server.port must be between 1 and 65535")
+DEBUG = _local.boolean("server", "debug", False, "DMTDB_DEBUG")
+READ_ONLY_PREVIEW = _local.boolean("server", "read_only_preview", False, "DMTDB_READ_ONLY_PREVIEW")
+PREVIEW_PRODUCTION_URL = _local.get("server", "preview_production_url", "", "DMTDB_PREVIEW_PRODUCTION_URL")
+SECRET = _local.get("server", "secret", "dmtdb-dev-key-change-in-prod", "DMTDB_SECRET")
+PUBLIC_URL = _local.get("server", "public_url", "", "DMTDB_PUBLIC_URL").rstrip("/")
 
-# ── Server ─────────────────────────────────────────────────────────────
-HOST   = os.environ.get("DMTDB_HOST", "0.0.0.0")
-PORT   = int(os.environ.get("DMTDB_PORT", "5000"))
-DEBUG  = os.environ.get("DMTDB_DEBUG", "0") == "1"
-SECRET = os.environ.get("DMTDB_SECRET", "dmtdb-dev-key-change-in-prod")
-
-# ── Pagination ─────────────────────────────────────────────────────────
 DEFAULT_PAGE_SIZE = 50
-API_MAX_LIMIT     = 1000
+API_MAX_LIMIT = 1000
 API_DEFAULT_LIMIT = 100
 SEARCH_DROPDOWN_LIMIT = 20
-KICAD_SEARCH_LIMIT    = 200
-
-# ── Supply Chain ───────────────────────────────────────────────────────
-# How many seconds before cached pricing is considered stale (default 24h)
-SUPPLY_CHAIN_CACHE_TTL = int(os.environ.get("DMTDB_SUPPLY_CACHE_TTL", "86400"))
-
-# USD → EUR conversion rate for display (update periodically or set via env)
-USD_TO_EUR_RATE = float(os.environ.get("DMTDB_USD_TO_EUR", "0.92"))
+KICAD_SEARCH_LIMIT = 200
+SUPPLY_CHAIN_CACHE_TTL = int(_local.get("supply", "cache_ttl", "86400", "DMTDB_SUPPLY_CACHE_TTL"))
+USD_TO_EUR_RATE = float(_local.get("supply", "usd_to_eur", "0.92", "DMTDB_USD_TO_EUR"))

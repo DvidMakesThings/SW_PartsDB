@@ -42,6 +42,9 @@ class RowProcessor:
         Validate one row, resolve its DMTUID, build a Part.
         Raises RowError on any problem.
         """
+        from services import inventory_service as inventory
+        from services.parts_service import PartsService
+        inventory.lock_inventory(session)
         tt, ff, cc, ss, xxx, dmtuid = self._resolve_uid(session, row)
 
         # Duplicate check
@@ -49,19 +52,25 @@ class RowProcessor:
         if existing and not replace:
             raise RowError(f"Duplicate DMTUID {dmtuid} (enable replace to overwrite)")
         if existing:
-            session.delete(existing)
-            session.flush()
+            # Preserve relationships, images, pricing and immutable stock history.
+            return PartsService.update(session, existing, row)
 
         part = Part(dmtuid=dmtuid, tt=tt, ff=ff, cc=cc, ss=ss, xxx=xxx)
 
         # Direct (indexed) fields
         for csv_col, attr in DIRECT_FIELDS.items():
+            if attr in {"quantity", "location"}:
+                continue
             val = (row.get(csv_col) or "").strip()
             if val:
                 setattr(part, attr, val)
 
         # Template-driven EAV fields
         self._apply_template_fields(part, row)
+
+        session.add(part)
+        session.flush()
+        inventory.legacy_edit(session, part, row, actor="legacy-interface", reason="Recorded stock count")
 
         return part
 
@@ -130,7 +139,7 @@ class RowProcessor:
             # No template → store everything non-empty as JSON
             extra: dict[str, str] = {}
             for k, v in row.items():
-                if k in SKIP_FOR_EAV:
+                if k in SKIP_FOR_EAV or k.startswith("_"):
                     continue
                 v = (v or "").strip()
                 if v:

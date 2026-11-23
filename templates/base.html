@@ -6,9 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}DMTDB{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/engineering.css">
 </head>
 
 <body>
+  {% if read_only_preview %}
+  <div role="status" style="padding:.7rem 1rem; background:#5b4300; color:#fff; text-align:center;">
+    Read-only development preview · Separate database snapshot · Changes are not saved here.
+    {% if preview_production_url %}<a href="{{ preview_production_url }}" style="color:#fff; text-decoration:underline;">Open production</a>{% endif %}
+  </div>
+  {% endif %}
 
   <nav class="nav">
     <a href="/" class="nav-brand">DMTDB</a>
@@ -53,6 +60,10 @@
     <div class="nav-links">
       <a href="/" {% if request.endpoint=='ui.index' %}class="active" {% endif %}>Browse</a>
       <a href="/part/add" {% if request.endpoint=='ui.part_add' %}class="active" {% endif %}>+ Add Part</a>
+      <a href="/designs" {% if request.path.startswith('/designs') %}class="active" {% endif %}>Designs</a>
+      <a href="/prototypes" {% if request.path.startswith('/prototypes') %}class="active" {% endif %}>Prototypes</a>
+      <a href="/builds" {% if request.path.startswith('/builds') %}class="active" {% endif %}>Builds</a>
+      <a href="/library-sync" {% if request.path.startswith('/library-sync') %}class="active" {% endif %}>Library Sync</a>
       <a href="/libs" {% if request.endpoint=='ui.libs_page' %}class="active" {% endif %}>KiCad Libs</a>
       <a href="/labels" {% if request.endpoint=='ui.labels_page' %}class="active" {% endif %}>Labels</a>
       <a href="/import" {% if request.endpoint=='ui.import_page' %}class="active" {% endif %}>Import CSV</a>

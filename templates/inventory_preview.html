@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Stock Migration Preview - DMTDB{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Stock migration preview</h1>
+    <p>Read-only review of existing counts. No quantities or locations are changed.</p></div>
+  <a class="btn btn-secondary" href="{{ url_for('ui.inventory_migration_preview', format='json') }}">Download report</a>
+</div>
+<div class="detail-card">
+  <p><strong>{{ report.parts }}</strong> parts:
+     {{ report.known_counts }} known counts,
+     {{ report.unknown_counts }} unknown counts,
+     {{ report.review_counts }} needing correction.</p>
+  <p>Unknown quantities remain uncounted holdings. A blank location is unassigned;
+     it does not mean a part is not stocked. Known quantities total {{ report.known_quantity_total }} components.</p>
+  <form method="get">
+    <label for="status">Count status</label>
+    <select name="status" id="status">
+    {% for value, label in [('all', 'All'), ('known', 'Known'), ('unknown', 'Unknown'), ('review', 'Needs review')] %}
+      <option value="{{ value }}" {% if scope == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+    </select>
+    <button class="btn btn-secondary" type="submit">Filter</button>
+  </form>
+</div>
+<div style="overflow-x:auto; margin-top:1rem;">
+<table>
+  <thead><tr><th>Part</th><th>Original count</th><th>Proposed count</th><th>Location</th><th>Explanation</th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td><a href="{{ url_for('ui.part_detail', dmtuid=item.dmtuid) }}">{{ item.dmtuid }}</a><br>{{ item.mpn or '' }}</td>
+      <td>{{ item.original_quantity if item.original_quantity not in [none, ''] else '(blank)' }}</td>
+      <td>{{ item.proposed_quantity if item.proposed_quantity is not none else 'Unknown' }}</td>
+      <td>{{ item.proposed_location or 'Unassigned' }}</td>
+      <td>{{ item.reason }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">No parts match this count status.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p>Page {{ page }} of {{ pages }}
+{% if page > 1 %}<a class="btn" href="{{ url_for('ui.inventory_migration_preview', status=scope, page=page-1) }}">Previous</a>{% endif %}
+{% if page < pages %}<a class="btn" href="{{ url_for('ui.inventory_migration_preview', status=scope, page=page+1) }}">Next</a>{% endif %}
+</p>
+{% endblock %}

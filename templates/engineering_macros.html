@@ -1,0 +1,43 @@
+{% macro token() %}<input type="hidden" name="csrf" value="{{ engineering_csrf() }}">{% endmacro %}
+{% macro field(name, label, value='', required=false, type='text', placeholder='') %}
+<label>{{ label }}<input name="{{ name }}" type="{{ type }}" value="{{ value }}" {% if required %}required{% endif %} placeholder="{{ placeholder }}"></label>
+{% endmacro %}
+{% macro area(name, label, value='', required=false) %}
+<label class="eng-wide">{{ label }}<textarea name="{{ name }}" rows="3" {% if required %}required{% endif %}>{{ value }}</textarea></label>
+{% endmacro %}
+{% macro submit(label) %}<button class="btn btn-primary" type="submit" {% if read_only_preview %}disabled title="Saving is disabled in this preview"{% endif %}>{{ label }}</button>{% endmacro %}
+{% macro pager(page, pages) %}
+{% if pages > 1 %}<nav aria-label="Pages" class="eng-actions">
+{% if page > 1 %}<a href="{{ request.path }}?{{ dict(request.args, page=page-1)|urlencode }}">Previous</a>{% endif %}
+<span>Page {{ page }} of {{ pages }}</span>
+{% if page < pages %}<a href="{{ request.path }}?{{ dict(request.args, page=page+1)|urlencode }}">Next</a>{% endif %}</nav>{% endif %}
+{% endmacro %}
+{% macro unit_table(units) %}
+<div class="eng-table"><table><thead><tr><th>Serial number</th><th>Board / revision</th><th>Stage / status</th><th>Last recorded firmware</th><th>Location</th></tr></thead><tbody>
+{% for u in units %}<tr><td><a href="/prototypes/{{ u.id }}">{{ u.serial }}</a></td>
+<td>{% if u.board %}<a href="/designs/boards/{{ u.board_id }}">{{ u.board.project.code }}-{{ u.board.code }}</a> /
+{% if u.release %}<a href="/designs/releases/{{ u.release_id }}">{{ u.release.revision }}</a>{% else %}<strong class="eng-warning">Unresolved revision</strong>{% endif %}
+{% elif u.part_id %}<a href="/part/{{ u.part_id }}">{{ u.part.mpn or u.part.value or u.part_id }}</a>{% endif %}</td>
+<td>{{ u.stage }} / <strong>{{ 'WASTE' if u.status=='waste' else u.status }}</strong>{% if u.archived %} · Archived{% endif %}</td><td>{{ u.firmware_version or 'Not recorded' }}</td><td>{{ u.location or 'Not recorded' }}</td></tr>
+{% else %}<tr><td colspan="5">No physical units registered yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endmacro %}
+{% macro artifacts(files) %}
+{% for a in files %}<article class="eng-file">
+<div class="eng-actions"><a href="/designs/artifacts/{{ a.id }}/download">{{ a.filename }}</a><span>{{ artifact_roles.get(a.role, a.role) }} · {{ a.size }} bytes</span>
+{% if a.media_type in ['application/pdf', 'image/png', 'image/jpeg'] %}<a href="/designs/artifacts/{{ a.id }}/download?preview=1" target="_blank" rel="noopener">Preview</a>{% endif %}</div>
+<p class="eng-muted">Archived {{ a.created_at }} UTC{% if a.provenance %} · {{ a.provenance }}{% endif %}</p>
+<details><summary>Checksum{% if a.archive_manifest != '[]' %} and ZIP contents{% endif %}</summary><code class="eng-hash">SHA-256 {{ a.sha256 }}</code>
+{% if a.archive_manifest != '[]' %}<ul>{% for f in decode_json(a.archive_manifest) %}<li><code>{{ f.name }}</code> — {{ f.size }} bytes</li>{% endfor %}</ul>{% endif %}</details>
+</article>{% else %}<p class="eng-muted">No files archived yet.</p>{% endfor %}
+{% endmacro %}
+{% macro issues(items, scope) %}
+<h2>{{ scope }} issues</h2>
+{% for i in items %}<article class="eng-file"><h3>#{{ i.id }} {{ i.title }} <span class="eng-muted">{{ i.severity }} · {{ i.status }}</span></h3>
+<p class="eng-text">{{ i.description }}</p><p class="eng-muted">Reported {{ i.created_at }} UTC</p>
+{% if i.status == 'resolved' %}<p class="eng-text">Resolution: {{ i.resolution }}</p><p class="eng-muted">Resolved {{ i.resolved_at }} UTC</p>
+{% else %}<details><summary>Resolve this issue</summary><form method="post" class="eng-form">{{ token() }}<input type="hidden" name="action" value="resolve"><input type="hidden" name="issue_id" value="{{ i.id }}">{{ area('resolution', 'Resolution / evidence', required=true) }}{{ submit('Record resolution') }}</form></details>{% endif %}</article>
+{% else %}<p class="eng-muted">No {{ scope|lower }} issues reported.</p>{% endfor %}
+<details class="eng-panel"><summary>Report a {{ scope|lower }} issue</summary><form method="post" class="eng-form">{{ token() }}<input type="hidden" name="action" value="issue">
+{{ field('title', 'Issue title', required=true) }}<label>Severity<select name="severity">{% for s in ['low','normal','high','critical'] %}<option {% if s=='normal' %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+{{ area('description', 'Description / reproduction steps', required=true) }}{{ submit('Report issue') }}</form></details>
+{% endmacro %}

@@ -16,10 +16,17 @@
       Refresh All Pricing
     </button>
     <a href="/part/add" class="btn btn-primary">+ Add Part</a>
+    <a href="{{ url_for('ui.inventory_migration_preview') }}" class="btn btn-secondary">Stock migration preview</a>
   </div>
 </div>
 
 <form method="get" action="/" id="searchForm">
+  <label for="availabilitySelect">Stock availability</label>
+  <select name="availability" id="availabilitySelect" onchange="this.form.submit()">
+    {% for code, label in [('all','All parts'),('in_stock','In stock'),('out_of_stock','Out of stock'),('not_stocked','Not stocked'),('unknown','Unknown quantity')] %}
+      <option value="{{ code }}" {% if availability == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
   <div class="search-box">
     <div class="search-wrapper" id="searchWrapper">
       <input type="text" name="q" id="searchInput" value="{{ q }}"
@@ -113,7 +120,7 @@
         {% set new_order = 'desc' if sort_by == col and sort_order == 'asc' else 'asc' %}
         <th class="sortable {% if sort_by == col %}sorted {{ sort_order }}{% endif %}">
           <a
-            href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ col }}&order={{ new_order }}">
+            href="?availability={{ availability }}&q={{ q|urlencode }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ col }}&order={{ new_order }}">
             {{ label }}
             <span class="sort-indicator"></span>
           </a>
@@ -138,11 +145,14 @@
       {% for p in parts %}
       <tr>
         {% set pl = pricing_lookup.get(p.dmtuid, {}) %}
+        {% set stock = stock_lookup[p.dmtuid] %}
         <td class="uid-cell"><a href="/part/{{ p.dmtuid }}" {% if pl.lifecycle == 'Active' %}style="color:var(--green);"{% elif pl.lifecycle in ['EOL', 'Discontinued', 'Obsolete'] %}style="color:var(--red);"{% elif pl.lifecycle in ['NRND', 'Not Recommended'] %}style="color:#eab308;"{% endif %}>{{ p.dmtuid }}</a>{% if p.eol %} <span style="background:var(--red); color:#fff; padding:0 4px; border-radius:3px; font-size:.65em; vertical-align:middle;">EOL</span>{% endif %}</td>
         <td>{{ p.mpn or '' }}</td>
         <td>{{ p.value or '' }}</td>
-        <td>{{ p.quantity or '' }}</td>
-        <td>{{ p.location or '' }}</td>
+        <td><a href="{{ url_for('ui.stock_history', dmtuid=p.dmtuid) }}" title="Available: {{ stock.available }}; reserved: {{ stock.reserved }}">
+          {% if stock.unknown_holdings %}{{ stock.on_hand|string + ' + ?' if stock.on_hand else 'Unknown' }}{% else %}{{ stock.on_hand }}{% endif %}
+          </a><small style="display:block; color:var(--text-dim);">{{ stock.status }}</small></td>
+        <td>{{ 'Not stocked' if stock.status == 'Not stocked' else p.location or 'Unassigned' }}</td>
         <td>
           <span class="badge badge-domain">{{ p.tt }}</span>
           <span class="badge badge-family">{{ p.ff }}</span>
@@ -214,7 +224,7 @@
   <div style="display: flex; align-items: center; gap: 0.5rem;">
     {% if page > 1 %}
     <a
-      href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page - 1 }}">←
+      href="?availability={{ availability }}&q={{ q|urlencode }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page - 1 }}">←
       Prev</a>
     {% endif %}
     {% if total_pages > 1 %}
@@ -222,7 +232,7 @@
     {% if p == page %}
     <span class="current">{{ p }}</span>
     {% elif p <= 3 or p>= total_pages - 2 or (p >= page - 2 and p <= page + 2) %} <a
-        href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ p }}">
+        href="?availability={{ availability }}&q={{ q|urlencode }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ p }}">
         {{ p }}</a>
         {% elif p == 4 or p == total_pages - 3 %}
         <span class="info">…</span>
@@ -230,7 +240,7 @@
         {% endfor %}
         {% endif %}
         {% if page < total_pages %} <a
-          href="?q={{ q }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page + 1 }}">
+          href="?availability={{ availability }}&q={{ q|urlencode }}&tt={{ tt }}&ff={{ ff }}&cc={{ cc|default('') }}&ss={{ ss|default('') }}&props={{ props|default('') }}&sort={{ sort_by }}&order={{ sort_order }}&per_page={{ per_page }}&page={{ page + 1 }}">
           Next →</a>
           {% endif %}
   </div>

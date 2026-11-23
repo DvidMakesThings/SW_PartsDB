@@ -10,7 +10,8 @@ import re
 
 from sqlalchemy.orm import Session, Query
 
-from db.models import Part, PartField
+from db.models import Part, PartField, StockHolding
+from sqlalchemy import select, func
 
 
 # Metric prefix multipliers for smart value sorting
@@ -112,12 +113,14 @@ class SearchService:
         sort_order: str = "asc",
         limit: int = 100,
         offset: int = 0,
+        availability: str = "all",
     ) -> tuple[list[Part], int]:
         """
         Search parts.  Returns (parts_list, total_count).
         """
         query = session.query(Part)
         query = SearchService._apply_filters(query, q=q, tt=tt, ff=ff, cc=cc, ss=ss, props=props)
+        query = SearchService._apply_availability(query, availability)
         total = query.count()
         
         # Special handling for "value" column - needs smart metric prefix sorting
@@ -131,6 +134,9 @@ class SearchService:
         else:
             # Standard SQL sorting for other columns
             sort_col = SearchService.SORTABLE_COLUMNS.get(sort_by, Part.dmtuid)
+            if sort_by == "quantity":
+                sort_col = select(func.sum(StockHolding.on_hand)).where(
+                    StockHolding.dmtuid == Part.dmtuid, StockHolding.count_known == True).correlate(Part).scalar_subquery()
             if sort_order == "desc":
                 query = query.order_by(sort_col.desc())
             else:
@@ -140,7 +146,7 @@ class SearchService:
         return parts, total
 
     @staticmethod
-    def quick_search(session: Session, q: str, limit: int = 20) -> list[Part]:
+    def quick_search(session: Session, q: str, limit: int = 20, availability: str = "all") -> list[Part]:
         """
         Fast search for the live-search dropdown.
         Returns a small list, no total count.
@@ -149,7 +155,19 @@ class SearchService:
             return []
         query = session.query(Part)
         query = SearchService._apply_text_filter(query, q)
+        query = SearchService._apply_availability(query, availability)
         return query.order_by(Part.dmtuid).limit(limit).all()
+
+    @staticmethod
+    def _apply_availability(query, availability):
+        has_holding = select(StockHolding.id).where(StockHolding.dmtuid == Part.dmtuid).exists()
+        positive = select(StockHolding.id).where(StockHolding.dmtuid == Part.dmtuid,
+                                                StockHolding.on_hand > 0).exists()
+        unknown = select(StockHolding.id).where(StockHolding.dmtuid == Part.dmtuid,
+                                               StockHolding.count_known == False).exists()
+        filters = {"in_stock": positive, "out_of_stock": has_holding & ~positive & ~unknown,
+                   "not_stocked": ~has_holding, "unknown": ~positive & unknown}
+        return query.filter(filters[availability]) if availability in filters else query
 
     # ── Internal ───────────────────────────────────────────────────────
 

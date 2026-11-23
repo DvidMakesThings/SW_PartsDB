@@ -3,6 +3,7 @@
 A self-hosted electronic components inventory system built around the **DMT classification schema**. DMTDB provides a complete solution for organizing, tracking, and integrating your parts library with KiCad EDA software.
 
 **Key Features:**
+- Design revision archives, product-domain serial management, firmware/modification histories, Git library catalogue review, BOM builds and stock deductions; see [access and deployment](docs/access-and-deployment.md) for workflows and deployment instructions.
 - Hierarchical part classification using the DMT numbering system (29 domains, 192 families)
 - Full KiCad HTTP Library integration for real-time symbol browsing
 - Smart value sorting (understands metric prefixes: pico, nano, micro, milli, kilo, mega)
@@ -39,6 +40,18 @@ A self-hosted electronic components inventory system built around the **DMT clas
 ---
 
 ## Quick Start
+
+For per-machine Windows/Linux paths, copy `config.local.example.ini` to the
+gitignored `config.local.ini`. See [local configuration and migration instructions](docs/local-configuration-and-migrations.md)
+before upgrading an existing installation: the new versioned baseline requires
+an explicit database upgrade while writers are paused.
+
+The [engineering and inventory implementation plan](docs/engineering-inventory-change-plan.md)
+tracks the design archive, prototype, library synchronization, and stock work.
+The current writable PC deployment is **http://192.168.0.100:5000/** (or localhost:5000 on this PC).
+See [access and deployment](docs/access-and-deployment.md) for page navigation,
+backups, local server controls, and the later user-controlled Raspberry Pi rollout.
+Git transfers code; it does not transfer the local database or archived files.
 
 ### Windows
 

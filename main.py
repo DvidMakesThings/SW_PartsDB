@@ -9,7 +9,8 @@ See config.py for all environment-variable tunables.
 """
 
 import sys
-from flask import Flask, render_template, send_from_directory
+import uuid
+from flask import Flask, render_template, send_from_directory, request, abort
 
 import config
 import schema
@@ -27,6 +28,27 @@ def create_app() -> Flask:
         static_folder=str(config.BASE_DIR / "static"),
     )
     app.secret_key = config.SECRET
+    app.config["MAX_CONTENT_LENGTH"] = config.ARTIFACT_MAX_BYTES + 1024 * 1024
+    app.jinja_env.globals["new_operation_key"] = lambda: uuid.uuid4().hex
+    app.jinja_env.globals["read_only_preview"] = config.READ_ONLY_PREVIEW
+    app.jinja_env.globals["preview_production_url"] = config.PREVIEW_PRODUCTION_URL
+    if config.READ_ONLY_PREVIEW:
+        # Explicit allowlist: old GET endpoints can also have side effects.
+        @app.before_request
+        def protect_preview():
+            allowed = {"ui.index", "ui.part_detail", "ui.stock_history",
+                       "ui.inventory_migration_preview", "api.list_parts", "api.get_part",
+                       "ui.ui_search", "ui.ui_template_fields", "ui.ui_facets",
+                       "ui.designs_index", "ui.design_project", "ui.design_board", "ui.design_release",
+                       "ui.design_artifact", "ui.release_manifest", "ui.prototypes_index",
+                       "ui.prototype_detail", "ui.prototype_history",
+                       "ui.product_serials", "ui.serial_settings",
+                       "ui.library_catalog", "ui.library_entry",
+                       "ui.jobs_page",
+                       "ui.builds_index", "ui.build_detail", "ui.bom_example",
+                       "static", "serve_part_image", "serve_kicad_lib", "ui.serve_datasheet"}
+            if request.method not in {"GET", "HEAD", "OPTIONS"} or request.endpoint not in allowed:
+                abort(403, description="This is a read-only preview using a separate database snapshot.")
 
     # ── Load classification schema + templates ──────────────────────
     if not config.SCHEMA_PATH.exists():
@@ -53,12 +75,17 @@ def create_app() -> Flask:
     app.register_blueprint(kicad_httplib_bp)
 
     # ── KiCad library file server ───────────────────────────────────
-    kicad_libs_dir = config.BASE_DIR / "kicad_libs"
-
     @app.route("/kicad_libs/<path:filepath>")
     def serve_kicad_lib(filepath):
         """Serve KiCad library files (symbols, footprints, 3D models)."""
-        return send_from_directory(kicad_libs_dir, filepath)
+        kind, separator, relative = filepath.partition("/")
+        directories = {"symbols": config.KICAD_SYMBOLS_DIR,
+                       "footprints": config.KICAD_FOOTPRINT_DIR,
+                       "3dmodels": config.KICAD_3DMODELS_DIR}
+        if separator and kind in directories:
+            return send_from_directory(directories[kind], relative)
+        # Preserve existing root-file URLs, including HTTP library configuration.
+        return send_from_directory(config.KICAD_LIBS_DIR, filepath)
 
     # ── Part image file server ──────────────────────────────────────
     @app.route("/part_images/<path:filepath>")
@@ -86,6 +113,8 @@ def create_app() -> Flask:
 
 def _seed_if_empty():
     """Auto-import seed CSV when the database is empty."""
+    if config.READ_ONLY_PREVIEW:
+        return
     session = get_session()
     count = session.query(Part).count()
     session.close()
@@ -94,7 +123,7 @@ def _seed_if_empty():
         print(f"\n  Database has {count} parts.")
         return
 
-    if not config.CSV_SEED_PATH.exists():
+    if config.CSV_SEED_PATH is None or not config.CSV_SEED_PATH.is_file():
         print(f"\n  No seed CSV at {config.CSV_SEED_PATH} - starting empty.")
         return
 
@@ -119,6 +148,9 @@ def main():
 
     app = create_app()
     _seed_if_empty()
+    if not config.READ_ONLY_PREVIEW:
+        from services.jobs import start_worker
+        start_worker()
 
     print(f"\n  http://{config.HOST}:{config.PORT}")
     print(f"  API docs: http://{config.HOST}:{config.PORT}/api/docs")

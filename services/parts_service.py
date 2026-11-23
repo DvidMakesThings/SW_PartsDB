@@ -17,6 +17,7 @@ from schema.numbering import build_dmtuid
 from schema.templates import get_fields
 from import_engine.field_map import DIRECT_FIELDS, SKIP_FOR_EAV
 from services.sequence_service import next_xxx
+from services import inventory_service as inventory
 
 
 def collect_distributors_from_form(data: dict) -> str:
@@ -54,6 +55,7 @@ class PartsService:
         Create a new Part from a dict of field values.
         Required keys: tt, ff, cc, ss.  XXX is auto-assigned.
         """
+        inventory.lock_inventory(session)
         tt = str(data.get("tt", "")).zfill(2)
         ff = str(data.get("ff", "")).zfill(2)
         cc = str(data.get("cc", "")).zfill(2)
@@ -66,7 +68,7 @@ class PartsService:
 
         # Direct fields (excluding Distributor - handled separately)
         for csv_col, attr in DIRECT_FIELDS.items():
-            if csv_col == "Distributor":
+            if attr in {"distributor", "quantity", "location"}:
                 continue  # Handled below
             val = str(data.get(csv_col, data.get(attr, ""))).strip()
             if val:
@@ -91,7 +93,7 @@ class PartsService:
 
         # Template EAV fields + extra_json for non-template fields
         template = get_fields(tt, ff)
-        skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
+        skip = SKIP_FOR_EAV | set(DIRECT_FIELDS.values()) | {"kicad_symbol", "kicad_footprint",
                                 "kicad_libref", "kicad_3dmodel", "dmtuid", "notes", "eol",
                                 "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
         # Also skip distributor form fields
@@ -102,7 +104,7 @@ class PartsService:
             allowed = set(template) - skip
             for k, v in data.items():
                 # Skip distributor form fields
-                if any(k.startswith(p) for p in skip_patterns):
+                if k.startswith("_") or any(k.startswith(p) for p in skip_patterns):
                     continue
                 val = str(v).strip()
                 if not val:
@@ -118,7 +120,7 @@ class PartsService:
             # No template → all non-skip fields go to extra_json
             for k, v in data.items():
                 # Skip distributor form fields
-                if any(k.startswith(p) for p in skip_patterns):
+                if k.startswith("_") or any(k.startswith(p) for p in skip_patterns):
                     continue
                 val = str(v).strip()
                 if val and k not in skip:
@@ -129,6 +131,7 @@ class PartsService:
 
         session.add(part)
         session.flush()
+        inventory.legacy_edit(session, part, data)
         return part
 
     # ── Read ───────────────────────────────────────────────────────────
@@ -144,9 +147,10 @@ class PartsService:
         """
         Update direct, KiCad, notes, and EAV fields on an existing Part.
         """
-        # Direct fields (excluding Distributor - handled separately)
+        inventory.legacy_edit(session, part, data)
+        # Direct fields (inventory and distributor handled separately)
         for csv_col, attr in DIRECT_FIELDS.items():
-            if csv_col == "Distributor":
+            if attr in {"distributor", "quantity", "location"}:
                 continue  # Handled below
             if csv_col in data or attr in data:
                 val = str(data.get(csv_col, data.get(attr, ""))).strip()
@@ -173,7 +177,7 @@ class PartsService:
 
         # EAV fields + extra_json for non-template fields
         template = get_fields(part.tt, part.ff)
-        skip = SKIP_FOR_EAV | {"kicad_symbol", "kicad_footprint",
+        skip = SKIP_FOR_EAV | set(DIRECT_FIELDS.values()) | {"kicad_symbol", "kicad_footprint",
                                 "kicad_libref", "kicad_3dmodel", "dmtuid", "notes", "eol",
                                 "tt", "ff", "cc", "ss", "xxx", "distributor_count"}
         # Also skip distributor form fields
@@ -192,7 +196,7 @@ class PartsService:
             existing_map = {f.field_name: f for f in part.fields}
             for k, v in data.items():
                 # Skip distributor form fields
-                if any(k.startswith(p) for p in skip_patterns):
+                if k.startswith("_") or any(k.startswith(p) for p in skip_patterns):
                     continue
                 val = str(v).strip()
                 if k in allowed:
@@ -216,7 +220,7 @@ class PartsService:
             # No template → all non-skip fields go to extra_json
             for k, v in data.items():
                 # Skip distributor form fields
-                if any(k.startswith(p) for p in skip_patterns):
+                if k.startswith("_") or any(k.startswith(p) for p in skip_patterns):
                     continue
                 val = str(v).strip()
                 if k in skip:
@@ -236,5 +240,8 @@ class PartsService:
 
     @staticmethod
     def delete(session: Session, part: Part) -> None:
+        inventory.lock_inventory(session)
+        if inventory.holdings(session, part.dmtuid):
+            raise ValueError("This part has inventory history and cannot be deleted")
         session.delete(part)
         session.flush()

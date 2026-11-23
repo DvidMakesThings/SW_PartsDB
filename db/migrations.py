@@ -12,11 +12,12 @@ from sqlalchemy import inspect
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "0001_legacy"
-HEAD = "0008_document_id"
+HEAD = "0009_part_deletion"
 MANIFESTS = {BASELINE: "legacy_schema.json", "0002_inventory": "inventory_schema.json",
              "0003_designs": "design_schema.json", "0004_library": "library_schema.json",
              "0005_serials": "serial_schema.json", "0006_jobs": "jobs_schema.json",
-             "0007_builds": "builds_schema.json", HEAD: "document_id_schema.json"}
+             "0007_builds": "builds_schema.json", "0008_document_id": "document_id_schema.json",
+             HEAD: "part_deletion_schema.json"}
 
 
 def alembic_config(connection):

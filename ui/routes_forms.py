@@ -13,7 +13,6 @@ from db import get_session
 from db.models import PartField
 from services.parts_service import PartsService
 from services.inventory_service import holdings
-from ui.stock_review import confirm_stock_form
 from services.kicad_symbol_processor import KiCadSymbolProcessor
 from services import kicad_staging
 from schema.loader import get_domains, domain_name, family_name
@@ -124,14 +123,11 @@ def part_add():
 
     # POST: collect form data into a dict and delegate to PartsService
     data = dict(request.form)
-    stock_confirmation = data.pop('_stock_confirmation', None)
+    data.pop('_stock_confirmation', None)
     data.setdefault("eol", "off")  # unchecked checkbox sends nothing
     
     session = get_session()
     try:
-        preview = confirm_stock_form(session, None, data, stock_confirmation)
-        if preview is not None:
-            return preview
         staging_session_id = data.pop('staging_session_id', None)
         part = PartsService.create(session, data)
         
@@ -220,12 +216,9 @@ def part_edit(dmtuid: str):
 
         # POST
         data = dict(request.form)
-        stock_confirmation = data.pop('_stock_confirmation', None)
+        data.pop('_stock_confirmation', None)
         data.setdefault("eol", "off")  # unchecked checkbox sends nothing
         
-        preview = confirm_stock_form(session, part, data, stock_confirmation)
-        if preview is not None:
-            return preview
         staging_session_id = data.pop('staging_session_id', None)
         PartsService.update(session, part, data)
         

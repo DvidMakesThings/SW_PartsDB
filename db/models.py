@@ -276,7 +276,8 @@ class InventoryLock(Base):
 class StockHolding(Base):
     __tablename__ = "stock_holdings"
     id = Column(Integer, primary_key=True)
-    dmtuid = Column(String(20), ForeignKey("parts.dmtuid", ondelete="RESTRICT"), nullable=False, index=True)
+    dmtuid = Column(String(20), ForeignKey("parts.dmtuid", ondelete="RESTRICT"), nullable=True, index=True)
+    deleted_dmtuid = Column(String(20), nullable=True)
     location = Column(String(200), nullable=False, default="")
     lot = Column(String(200), nullable=False, default="")
     count_known = Column(Boolean, nullable=False, default=False)

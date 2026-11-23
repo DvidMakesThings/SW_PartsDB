@@ -12,7 +12,7 @@ import json
 import re
 from sqlalchemy.orm import Session
 
-from db.models import Part, PartField
+from db.models import Part, PartField, StockReservation
 from schema.numbering import build_dmtuid
 from schema.templates import get_fields
 from import_engine.field_map import DIRECT_FIELDS, SKIP_FOR_EAV
@@ -241,7 +241,15 @@ class PartsService:
     @staticmethod
     def delete(session: Session, part: Part) -> None:
         inventory.lock_inventory(session)
-        if inventory.holdings(session, part.dmtuid):
-            raise ValueError("This part has inventory history and cannot be deleted")
-        session.delete(part)
-        session.flush()
+        with session.begin_nested():
+            # Retain old movement IDs for historical references without keeping
+            # a deleted component in the catalogue or its available inventory.
+            for holding in inventory.holdings(session, part.dmtuid):
+                session.query(StockReservation).filter_by(holding_id=holding.id).update({"quantity": 0})
+                holding.reserved = 0
+                holding.deleted_dmtuid = part.dmtuid
+                holding.dmtuid = None
+                holding.version += 1
+            session.flush()
+            session.delete(part)
+            session.flush()

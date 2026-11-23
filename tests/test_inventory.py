@@ -93,8 +93,11 @@ def test_transfer_balances_and_history_is_immutable(inventory):
         with pytest.raises(Exception, match="immutable"):
             with s.begin_nested():
                 s.execute(text("DELETE FROM stock_movements"))
-        with pytest.raises(ValueError, match="history"):
-            PartsService.delete(s,s.get(Part,uid))
+        PartsService.delete(s,s.get(Part,uid))
+        assert s.get(Part,uid) is None
+        assert stock.holdings(s,uid) == []
+        assert s.get(StockHolding,h).deleted_dmtuid == uid
+        assert stock.reconcile(s) == []
 
 
 def test_unknown_stock_and_stale_form(inventory):

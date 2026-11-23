@@ -133,7 +133,7 @@ def test_populated_design_database_upgrades_with_serial_history(tmp_path):
             (id,unit_id,title,description,severity,status,resolution,created_at)
             VALUES (1,1,'Watchdog fault','Recorded before upgrade','minor','open','',CURRENT_TIMESTAMP)""")
     result = upgrade(engine, tmp_path / 'backups')
-    assert result['revision'] == '0008_document_id'
+    assert result['revision'] == '0009_part_deletion'
     with engine.connect() as c:
         assert status(c) == 'current'
         assert c.exec_driver_sql('PRAGMA foreign_key_check').all() == []

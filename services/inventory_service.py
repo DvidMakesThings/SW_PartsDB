@@ -84,6 +84,8 @@ def _holding(session, holding_id):
     row = session.get(StockHolding, holding_id, populate_existing=True)
     if row is None:
         raise ValueError("Unknown stock holding")
+    if row.dmtuid is None:
+        raise ValueError("This stock record belongs to a deleted part")
     return row
 
 

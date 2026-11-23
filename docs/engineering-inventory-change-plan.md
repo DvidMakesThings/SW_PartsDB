@@ -487,7 +487,3 @@ Outside the first version: in-browser CAD editing, automatic electrical design r
 
 - Local rollout verified: full bundle and migration backup created before upgrade; current schema is `0008_document_id`. All prior rows/columns in 26 application tables matched the pre-upgrade snapshot. Inventory reconciliation is clean. Restarted local app and verified the new DOCUMENT_ID form at http://192.168.0.100:5000/designs. Pi unchanged.
 
-### 2026-11-23: complete transformer classification and properties
-
-- Added missing 0706 CC/SS guidelines and property template to the tracked description JSONs. 749020111A is classified as 07/06/02/01 (Pulse / LAN / Ethernet, SMT). Includes Inductance, Turns Ratio - Primary:Secondary, Transformer Type and the shared core fields. Part-specific values are not family defaults.
-- Verified the template/classification API and property save/edit/detail round-trip in an isolated database. Restarted the local app and confirmed the live definitions at http://192.168.0.100:5000/. No database migration is required for this JSON-only update. Details and datasheet reference: [transformer-classification.md](transformer-classification.md).
